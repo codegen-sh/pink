@@ -10,12 +10,10 @@ fn get_cases(
 ) {
     for t in variants {
         let normalized_variant_name = normalize_type_name(&t.type_name);
-        if normalized_variant_name == "" {
+        if normalized_variant_name.is_empty() {
             continue;
         }
-        let variant_name = override_variant_name
-            .clone()
-            .unwrap_or_else(|| &normalized_variant_name);
+        let variant_name = override_variant_name.unwrap_or_else(|| &normalized_variant_name);
         let prefix = format!("{}::{}", "Self", variant_name);
         if let Some(variants) = state.variants.get(&normalized_variant_name) {
             get_cases(variants, cases, state, Some(variant_name), existing_cases);
@@ -42,7 +40,7 @@ pub fn generate_enum(
     ));
     for t in variants {
         let variant_name = normalize_type_name(&t.type_name);
-        if variant_name == "" {
+        if variant_name.is_empty() {
             continue;
         }
         state
@@ -57,8 +55,8 @@ pub fn generate_enum(
     let mut existing_cases = Vec::new();
     get_cases(variants, &mut cases, state, None, &mut existing_cases);
     if anonymous_nodes {
-        for (name, variant_name) in state.anonymous_nodes.iter() {
-            if name == "" {
+        for (name, _variant_name) in state.anonymous_nodes.iter() {
+            if name.is_empty() {
                 continue;
             }
             if existing_cases.contains(name) {

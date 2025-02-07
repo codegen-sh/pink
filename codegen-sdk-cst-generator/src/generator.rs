@@ -1,9 +1,8 @@
-use crate::parser::{Children, Fields, Node, TypeDefinition};
-use convert_case::{Case, Casing};
+use crate::parser::Node;
 use enum_generator::generate_enum;
 use naming::normalize_type_name;
 use state::State;
-use std::{collections::HashSet, error::Error, fmt::format};
+use std::{collections::HashSet, error::Error};
 use struct_generator::generate_struct;
 mod enum_generator;
 mod format;
@@ -22,7 +21,7 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> Result<String, Box<dyn Err
     let mut state = State::default();
     let mut nodes = HashSet::new();
     for node in node_types {
-        if node.subtypes.len() > 0 {
+        if !node.subtypes.is_empty() {
             state
                 .variants
                 .insert(normalize_type_name(&node.type_name), node.subtypes.clone());
@@ -38,10 +37,10 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> Result<String, Box<dyn Err
             continue;
         }
         nodes.insert(name.clone());
-        if name == "" {
+        if name.is_empty() {
             continue;
         }
-        if node.subtypes.len() > 0 {
+        if !node.subtypes.is_empty() {
             generate_enum(&node.subtypes, &mut state, &name, true);
         } else {
             generate_struct(node, &mut state, &name);

@@ -115,21 +115,20 @@ fn generate_optional_field(
 fn generate_fields(
     fields: &Fields,
     state: &mut State,
-    node_name: &str,
     node: &Node,
     constructor_fields: &mut Vec<String>,
 ) {
     for (name, field) in &fields.fields {
         let field_name = normalize_field_name(name);
         let converted_type_name =
-            convert_type_definition(&field.types, state, &node.type_name, &name);
+            convert_type_definition(&field.types, state, &node.type_name, name);
         if field.multiple {
             generate_multiple_field(
                 &field_name,
                 &converted_type_name,
                 state,
                 constructor_fields,
-                &name,
+                name,
             );
         } else if field.required {
             generate_required_field(
@@ -137,7 +136,7 @@ fn generate_fields(
                 &converted_type_name,
                 state,
                 constructor_fields,
-                &name,
+                name,
             );
         } else {
             generate_optional_field(
@@ -145,7 +144,7 @@ fn generate_fields(
                 &converted_type_name,
                 state,
                 constructor_fields,
-                &name,
+                name,
             );
         }
     }
@@ -157,7 +156,7 @@ fn generate_children(
     constructor_fields: &mut Vec<String>,
 ) {
     let converted_type_name =
-        convert_type_definition(&children.types, state, node_name, &"children");
+        convert_type_definition(&children.types, state, node_name, "children");
     state.structs.push_str(&format!(
         "    pub children: Vec<{}>,\n",
         converted_type_name
@@ -167,24 +166,18 @@ fn generate_children(
 pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     state
         .structs
-        .push_str(&HEADER_TEMPLATE.replace("{name}", &name));
+        .push_str(&HEADER_TEMPLATE.replace("{name}", name));
     let mut constructor_fields = Vec::new();
     if let Some(fields) = &node.fields {
-        generate_fields(
-            fields,
-            state,
-            &node.type_name,
-            &node,
-            &mut constructor_fields,
-        );
+        generate_fields(fields, state, node, &mut constructor_fields);
     }
     if let Some(children) = &node.children {
         generate_children(children, state, &node.type_name, &mut constructor_fields);
     }
-    state.structs.push_str(&FOOTER_TEMPLATE);
+    state.structs.push_str(FOOTER_TEMPLATE);
     state.structs.push_str(
         &CONSTRUCTOR_TEMPLATE
             .replace("{{fields}}", &constructor_fields.join(",\n       "))
-            .replace("{{name}}", &name),
+            .replace("{{name}}", name),
     );
 }

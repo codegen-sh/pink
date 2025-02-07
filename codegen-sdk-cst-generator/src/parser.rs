@@ -45,7 +45,7 @@ pub struct Children {
 }
 
 pub fn parse_node_types(source: &str) -> Result<Vec<Node>, Box<dyn Error>> {
-    let parsed: Vec<Node> = serde_json::from_str(&source)?;
+    let parsed: Vec<Node> = serde_json::from_str(source)?;
     Ok(parsed)
 }
 #[cfg(test)]
@@ -56,6 +56,6 @@ mod tests {
     fn test_parse_node_types() {
         let source = tree_sitter_python::NODE_TYPES;
         let cst = parse_node_types(source).unwrap();
-        panic!();
+        assert!(!cst.is_empty());
     }
 }
