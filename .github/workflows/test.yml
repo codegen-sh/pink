@@ -19,6 +19,6 @@ jobs:
         uses: ./.github/actions/setup-environment
       - name: Run tests
         run: |
-          ~/.cargo/bin/cargo-nextest nextest run
+          ~/.cargo/bin/cargo-nextest nextest run --workspace
         env:
             CARGO_TERM_COLOR: always
