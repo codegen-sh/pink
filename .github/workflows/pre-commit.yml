@@ -26,9 +26,7 @@ jobs:
 
 
 
-      - uses: pre-commit/action@v3
-        with:
-          cache: true
+      - uses: pre-commit/action@v3.0.1
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         # Always commit changes even if pre-commit failed
