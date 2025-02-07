@@ -47,6 +47,8 @@ pub fn parse_file_typescript(file_path: &str) -> Result<Box<tsx::Program>, Box<d
 mod tests {
     use std::io::Write;
 
+    use tempfile::tempdir;
+
     use super::*;
     #[test]
     fn test_snazzy_items() {
@@ -57,10 +59,11 @@ mod tests {
             }
         }
         ";
-
-        let mut file = File::create("snazzy_items.ts").unwrap();
+        let dir = tempdir().unwrap();
+        let path = dir.into_path().join("snazzy_items.ts");
+        let mut file = File::create(&path).unwrap();
         file.write_all(content.as_bytes()).unwrap();
-        let module = parse_file_typescript("snazzy_items.ts").unwrap();
-        panic!("{:#?}", module);
+        let module: Box<tsx::Program> = parse_file_typescript(&path.to_str().unwrap()).unwrap();
+        assert!(module.children.len() > 0);
     }
 }
