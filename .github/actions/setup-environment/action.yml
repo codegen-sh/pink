@@ -1,0 +1,10 @@
+name: "Setup Environment"
+description: "Setup Environment"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+          override: true
+    - uses: taiki-e/install-action@nextest
