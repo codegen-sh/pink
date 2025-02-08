@@ -1,0 +1,24 @@
+name: Test
+on:
+    pull_request:
+      branches:
+        - "main"
+    push:
+      branches:
+        - "main"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+      - name: Run tests
+        run: |
+          ~/.cargo/bin/cargo-nextest nextest run --workspace
+        env:
+            CARGO_TERM_COLOR: always

@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
 use codegen_sdk_cst_generator::generate_cst;
-use tree_sitter_python;
-use tree_sitter_typescript;
 fn get_node_types() -> HashMap<String, String> {
     HashMap::from([
         (

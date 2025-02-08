@@ -2,9 +2,8 @@ use clap::Parser;
 use codegen_sdk_cst::{parse_file_typescript, tsx};
 use glob::glob;
 use rayon::prelude::*;
-use std::error::Error;
 use std::{path, time::Instant};
-use sysinfo::{Pid, Process, System};
+use sysinfo::System;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
@@ -32,12 +31,12 @@ fn main() {
                 return match parse_file_typescript(file.to_str().unwrap()) {
                     Ok(program) => Some(program),
                     Err(e) => {
-                        tx.send(()).unwrap();
+                        tx.send(e.to_string()).unwrap();
                         None
                     }
                 };
             }
-            return None;
+            None
         })
         .collect();
     let end = Instant::now();

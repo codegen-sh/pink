@@ -15,3 +15,6 @@ codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator" }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
 tree-sitter-python = "0.23.6"
 tree-sitter-typescript = "0.23.2"
+
+[dev-dependencies]
+tempfile = "3.16.0"

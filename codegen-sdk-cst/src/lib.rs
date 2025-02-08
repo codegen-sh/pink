@@ -40,12 +40,14 @@ pub fn parse_file_typescript(file_path: &str) -> Result<Box<tsx::Program>, Box<d
     let tree = parse_file(file_path, tree_sitter_typescript::LANGUAGE_TSX.into())?;
     Ok(
         catch_unwind(|| Box::new(tsx::Program::from_node(tree.root_node())))
-            .map_err(|e| ParseError {})?,
+            .map_err(|_e| ParseError {})?,
     )
 }
 #[cfg(test)]
 mod tests {
     use std::io::Write;
+
+    use tempfile::tempdir;
 
     use super::*;
     #[test]
@@ -57,10 +59,11 @@ mod tests {
             }
         }
         ";
-
-        let mut file = File::create("snazzy_items.ts").unwrap();
-        file.write_all(&content.as_bytes()).unwrap();
-        let module = parse_file_typescript("snazzy_items.ts").unwrap();
-        panic!("{:#?}", module);
+        let dir = tempdir().unwrap();
+        let path = dir.into_path().join("snazzy_items.ts");
+        let mut file = File::create(&path).unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+        let module: Box<tsx::Program> = parse_file_typescript(&path.to_str().unwrap()).unwrap();
+        assert!(module.children.len() > 0);
     }
 }

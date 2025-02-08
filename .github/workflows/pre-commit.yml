@@ -1,0 +1,36 @@
+name: pre-commit
+
+on:
+  pull_request:
+    branches:
+      - "main"
+  push:
+    branches:
+      - "main"
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup backend
+        uses: ./.github/actions/setup-environment
+
+
+
+      - uses: pre-commit/action@v3.0.1
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        # Always commit changes even if pre-commit failed
+        if: always() && github.event_name == 'pull_request'
+        with:
+          commit_message: "Automated pre-commit update"
+          push_options: "--no-verify"

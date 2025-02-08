@@ -61,7 +61,7 @@ fn escape_char(c: char) -> String {
     c.to_string()
 }
 pub fn normalize_string(string: &str) -> String {
-    let escaped = String::from_iter(string.chars().map(|c| escape_char(c)));
+    let escaped = String::from_iter(string.chars().map(escape_char));
     escaped
 }
 pub fn normalize_type_name(type_name: &str) -> String {
@@ -69,7 +69,7 @@ pub fn normalize_type_name(type_name: &str) -> String {
     if type_name.chars().any(|c| c.is_ascii_alphabetic()) {
         cased = cased.to_case(Case::Pascal);
     }
-    let escaped = String::from_iter(cased.chars().map(|c| get_char_mapping(c)));
+    let escaped = String::from_iter(cased.chars().map(get_char_mapping));
     debug_assert!(
         escaped
             .chars()
