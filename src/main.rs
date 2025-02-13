@@ -1,5 +1,5 @@
 use clap::Parser;
-use codegen_sdk_cst::{parse_file_typescript, tsx};
+use codegen_sdk_common::traits::CSTNode;
 use glob::glob;
 use rayon::prelude::*;
 use std::{path, time::Instant};
@@ -22,11 +22,11 @@ fn collect_files(dir: String) -> Vec<path::PathBuf> {
 fn parse_file(
     file: &path::PathBuf,
     tx: &crossbeam::channel::Sender<String>,
-) -> Option<Box<tsx::Program>> {
+) -> Option<Box<dyn CSTNode + Send>> {
     if file.is_dir() {
         return None;
     }
-    return match parse_file_typescript(file.to_str().unwrap()) {
+    return match codegen_sdk_cst::parse_file(file) {
         Ok(program) => Some(program),
         Err(e) => {
             tx.send(e.to_string()).unwrap();
@@ -34,7 +34,7 @@ fn parse_file(
         }
     };
 }
-fn parse_files(dir: String) -> (Vec<Box<tsx::Program>>, Vec<String>) {
+fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     rayon::ThreadPoolBuilder::new()
         .stack_size(1024 * 1024 * 1024 * 10)
         .build_global()
@@ -43,7 +43,7 @@ fn parse_files(dir: String) -> (Vec<Box<tsx::Program>>, Vec<String>) {
     let mut errors = Vec::new();
     let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
-    let files: Vec<Box<tsx::Program>> = files_to_parse
+    let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
         .filter_map(|file| parse_file(file, &tx))
         .collect();

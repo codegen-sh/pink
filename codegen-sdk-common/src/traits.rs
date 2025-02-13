@@ -3,7 +3,7 @@ use tree_sitter::{self, Point};
 pub trait FromNode {
     fn from_node(node: tree_sitter::Node) -> Self;
 }
-pub trait CSTNode {
+pub trait CSTNode: Send {
     fn start_byte(&self) -> usize;
     fn end_byte(&self) -> usize;
     fn start_position(&self) -> Point;
@@ -12,4 +12,8 @@ pub trait CSTNode {
     fn source(&self) -> String {
         String::from_utf8(self.text().to_vec()).unwrap()
     }
+}
+pub trait HasChildren {
+    type Child: Send;
+    fn children(&self) -> &Vec<Self::Child>;
 }

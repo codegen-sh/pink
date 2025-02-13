@@ -7,3 +7,10 @@ edition = "2021"
 bytes = { workspace = true }
 tree-sitter = { workspace = true }
 ouroboros = { workspace = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
+tree-sitter-javascript = { workspace = true, optional = true }
+lazy_static = "1.5.0"
+[features]
+python = ["dep:tree-sitter-python"]
+typescript = ["dep:tree-sitter-typescript", "dep:tree-sitter-javascript"]

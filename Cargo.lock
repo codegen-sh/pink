@@ -166,8 +166,12 @@ name = "codegen-sdk-common"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "lazy_static",
  "ouroboros",
  "tree-sitter",
+ "tree-sitter-javascript",
+ "tree-sitter-python",
+ "tree-sitter-typescript",
 ]
 
 [[package]]
@@ -176,6 +180,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "codegen-sdk-analyzer",
+ "codegen-sdk-common",
  "codegen-sdk-cst",
  "crossbeam",
  "env_logger",
@@ -192,12 +197,11 @@ dependencies = [
  "bytes",
  "codegen-sdk-common",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-macros",
  "convert_case",
  "ouroboros",
  "tempfile",
  "tree-sitter",
- "tree-sitter-python",
- "tree-sitter-typescript",
 ]
 
 [[package]]
@@ -213,7 +217,14 @@ dependencies = [
  "serde_json",
  "syn 2.0.98",
  "tree-sitter",
- "tree-sitter-python",
+]
+
+[[package]]
+name = "codegen-sdk-macros"
+version = "0.1.0"
+dependencies = [
+ "codegen-sdk-common",
+ "convert_case",
 ]
 
 [[package]]
@@ -441,6 +452,12 @@ name = "itoa"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d75a2a4b1b190afb6f5425f10f6a8f959d2ea0b9c2b1d79553551850539e4674"
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
@@ -892,6 +909,16 @@ dependencies = [
  "regex-syntax",
  "serde_json",
  "streaming-iterator",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-javascript"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf40bf599e0416c16c125c3cec10ee5ddc7d1bb8b0c60fa5c4de249ad34dc1b1"
+dependencies = [
+ "cc",
  "tree-sitter-language",
 ]
 

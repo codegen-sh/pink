@@ -4,30 +4,41 @@ use std::{
     fs::File,
     io::{BufReader, Read},
     panic::catch_unwind,
+    path::PathBuf,
 };
 
-use codegen_sdk_common::traits::FromNode;
-use tree_sitter::{Language, Parser};
-fn parse_file(file_path: &str, language: Language) -> Result<tree_sitter::Tree, Box<dyn Error>> {
-    let file = File::open(file_path)?;
-    let mut reader = BufReader::new(file);
-    let mut buffer = String::new();
-    let mut parser = Parser::new();
-    parser.set_language(&language)?;
-    reader.read_to_string(&mut buffer)?;
-    let tree = parser.parse(&buffer, None).unwrap();
-    Ok(tree)
-}
-// mod python {
-//     include!(concat!(env!("OUT_DIR"), "/python.rs"));
-// }
-pub mod typescript {
-    include!(concat!(env!("OUT_DIR"), "/typescript.rs"));
-}
-pub mod tsx {
-    include!(concat!(env!("OUT_DIR"), "/tsx.rs"));
-}
+use codegen_sdk_common::{
+    language::Language,
+    traits::{CSTNode, FromNode},
+};
+use codegen_sdk_macros::{include_language, parse_language};
 
+pub trait CSTLanguage {
+    type Program: CSTNode + FromNode + Send;
+    fn language() -> &'static Language;
+    fn parse(content: &str) -> Result<Self::Program, Box<dyn Error>> {
+        let tree = Self::language().parse_tree_sitter(content)?;
+        Ok(Self::Program::from_node(tree.root_node()))
+    }
+    fn parse_file(file_path: &PathBuf) -> Result<Self::Program, Box<dyn Error>> {
+        let content = std::fs::read_to_string(file_path)?;
+        Self::parse(&content)
+    }
+
+    fn should_parse(file_path: &PathBuf) -> bool {
+        for extension in Self::language().file_extensions.iter() {
+            if file_path.ends_with(extension) {
+                return true;
+            }
+        }
+        false
+    }
+}
+include_language!(python);
+include_language!(typescript);
+include_language!(tsx);
+include_language!(jsx);
+include_language!(javascript);
 #[derive(Debug)]
 struct ParseError {}
 impl Error for ParseError {}
@@ -36,17 +47,20 @@ impl Display for ParseError {
         write!(f, "ParseError")
     }
 }
-pub fn parse_file_typescript(file_path: &str) -> Result<Box<tsx::Program>, Box<dyn Error>> {
-    let tree = parse_file(file_path, tree_sitter_typescript::LANGUAGE_TSX.into())?;
-    Ok(
-        catch_unwind(|| Box::new(tsx::Program::from_node(tree.root_node())))
-            .map_err(|_e| ParseError {})?,
-    )
+pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, Box<dyn Error>> {
+    parse_language!(python);
+    parse_language!(typescript);
+    parse_language!(tsx);
+    parse_language!(jsx);
+    parse_language!(javascript);
+    Err(Box::new(ParseError {}))
 }
+
 #[cfg(test)]
 mod tests {
     use std::io::Write;
 
+    use codegen_sdk_common::traits::HasChildren;
     use tempfile::tempdir;
 
     use super::*;
@@ -59,11 +73,7 @@ mod tests {
             }
         }
         ";
-        let dir = tempdir().unwrap();
-        let path = dir.into_path().join("snazzy_items.ts");
-        let mut file = File::create(&path).unwrap();
-        file.write_all(content.as_bytes()).unwrap();
-        let module: Box<tsx::Program> = parse_file_typescript(&path.to_str().unwrap()).unwrap();
-        assert!(module.children.len() > 0);
+        let module = typescript::Typescript::parse(&content).unwrap();
+        assert!(module.children().len() > 0);
     }
 }
