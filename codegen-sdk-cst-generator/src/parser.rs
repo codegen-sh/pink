@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use codegen_sdk_common::language::Language;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -44,18 +45,17 @@ pub struct Children {
     pub types: Vec<TypeDefinition>,
 }
 
-pub fn parse_node_types(source: &str) -> Result<Vec<Node>, Box<dyn Error>> {
-    let parsed: Vec<Node> = serde_json::from_str(source)?;
+pub fn parse_node_types(language: &Language) -> Result<Vec<Node>, Box<dyn Error>> {
+    let parsed: Vec<Node> = serde_json::from_str(language.node_types)?;
     Ok(parsed)
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use codegen_sdk_common::language::python::Python;
     #[test]
     fn test_parse_node_types() {
-        let source = tree_sitter_python::NODE_TYPES;
-        let cst = parse_node_types(source).unwrap();
+        let cst = parse_node_types(&Python).unwrap();
         assert!(!cst.is_empty());
     }
 }

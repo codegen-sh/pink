@@ -36,6 +36,12 @@ impl CSTNode for {{name}} {
         &self.text
     }
 }
+impl HasChildren for {{name}} {
+    type Child = {{children}};
+    fn children(&self) -> &Vec<Self::Child> {
+       self.children.as_ref()
+    }
+}
 impl FromNode for {{name}} {
     fn from_node(node: tree_sitter::Node) -> Self {
         Self {
@@ -154,14 +160,11 @@ fn generate_children(
     state: &mut State,
     node_name: &str,
     constructor_fields: &mut Vec<String>,
-) {
+) -> String {
     let converted_type_name =
         convert_type_definition(&children.types, state, node_name, "children");
-    state.structs.push_str(&format!(
-        "    pub children: Vec<{}>,\n",
-        converted_type_name
-    ));
     constructor_fields.push(format!("    children: named_children_without_field_names(node).into_iter().map(|node| {converted_type_name}::from_node(node)).collect()", converted_type_name = converted_type_name));
+    converted_type_name
 }
 pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     state
@@ -171,13 +174,21 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     if let Some(fields) = &node.fields {
         generate_fields(fields, state, node, &mut constructor_fields);
     }
+    let mut children_type_name = "Self".to_string();
     if let Some(children) = &node.children {
-        generate_children(children, state, &node.type_name, &mut constructor_fields);
+        children_type_name =
+            generate_children(children, state, &node.type_name, &mut constructor_fields);
+    } else {
+        constructor_fields.push("    children: vec![]".to_string());
     }
+    state
+        .structs
+        .push_str(&format!("    pub children: Vec<{}>,\n", children_type_name));
     state.structs.push_str(FOOTER_TEMPLATE);
     state.structs.push_str(
         &CONSTRUCTOR_TEMPLATE
             .replace("{{fields}}", &constructor_fields.join(",\n       "))
-            .replace("{{name}}", name),
+            .replace("{{name}}", name)
+            .replace("{{children}}", &children_type_name),
     );
 }

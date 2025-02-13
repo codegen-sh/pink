@@ -1,8 +1,8 @@
 use clap::Parser;
-use codegen_sdk_cst::{parse_file_typescript, tsx};
+use codegen_sdk_common::{language::LANGUAGES, traits::CSTNode};
 use glob::glob;
 use rayon::prelude::*;
-use std::{path, time::Instant};
+use std::{panic::catch_unwind, path, time::Instant};
 use sysinfo::System;
 #[derive(Debug, Parser)]
 struct Args {
@@ -22,19 +22,34 @@ fn collect_files(dir: String) -> Vec<path::PathBuf> {
 fn parse_file(
     file: &path::PathBuf,
     tx: &crossbeam::channel::Sender<String>,
-) -> Option<Box<tsx::Program>> {
+) -> Option<Box<dyn CSTNode + Send>> {
     if file.is_dir() {
         return None;
     }
-    return match parse_file_typescript(file.to_str().unwrap()) {
-        Ok(program) => Some(program),
-        Err(e) => {
+    let result = catch_unwind(|| codegen_sdk_cst::parse_file(file));
+
+    return match result {
+        Ok(Ok(program)) => Some(program),
+        Ok(Err(e)) => {
             tx.send(e.to_string()).unwrap();
+            None
+        }
+        Err(_) => {
+            tx.send("".to_string()).unwrap();
             None
         }
     };
 }
-fn parse_files(dir: String) -> (Vec<Box<tsx::Program>>, Vec<String>) {
+fn log_languages() {
+    for language in LANGUAGES.iter() {
+        log::info!(
+            "Supported language: {} with extensions: {:?}",
+            language.name,
+            language.file_extensions
+        );
+    }
+}
+fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     rayon::ThreadPoolBuilder::new()
         .stack_size(1024 * 1024 * 1024 * 10)
         .build_global()
@@ -43,7 +58,8 @@ fn parse_files(dir: String) -> (Vec<Box<tsx::Program>>, Vec<String>) {
     let mut errors = Vec::new();
     let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
-    let files: Vec<Box<tsx::Program>> = files_to_parse
+    log_languages();
+    let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
         .filter_map(|file| parse_file(file, &tx))
         .collect();

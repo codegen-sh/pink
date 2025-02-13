@@ -14,4 +14,4 @@ tree-sitter = { workspace = true }
 log = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
 [dev-dependencies]
-tree-sitter-python = { workspace = true }
+codegen-sdk-common = { path = "../codegen-sdk-common" , features = ["python"] }

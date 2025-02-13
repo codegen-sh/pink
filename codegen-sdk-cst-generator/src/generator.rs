@@ -57,9 +57,10 @@ mod tests {
     use crate::parser::parse_node_types;
 
     use super::*;
+    use codegen_sdk_common::language::python::Python;
     #[test]
     fn test_generate_cst() {
-        let node_types = parse_node_types(tree_sitter_python::NODE_TYPES).unwrap();
+        let node_types = parse_node_types(&Python).unwrap();
         let cst = generate_cst(&node_types).unwrap();
         log::info!("{}", cst);
     }
