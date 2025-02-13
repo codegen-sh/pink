@@ -48,7 +48,7 @@ fn main() {
     let s = System::new_all();
     let current = s.process(sysinfo::get_current_pid().unwrap()).unwrap();
     let memory = current.memory();
-    println!(
+    log::info!(
         "{} files parsed in {:?}.{} seconds with {} errors. Using {} MB of memory",
         files.len(),
         duration.as_secs(),

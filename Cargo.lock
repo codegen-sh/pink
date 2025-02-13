@@ -151,7 +151,6 @@ name = "codegen-sdk-analyzer"
 version = "0.1.0"
 dependencies = [
  "codegen-sdk-ast",
- "convert_case",
  "salsa",
 ]
 
@@ -180,7 +179,7 @@ dependencies = [
  "codegen-sdk-cst",
  "crossbeam",
  "glob",
- "phf",
+ "log",
  "rayon",
  "sysinfo",
 ]
@@ -192,6 +191,7 @@ dependencies = [
  "bytes",
  "codegen-sdk-common",
  "codegen-sdk-cst-generator",
+ "convert_case",
  "ouroboros",
  "tempfile",
  "tree-sitter",
@@ -205,6 +205,7 @@ version = "0.1.0"
 dependencies = [
  "codegen-sdk-common",
  "convert_case",
+ "log",
  "phf",
  "prettyplease",
  "serde",

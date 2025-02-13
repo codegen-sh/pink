@@ -9,7 +9,7 @@ codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
 codegen-sdk-cst = { path = "codegen-sdk-cst" }
 crossbeam = "0.8.4"
 glob = "0.3.2"
-phf = { version = "0.11.3", features = ["macros"] }
+log = { workspace = true }
 rayon = "1.10.0"
 sysinfo = "0.33.1"
 [workspace]
@@ -21,4 +21,12 @@ members = [
   "codegen-sdk-cst-generator",
 ]
 [workspace.dependencies]
+log = "0.4.25"
 ouroboros = "0.18.5"
+tree-sitter = "0.25.1"
+tree-sitter-python = "0.23.6"
+tree-sitter-typescript = "0.23.2"
+bytes = "1.10.0"
+convert_case = "0.7.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
