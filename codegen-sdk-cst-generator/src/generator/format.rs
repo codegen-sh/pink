@@ -1,7 +1,7 @@
 pub fn format_cst(cst: &str) -> String {
     let parsed = syn::parse_str::<syn::File>(cst)
         .map_err(|e| {
-            println!("{:#?}", e);
+            log::error!("{:#?}", e);
             e
         })
         .unwrap();

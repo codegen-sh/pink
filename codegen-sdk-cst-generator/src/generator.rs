@@ -61,6 +61,6 @@ mod tests {
     fn test_generate_cst() {
         let node_types = parse_node_types(tree_sitter_python::NODE_TYPES).unwrap();
         let cst = generate_cst(&node_types).unwrap();
-        println!("{}", cst);
+        log::info!("{}", cst);
     }
 }
