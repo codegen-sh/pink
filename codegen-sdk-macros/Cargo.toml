@@ -1,0 +1,10 @@
+[package]
+name = "codegen-sdk-macros"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codegen-sdk-common = { path = "../codegen-sdk-common", features = ["typescript", "python"] }
+convert_case = { workspace = true }
+[lib]
+proc-macro = true

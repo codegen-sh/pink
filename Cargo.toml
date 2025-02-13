@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
 codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
-codegen-sdk-cst = { path = "codegen-sdk-cst" }
+codegen-sdk-cst = { path = "codegen-sdk-cst" , features = ["typescript"]}
+codegen-sdk-common = { path = "codegen-sdk-common" }
 crossbeam = "0.8.4"
 env_logger = "0.11.6"
 glob = "0.3.2"
@@ -19,7 +20,7 @@ members = [
   "codegen-sdk-ast",
   "codegen-sdk-common",
   "codegen-sdk-cst",
-  "codegen-sdk-cst-generator",
+  "codegen-sdk-cst-generator", "codegen-sdk-macros",
 ]
 [workspace.dependencies]
 log = "0.4.25"
@@ -27,6 +28,7 @@ ouroboros = "0.18.5"
 tree-sitter = "0.25.1"
 tree-sitter-python = "0.23.6"
 tree-sitter-typescript = "0.23.2"
+tree-sitter-javascript = "0.23.1"
 bytes = "1.10.0"
 convert_case = "0.7.1"
 serde = { version = "1.0.217", features = ["derive"] }
