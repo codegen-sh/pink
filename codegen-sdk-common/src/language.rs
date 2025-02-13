@@ -2,6 +2,7 @@ use tree_sitter::{LanguageError, Parser};
 
 pub struct Language {
     pub name: &'static str,
+    pub struct_name: &'static str,
     pub node_types: &'static str,
     pub file_extensions: &'static [&'static str],
     pub tree_sitter_language: tree_sitter::Language,

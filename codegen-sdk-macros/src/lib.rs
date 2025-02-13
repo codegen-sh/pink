@@ -1,21 +1,19 @@
 extern crate proc_macro;
 use codegen_sdk_common::language::{Language, LANGUAGES};
-use convert_case::Case;
-use convert_case::Casing;
 use proc_macro::TokenStream;
 fn get_language(language: &str) -> &Language {
     for lang in LANGUAGES.iter() {
-        if lang.name == language {
+        if lang.name.to_lowercase() == language.to_lowercase() {
             return lang;
         }
     }
     panic!("Language not found");
 }
-
 #[proc_macro]
 pub fn include_language(_item: TokenStream) -> TokenStream {
     let target_language = _item.to_string();
     let language = get_language(&target_language);
+
     format!(
         "#[cfg(feature = \"{name}\")]
 pub mod {name} {{
@@ -31,7 +29,7 @@ pub mod {name} {{
     }}
 }}",
         name = language.name,
-        struct_name = language.name.to_case(Case::Pascal)
+        struct_name = language.struct_name
     )
     .parse()
     .unwrap()
@@ -49,7 +47,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     }}
  ",
         name = language.name,
-        struct_name = language.name.to_case(Case::Pascal)
+        struct_name = language.struct_name
     )
     .parse()
     .unwrap()

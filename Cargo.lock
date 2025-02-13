@@ -224,7 +224,6 @@ name = "codegen-sdk-macros"
 version = "0.1.0"
 dependencies = [
  "codegen-sdk-common",
- "convert_case",
 ]
 
 [[package]]

@@ -1,8 +1,8 @@
 use clap::Parser;
-use codegen_sdk_common::traits::CSTNode;
+use codegen_sdk_common::{language::LANGUAGES, traits::CSTNode};
 use glob::glob;
 use rayon::prelude::*;
-use std::{path, time::Instant};
+use std::{panic::catch_unwind, path, time::Instant};
 use sysinfo::System;
 #[derive(Debug, Parser)]
 struct Args {
@@ -26,13 +26,28 @@ fn parse_file(
     if file.is_dir() {
         return None;
     }
-    return match codegen_sdk_cst::parse_file(file) {
-        Ok(program) => Some(program),
-        Err(e) => {
+    let result = catch_unwind(|| codegen_sdk_cst::parse_file(file));
+
+    return match result {
+        Ok(Ok(program)) => Some(program),
+        Ok(Err(e)) => {
             tx.send(e.to_string()).unwrap();
             None
         }
+        Err(e) => {
+            tx.send("".to_string()).unwrap();
+            None
+        }
     };
+}
+fn log_languages() {
+    for language in LANGUAGES.iter() {
+        log::info!(
+            "Supported language: {} with extensions: {:?}",
+            language.name,
+            language.file_extensions
+        );
+    }
 }
 fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     rayon::ThreadPoolBuilder::new()
@@ -43,6 +58,7 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     let mut errors = Vec::new();
     let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
+    log_languages();
     let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
         .filter_map(|file| parse_file(file, &tx))

@@ -1,9 +1,6 @@
 use std::{
     error::Error,
     fmt::{self, Display},
-    fs::File,
-    io::{BufReader, Read},
-    panic::catch_unwind,
     path::PathBuf,
 };
 
@@ -26,12 +23,9 @@ pub trait CSTLanguage {
     }
 
     fn should_parse(file_path: &PathBuf) -> bool {
-        for extension in Self::language().file_extensions.iter() {
-            if file_path.ends_with(extension) {
-                return true;
-            }
-        }
-        false
+        Self::language()
+            .file_extensions
+            .contains(&file_path.extension().unwrap().to_str().unwrap())
     }
 }
 include_language!(python);
