@@ -52,10 +52,8 @@ pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, Box<dy
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
 
     use codegen_sdk_common::traits::HasChildren;
-    use tempfile::tempdir;
 
     use super::*;
     #[test]

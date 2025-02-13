@@ -34,7 +34,7 @@ fn parse_file(
             tx.send(e.to_string()).unwrap();
             None
         }
-        Err(e) => {
+        Err(_) => {
             tx.send("".to_string()).unwrap();
             None
         }
