@@ -13,6 +13,27 @@ fn get_memory() -> u64 {
     let current = s.process(sysinfo::get_current_pid().unwrap()).unwrap();
     current.memory()
 }
+fn collect_files(dir: String) -> Vec<path::PathBuf> {
+    glob(&format!("{}/**/*.ts*", dir))
+        .unwrap()
+        .filter_map(|file| file.ok())
+        .collect()
+}
+fn parse_file(
+    file: &path::PathBuf,
+    tx: &crossbeam::channel::Sender<String>,
+) -> Option<Box<tsx::Program>> {
+    if file.is_dir() {
+        return None;
+    }
+    return match parse_file_typescript(file.to_str().unwrap()) {
+        Ok(program) => Some(program),
+        Err(e) => {
+            tx.send(e.to_string()).unwrap();
+            None
+        }
+    };
+}
 fn parse_files(dir: String) -> (Vec<Box<tsx::Program>>, Vec<String>) {
     rayon::ThreadPoolBuilder::new()
         .stack_size(1024 * 1024 * 1024 * 10)
@@ -20,26 +41,11 @@ fn parse_files(dir: String) -> (Vec<Box<tsx::Program>>, Vec<String>) {
         .unwrap();
     let (tx, rx) = crossbeam::channel::unbounded();
     let mut errors = Vec::new();
-    let files_to_parse: Vec<Result<path::PathBuf, glob::GlobError>> =
-        glob(&format!("{}/**/*.ts*", dir)).unwrap().collect();
+    let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
     let files: Vec<Box<tsx::Program>> = files_to_parse
         .par_iter()
-        .filter_map(|file| {
-            if let Ok(file) = file {
-                if file.is_dir() {
-                    return None;
-                }
-                return match parse_file_typescript(file.to_str().unwrap()) {
-                    Ok(program) => Some(program),
-                    Err(e) => {
-                        tx.send(e.to_string()).unwrap();
-                        None
-                    }
-                };
-            }
-            None
-        })
+        .filter_map(|file| parse_file(file, &tx))
         .collect();
     drop(tx);
     for e in rx.iter() {
