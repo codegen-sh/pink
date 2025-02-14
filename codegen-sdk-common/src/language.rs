@@ -1,5 +1,5 @@
-use tree_sitter::{LanguageError, Parser};
-
+use crate::errors::ParseError;
+use tree_sitter::Parser;
 pub struct Language {
     pub name: &'static str,
     pub struct_name: &'static str,
@@ -8,11 +8,10 @@ pub struct Language {
     pub tree_sitter_language: tree_sitter::Language,
 }
 impl Language {
-    pub fn parse_tree_sitter(&self, content: &str) -> Result<tree_sitter::Tree, LanguageError> {
+    pub fn parse_tree_sitter(&self, content: &str) -> Result<tree_sitter::Tree, ParseError> {
         let mut parser = Parser::new();
         parser.set_language(&self.tree_sitter_language)?;
-        let tree = parser.parse(content, None).unwrap();
-        Ok(tree)
+        parser.parse(content, None).ok_or(ParseError::Miscelaneous)
     }
 }
 #[cfg(feature = "typescript")]

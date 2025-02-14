@@ -11,6 +11,7 @@ tree-sitter-python = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }
 lazy_static = "1.5.0"
+thiserror = "2.0.11"
 [features]
 python = ["dep:tree-sitter-python"]
 typescript = ["dep:tree-sitter-typescript", "dep:tree-sitter-javascript"]

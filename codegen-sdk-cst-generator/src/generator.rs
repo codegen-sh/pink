@@ -2,7 +2,7 @@ use crate::parser::Node;
 use enum_generator::generate_enum;
 use naming::normalize_type_name;
 use state::State;
-use std::{collections::HashSet, error::Error};
+use std::collections::HashSet;
 use struct_generator::generate_struct;
 mod enum_generator;
 mod format;
@@ -17,7 +17,7 @@ use codegen_sdk_common::utils::*;
 use bytes::Bytes;
 ";
 
-pub(crate) fn generate_cst(node_types: &Vec<Node>) -> Result<String, Box<dyn Error>> {
+pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
     let mut state = State::default();
     let mut nodes = HashSet::new();
     for node in node_types {

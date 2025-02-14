@@ -41,7 +41,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     let language = get_language(&target_language);
     format!(
         "#[cfg(feature = \"{name}\")]
-    if {name}::{struct_name}::should_parse(file_path) {{
+    if {name}::{struct_name}::should_parse(file_path)? {{
         let parsed = {name}::{struct_name}::parse_file(file_path)?;
         return Ok(Box::new(parsed));
     }}

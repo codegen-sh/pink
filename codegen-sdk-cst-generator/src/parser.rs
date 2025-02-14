@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use codegen_sdk_common::language::Language;
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +43,7 @@ pub struct Children {
     pub types: Vec<TypeDefinition>,
 }
 
-pub fn parse_node_types(language: &Language) -> Result<Vec<Node>, Box<dyn Error>> {
+pub fn parse_node_types(language: &Language) -> anyhow::Result<Vec<Node>> {
     let parsed: Vec<Node> = serde_json::from_str(language.node_types)?;
     Ok(parsed)
 }
