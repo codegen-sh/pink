@@ -54,3 +54,21 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     .parse()
     .unwrap()
 }
+#[proc_macro]
+pub fn parse_languages(_item: TokenStream) -> TokenStream {
+    let mut output = String::new();
+    output.push_str("use codegen_sdk_macros::parse_language;");
+    for language in LANGUAGES.iter() {
+        output.push_str(&format!("parse_language!({});", language.name));
+    }
+    output.parse().unwrap()
+}
+#[proc_macro]
+pub fn include_languages(_item: TokenStream) -> TokenStream {
+    let mut output = String::new();
+    output.push_str("use codegen_sdk_macros::include_language;");
+    for language in LANGUAGES.iter() {
+        output.push_str(&format!("include_language!({});", language.name));
+    }
+    output.parse().unwrap()
+}
