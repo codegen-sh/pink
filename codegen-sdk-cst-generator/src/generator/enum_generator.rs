@@ -77,6 +77,7 @@ pub fn generate_enum(
                 {cases}
                 _ => Err(ParseError::UnexpectedNode {{
                     node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
                 }}),
             }}
         }}
