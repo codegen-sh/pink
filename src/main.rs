@@ -14,10 +14,14 @@ fn get_memory() -> u64 {
     current.memory()
 }
 fn collect_files(dir: String) -> Vec<path::PathBuf> {
-    glob(&format!("{}/**/*.ts*", dir))
-        .unwrap()
-        .filter_map(|file| file.ok())
-        .collect()
+    let mut files = Vec::new();
+    for language in LANGUAGES.iter() {
+        for extension in language.file_extensions.iter() {
+            files.extend(glob(&format!("{dir}**/*.{}", extension)).unwrap());
+        }
+    }
+
+    files.into_iter().filter_map(|file| file.ok()).collect()
 }
 fn parse_file(
     file: &path::PathBuf,
