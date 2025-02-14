@@ -34,12 +34,16 @@ include_language!(typescript);
 include_language!(tsx);
 include_language!(jsx);
 include_language!(javascript);
+include_language!(json);
+include_language!(java);
 pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, ParseError> {
     parse_language!(python);
     parse_language!(typescript);
     parse_language!(tsx);
     parse_language!(jsx);
     parse_language!(javascript);
+    parse_language!(json);
+    parse_language!(java);
     Err(ParseError::UnknownLanguage)
 }
 

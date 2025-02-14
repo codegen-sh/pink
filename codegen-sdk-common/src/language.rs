@@ -14,8 +14,12 @@ impl Language {
         parser.parse(content, None).ok_or(ParseError::Miscelaneous)
     }
 }
+#[cfg(feature = "java")]
+pub mod java;
 #[cfg(feature = "typescript")]
 pub mod javascript;
+#[cfg(feature = "json")]
+pub mod json;
 #[cfg(feature = "typescript")]
 pub mod jsx;
 #[cfg(feature = "python")]
@@ -36,5 +40,9 @@ lazy_static! {
         &jsx::JSX,
         #[cfg(feature = "typescript")]
         &javascript::Javascript,
+        #[cfg(feature = "json")]
+        &json::JSON,
+        #[cfg(feature = "java")]
+        &java::Java,
     ];
 }
