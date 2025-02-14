@@ -5,7 +5,7 @@ use codegen_sdk_common::{
     traits::{CSTNode, FromNode},
     ParseError,
 };
-use codegen_sdk_macros::{include_language, parse_language};
+use codegen_sdk_macros::{include_languages, parse_languages};
 
 pub trait CSTLanguage {
     type Program: CSTNode + FromNode + Send;
@@ -29,21 +29,9 @@ pub trait CSTLanguage {
         ))
     }
 }
-include_language!(python);
-include_language!(typescript);
-include_language!(tsx);
-include_language!(jsx);
-include_language!(javascript);
-include_language!(json);
-include_language!(java);
+include_languages!();
 pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, ParseError> {
-    parse_language!(python);
-    parse_language!(typescript);
-    parse_language!(tsx);
-    parse_language!(jsx);
-    parse_language!(javascript);
-    parse_language!(json);
-    parse_language!(java);
+    parse_languages!();
     Err(ParseError::UnknownLanguage)
 }
 
