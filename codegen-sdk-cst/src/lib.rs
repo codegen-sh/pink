@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    fmt::{self, Display},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 use codegen_sdk_common::{
     language::Language,
