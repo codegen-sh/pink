@@ -20,7 +20,7 @@ fn get_cases(
         } else if !existing_cases.contains(&t.type_name) {
             existing_cases.push(t.type_name.clone());
             cases.push_str(&format!(
-                "\"{}\" => {}({variant_name}::from_node(node)),",
+                "\"{}\" => Ok({}({variant_name}::from_node(node)?)),",
                 t.type_name, prefix,
             ));
         }
@@ -63,16 +63,21 @@ pub fn generate_enum(
                 continue;
             }
             let normalized_name = normalize_string(name);
-            cases.push_str(&format!("\"{}\" => Self::Anonymous,\n", normalized_name,));
+            cases.push_str(&format!(
+                "\"{}\" => Ok(Self::Anonymous),\n",
+                normalized_name
+            ));
         }
     }
     state.enums.push_str(&format!(
         "
     impl FromNode for {enum_name} {{
-        fn from_node(node: tree_sitter::Node) -> Self {{
+        fn from_node(node: tree_sitter::Node) -> Result<Self, ParseError> {{
             match node.kind() {{
                 {cases}
-                _ => panic!(\"Unexpected node type: {{}}\", node.kind()),
+                _ => Err(ParseError::UnexpectedNode {{
+                    node_type: node.kind().to_string(),
+                }}),
             }}
         }}
     }}

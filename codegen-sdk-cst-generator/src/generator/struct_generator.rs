@@ -43,15 +43,15 @@ impl HasChildren for {{name}} {
     }
 }
 impl FromNode for {{name}} {
-    fn from_node(node: tree_sitter::Node) -> Self {
-        Self {
+    fn from_node(node: tree_sitter::Node) -> Result<Self, ParseError> {
+        Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
             start_position: node.start_position(),
             end_position: node.end_position(),
             text: Box::new(get_text_from_node(node)),
             {{fields}}
-        }
+        })
     }
 }
 ";
@@ -88,7 +88,11 @@ fn generate_multiple_field(
         "    pub {field_name}: Vec<{}>,\n",
         converted_type_name
     ));
-    constructor_fields.push(format!("    {field_name}: node.children_by_field_name(\"{name}\", &mut node.walk()).map(|node| {converted_type_name}::from_node(node)).collect()", field_name = field_name, converted_type_name = converted_type_name, name=original_name));
+    constructor_fields.push(format!(
+        "    {field_name}: get_multiple_children_by_field_name(&node, \"{name}\")?",
+        field_name = field_name,
+        name = original_name
+    ));
 }
 fn generate_required_field(
     field_name: &str,
@@ -102,7 +106,11 @@ fn generate_required_field(
         field_name = field_name,
         type_name = converted_type_name
     ));
-    constructor_fields.push(format!("    {field_name}: {converted_type_name}::from_node(node.child_by_field_name(\"{name}\").unwrap()).into()", field_name = field_name, converted_type_name = converted_type_name, name=original_name));
+    constructor_fields.push(format!(
+        "    {field_name}: Box::new(get_child_by_field_name(&node, \"{name}\")?)",
+        field_name = field_name,
+        name = original_name
+    ));
 }
 fn generate_optional_field(
     field_name: &str,
@@ -116,7 +124,11 @@ fn generate_optional_field(
         field_name = field_name,
         type_name = converted_type_name
     ));
-    constructor_fields.push(format!("    {field_name}: node.child_by_field_name(\"{name}\").map(|node| {converted_type_name}::from_node(node)).into()", field_name = field_name, converted_type_name = converted_type_name, name=original_name));
+    constructor_fields.push(format!(
+        "    {field_name}: Box::new(get_optional_child_by_field_name(&node, \"{name}\")?)",
+        field_name = field_name,
+        name = original_name
+    ));
 }
 fn generate_fields(
     fields: &Fields,
@@ -163,7 +175,8 @@ fn generate_children(
 ) -> String {
     let converted_type_name =
         convert_type_definition(&children.types, state, node_name, "children");
-    constructor_fields.push(format!("    children: named_children_without_field_names(node).into_iter().map(|node| {converted_type_name}::from_node(node)).collect()", converted_type_name = converted_type_name));
+    constructor_fields.push("    children: named_children_without_field_names(node)?".to_string());
+
     converted_type_name
 }
 pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
@@ -185,10 +198,9 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
         .structs
         .push_str(&format!("    pub children: Vec<{}>,\n", children_type_name));
     state.structs.push_str(FOOTER_TEMPLATE);
-    state.structs.push_str(
-        &CONSTRUCTOR_TEMPLATE
-            .replace("{{fields}}", &constructor_fields.join(",\n       "))
-            .replace("{{name}}", name)
-            .replace("{{children}}", &children_type_name),
-    );
+    let constructor = &CONSTRUCTOR_TEMPLATE
+        .replace("{{fields}}", &constructor_fields.join(",\n       "))
+        .replace("{{name}}", name)
+        .replace("{{children}}", &children_type_name);
+    state.structs.push_str(&constructor);
 }
