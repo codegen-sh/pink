@@ -12,7 +12,11 @@ pub trait CSTLanguage {
     fn language() -> &'static Language;
     fn parse(content: &str) -> Result<Self::Program, ParseError> {
         let tree = Self::language().parse_tree_sitter(content)?;
-        Self::Program::from_node(tree.root_node())
+        if tree.root_node().has_error() {
+            Err(ParseError::SyntaxError)
+        } else {
+            Self::Program::from_node(tree.root_node())
+        }
     }
     fn parse_file(file_path: &PathBuf) -> Result<Self::Program, ParseError> {
         let content = std::fs::read_to_string(file_path)?;
