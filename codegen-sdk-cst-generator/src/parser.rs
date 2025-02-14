@@ -7,6 +7,8 @@ pub struct Node {
     pub type_name: String,
     pub named: bool,
     #[serde(default)]
+    pub root: bool,
+    #[serde(default)]
     pub subtypes: Vec<TypeDefinition>,
     #[serde(default)]
     pub fields: Option<Fields>,

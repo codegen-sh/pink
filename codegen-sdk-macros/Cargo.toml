@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 codegen-sdk-common = { path = "../codegen-sdk-common", features = ["all"] }
+codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
+convert_case = { workspace = true }
 [lib]
 proc-macro = true

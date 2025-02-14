@@ -6,6 +6,7 @@ pub struct Language {
     pub node_types: &'static str,
     pub file_extensions: &'static [&'static str],
     pub tree_sitter_language: tree_sitter::Language,
+    pub tag_query: &'static str,
 }
 impl Language {
     pub fn parse_tree_sitter(&self, content: &str) -> Result<tree_sitter::Tree, ParseError> {
