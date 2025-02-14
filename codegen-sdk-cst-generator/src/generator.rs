@@ -14,6 +14,7 @@ use tree_sitter::{self, Point};
 extern crate ouroboros;
 use codegen_sdk_common::*;
 use bytes::Bytes;
+use std::backtrace::Backtrace;
 ";
 
 pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {

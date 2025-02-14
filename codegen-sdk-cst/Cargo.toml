@@ -12,7 +12,7 @@ codegen-sdk-macros = { path = "../codegen-sdk-macros" }
 convert_case = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = { path = "../codegen-sdk-common", features = ["python", "typescript"] }
+codegen-sdk-common = { path = "../codegen-sdk-common", features = ["all"] }
 rayon = { workspace = true }
 env_logger = { workspace = true }
 [dev-dependencies]

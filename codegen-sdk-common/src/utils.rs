@@ -1,7 +1,7 @@
-use bytes::{Bytes, BytesMut};
-use tree_sitter::{self};
-
 use crate::{traits::FromNode, ParseError};
+use bytes::{Bytes, BytesMut};
+use std::backtrace::Backtrace;
+use tree_sitter::{self};
 pub fn named_children_without_field_names<T: FromNode>(
     node: tree_sitter::Node,
 ) -> Result<Vec<T>, ParseError> {
@@ -36,6 +36,7 @@ pub fn get_child_by_field_name<T: FromNode>(
     Err(ParseError::MissingNode {
         field_name: field_name.to_string(),
         parent_node: node.kind().to_string(),
+        backtrace: Backtrace::capture(),
     })
 }
 

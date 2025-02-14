@@ -61,7 +61,8 @@ fn convert_type_definition(
     field_name: &str,
     node_name: &str,
 ) -> String {
-    if type_name.len() == 1 {
+    let include_anonymous_nodes = true;
+    if type_name.len() == 1 && !include_anonymous_nodes {
         normalize_type_name(&type_name[0].type_name)
     } else {
         let enum_name = normalize_type_name(
@@ -72,7 +73,7 @@ fn convert_type_definition(
             )
             .as_str(),
         );
-        generate_enum(type_name, state, &enum_name, true);
+        generate_enum(type_name, state, &enum_name, include_anonymous_nodes);
         enum_name
     }
 }
