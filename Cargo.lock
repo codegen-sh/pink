@@ -239,6 +239,7 @@ dependencies = [
  "codegen-sdk-cst-generator",
  "codegen-sdk-macros",
  "convert_case",
+ "env_logger",
  "ouroboros",
  "tempfile",
  "tree-sitter",

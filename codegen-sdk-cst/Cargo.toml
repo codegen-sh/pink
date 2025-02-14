@@ -14,6 +14,7 @@ convert_case = { workspace = true }
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
 codegen-sdk-common = { path = "../codegen-sdk-common", features = ["python", "typescript"] }
 
+env_logger = { workspace = true }
 [dev-dependencies]
 tempfile = "3.16.0"
 [features]

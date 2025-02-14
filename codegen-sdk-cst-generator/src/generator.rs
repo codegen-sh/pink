@@ -10,10 +10,9 @@ mod naming;
 mod state;
 mod struct_generator;
 const IMPORTS: &str = "
-use codegen_sdk_common::traits::*;
 use tree_sitter::{self, Point};
 extern crate ouroboros;
-use codegen_sdk_common::utils::*;
+use codegen_sdk_common::*;
 use bytes::Bytes;
 ";
 
@@ -50,8 +49,15 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
     result.push_str(&state.enums);
     result.push_str(&state.structs);
     let formatted = format::format_cst(&result);
-    Ok(formatted)
+    match formatted {
+        Ok(formatted) => return Ok(formatted),
+        Err(e) => {
+            log::error!("Failed to format CST: {}", e);
+            return Ok(result.to_string());
+        }
+    }
 }
+
 #[cfg(test)]
 mod tests {
     use crate::parser::parse_node_types;

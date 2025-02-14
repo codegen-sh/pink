@@ -1,7 +1,8 @@
+use crate::errors::ParseError;
 use bytes::Bytes;
 use tree_sitter::{self, Point};
-pub trait FromNode {
-    fn from_node(node: tree_sitter::Node) -> Self;
+pub trait FromNode: Sized {
+    fn from_node(node: tree_sitter::Node) -> Result<Self, ParseError>;
 }
 pub trait CSTNode: Send {
     fn start_byte(&self) -> usize;
