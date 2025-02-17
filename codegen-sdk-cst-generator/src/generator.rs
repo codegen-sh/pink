@@ -12,9 +12,10 @@ mod struct_generator;
 const IMPORTS: &str = "
 use tree_sitter::{self, Point};
 extern crate ouroboros;
+use derive_more::Debug;
 use codegen_sdk_common::*;
-use bytes::Bytes;
 use std::backtrace::Backtrace;
+use bytes::Bytes;
 ";
 
 pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {

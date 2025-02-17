@@ -20,7 +20,7 @@ fn get_cases(
         } else if !existing_cases.contains(&t.type_name) {
             existing_cases.push(t.type_name.clone());
             cases.push_str(&format!(
-                "\"{}\" => Ok({}({variant_name}::from_node(node)?)),",
+                "\"{}\" => Ok({}({variant_name}::from_node(node, buffer)?)),",
                 t.type_name, prefix,
             ));
         }
@@ -72,7 +72,7 @@ pub fn generate_enum(
     state.enums.push_str(&format!(
         "
     impl FromNode for {enum_name} {{
-        fn from_node(node: tree_sitter::Node) -> Result<Self, ParseError> {{
+        fn from_node(node: tree_sitter::Node, buffer: &Bytes) -> Result<Self, ParseError> {{
             match node.kind() {{
                 {cases}
                 _ => Err(ParseError::UnexpectedNode {{

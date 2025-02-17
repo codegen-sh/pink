@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-log = {workspace = true}
 bytes = { workspace = true }
 tree-sitter = { workspace = true }
 ouroboros = { workspace = true }
@@ -19,12 +18,13 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 convert_case = { workspace = true }
-tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query"}
+tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", optional = true}
 tree-sitter-language = "0.1.4"
-env_logger={workspace = true}
 [features]
 python = ["dep:tree-sitter-python"]
 json = ["dep:tree-sitter-json"]
 java = ["dep:tree-sitter-java"]
 typescript = ["dep:tree-sitter-typescript", "dep:tree-sitter-javascript"]
-all = ["python", "typescript", "json", "java"]
+ts_query = ["dep:tree-sitter-query"]
+default = ["all"]
+all = ["python", "typescript", "json", "java", "ts_query"]

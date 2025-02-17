@@ -1,24 +1,29 @@
+use std::fmt::Debug;
+
 use crate::errors::ParseError;
 use bytes::Bytes;
 use tree_sitter::{self, Point};
 pub trait FromNode: Sized {
-    fn from_node(node: tree_sitter::Node) -> Result<Self, ParseError>;
+    fn from_node(node: tree_sitter::Node, buffer: &Bytes) -> Result<Self, ParseError>;
 }
-pub trait CSTNode: Send {
+pub trait CSTNode: Send + Debug {
     fn start_byte(&self) -> usize;
     fn end_byte(&self) -> usize;
     fn start_position(&self) -> Point;
     fn end_position(&self) -> Point;
-    fn text(&self) -> &Bytes;
+    fn buffer(&self) -> &Bytes;
+    fn text(&self) -> Bytes {
+        Bytes::copy_from_slice(&self.buffer()[self.start_byte()..self.end_byte()])
+    }
     fn source(&self) -> String {
         String::from_utf8(self.text().to_vec()).unwrap()
     }
 }
-pub trait HasNode {
+pub trait HasNode: Send + Debug {
     type Node: CSTNode;
     fn node(&self) -> &Self::Node;
 }
-impl<T: HasNode + Send> CSTNode for T {
+impl<T: HasNode> CSTNode for T {
     fn start_byte(&self) -> usize {
         self.node().start_byte()
     }
@@ -31,8 +36,8 @@ impl<T: HasNode + Send> CSTNode for T {
     fn end_position(&self) -> Point {
         self.node().end_position()
     }
-    fn text(&self) -> &Bytes {
-        self.node().text()
+    fn buffer(&self) -> &Bytes {
+        self.node().buffer()
     }
 }
 pub trait HasChildren {

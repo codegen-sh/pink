@@ -1,22 +1,22 @@
 #![recursion_limit = "256"]
-use std::path::PathBuf;
-
+use bytes::Bytes;
 use codegen_sdk_common::{
-    ParseError,
     language::Language,
     traits::{CSTNode, FromNode},
+    ParseError,
 };
 use codegen_sdk_macros::{include_languages, parse_languages};
-
+use std::path::PathBuf;
 pub trait CSTLanguage {
     type Program: CSTNode + FromNode + Send;
     fn language() -> &'static Language;
     fn parse(content: &str) -> Result<Self::Program, ParseError> {
+        let buffer = Bytes::from(content.as_bytes().to_vec());
         let tree = Self::language().parse_tree_sitter(content)?;
         if tree.root_node().has_error() {
             Err(ParseError::SyntaxError)
         } else {
-            Self::Program::from_node(tree.root_node())
+            Self::Program::from_node(tree.root_node(), &buffer)
         }
     }
     fn parse_file(file_path: &PathBuf) -> Result<Self::Program, ParseError> {
@@ -39,6 +39,7 @@ pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, ParseE
     parse_languages!();
     Err(ParseError::UnknownLanguage)
 }
+pub mod query;
 
 #[cfg(test)]
 mod tests {

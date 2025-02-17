@@ -1,7 +1,7 @@
 use super::Language;
 lazy_static! {
     pub static ref Query: Language = Language::new(
-        "query",
+        "ts_query",
         "Query",
         tree_sitter_query::NODE_TYPES,
         &[],

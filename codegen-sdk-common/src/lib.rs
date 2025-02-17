@@ -10,8 +10,5 @@ pub use utils::*;
 mod file;
 pub use file::File;
 pub mod parser;
-mod query;
-mod tree_sitter;
-pub use query::Query;
 #[macro_use]
 extern crate lazy_static;

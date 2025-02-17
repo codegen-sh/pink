@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
 use crate::{
-    Query,
     errors::ParseError,
-    parser::{Node, parse_node_types},
-    query::parse_query_tree,
+    parser::{parse_node_types, Node},
 };
 use convert_case::{Case, Casing};
 use tree_sitter::Parser;
@@ -64,7 +60,8 @@ pub mod json;
 pub mod jsx;
 #[cfg(feature = "python")]
 pub mod python;
-pub mod query;
+#[cfg(feature = "ts_query")]
+pub mod ts_query;
 #[cfg(feature = "typescript")]
 pub mod tsx;
 #[cfg(feature = "typescript")]
@@ -85,6 +82,7 @@ lazy_static! {
         &json::JSON,
         #[cfg(feature = "java")]
         &java::Java,
-        &query::Query,
+        #[cfg(feature = "ts_query")]
+        &ts_query::Query,
     ];
 }
