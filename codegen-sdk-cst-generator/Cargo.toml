@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 convert_case = { workspace = true }
-phf = { version = "0.11.3", features = ["macros"] }
 prettyplease = "0.2.29"
 syn = "2.0.98"
 tree-sitter = { workspace = true }

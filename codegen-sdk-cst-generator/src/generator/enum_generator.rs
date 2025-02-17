@@ -1,5 +1,5 @@
-use super::naming::{normalize_string, normalize_type_name};
 use crate::generator::state::State;
+use codegen_sdk_common::naming::{normalize_string, normalize_type_name};
 use codegen_sdk_common::parser::TypeDefinition;
 fn get_cases(
     variants: &Vec<TypeDefinition>,

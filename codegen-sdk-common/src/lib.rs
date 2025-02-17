@@ -12,3 +12,4 @@ pub use file::File;
 pub mod parser;
 #[macro_use]
 extern crate lazy_static;
+pub mod naming;

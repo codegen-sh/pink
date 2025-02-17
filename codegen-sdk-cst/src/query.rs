@@ -1,6 +1,6 @@
 use crate::ts_query;
 use crate::CSTLanguage;
-use codegen_sdk_common::{CSTNode, HasChildren, Language};
+use codegen_sdk_common::{naming::normalize_type_name, CSTNode, HasChildren, Language};
 use derive_more::Debug;
 use std::collections::HashMap;
 fn captures_for_field_definition(
@@ -90,6 +90,10 @@ impl Query {
         }
         panic!("No kind found for query. {:#?}", self.node);
     }
+    fn struct_name(&self) -> String {
+        normalize_type_name(&self.kind())
+    }
+
     fn captures(&self) -> Vec<&ts_query::Capture> {
         captures_for_named_node(&self.node).collect()
     }

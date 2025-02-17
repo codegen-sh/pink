@@ -1,10 +1,8 @@
 use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};
 
-use super::{
-    enum_generator::generate_enum,
-    naming::{normalize_field_name, normalize_type_name},
-};
+use super::enum_generator::generate_enum;
 use crate::generator::state::State;
+use codegen_sdk_common::naming::{normalize_field_name, normalize_type_name};
 const HEADER_TEMPLATE: &str = "
 #[derive(Debug, Clone)]
 pub struct {name} {
