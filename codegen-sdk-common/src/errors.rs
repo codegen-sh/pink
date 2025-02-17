@@ -12,7 +12,9 @@ pub enum ParseError {
     Io(#[from] std::io::Error),
     #[error("UTF-8 error: {0}")]
     Utf8(#[from] std::string::FromUtf8Error),
-    #[error("Missing Required Field '{field_name}' in node of type '{parent_node}' with backtrace:\n {backtrace}")]
+    #[error(
+        "Missing Required Field '{field_name}' in node of type '{parent_node}' with backtrace:\n {backtrace}"
+    )]
     MissingNode {
         field_name: String,
         parent_node: String,

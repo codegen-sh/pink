@@ -1,4 +1,4 @@
-use crate::parser::Node;
+use codegen_sdk_common::parser::Node;
 use enum_generator::generate_enum;
 use naming::normalize_type_name;
 use state::State;

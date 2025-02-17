@@ -7,5 +7,10 @@ pub use errors::*;
 pub use language::Language;
 pub use traits::*;
 pub use utils::*;
+mod file;
+pub use file::File;
+pub mod parser;
+mod query;
+pub use query::Query;
 #[macro_use]
 extern crate lazy_static;

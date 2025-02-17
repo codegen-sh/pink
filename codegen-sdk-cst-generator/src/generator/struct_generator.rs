@@ -1,4 +1,4 @@
-use crate::parser::{Children, Fields, Node, TypeDefinition};
+use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};
 
 use super::{
     enum_generator::generate_enum,

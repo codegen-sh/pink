@@ -1,11 +1,12 @@
 use super::Language;
 lazy_static! {
-    pub static ref Python: Language = Language {
-        name: "python",
-        struct_name: "Python",
-        node_types: tree_sitter_python::NODE_TYPES,
-        file_extensions: &["py"],
-        tree_sitter_language: tree_sitter_python::LANGUAGE.into(),
-        tag_query: tree_sitter_python::TAGS_QUERY,
-    };
+    pub static ref Python: Language = Language::new(
+        "python",
+        "Python",
+        tree_sitter_python::NODE_TYPES,
+        &["py"],
+        tree_sitter_python::LANGUAGE.into(),
+        tree_sitter_python::TAGS_QUERY,
+    )
+    .unwrap();
 }

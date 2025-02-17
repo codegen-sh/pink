@@ -197,22 +197,40 @@ dependencies = [
 name = "codegen-sdk-ast"
 version = "0.1.0"
 dependencies = [
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
  "codegen-sdk-cst",
+ "env_logger",
+ "rayon",
+]
+
+[[package]]
+name = "codegen-sdk-ast-generator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "codegen-sdk-common",
 ]
 
 [[package]]
 name = "codegen-sdk-common"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bytes",
+ "convert_case",
  "lazy_static",
  "ouroboros",
+ "serde",
+ "serde_json",
  "thiserror",
  "tree-sitter",
  "tree-sitter-java",
  "tree-sitter-javascript",
  "tree-sitter-json",
+ "tree-sitter-language",
  "tree-sitter-python",
+ "tree-sitter-query",
  "tree-sitter-typescript",
 ]
 
@@ -258,8 +276,6 @@ dependencies = [
  "log",
  "phf",
  "prettyplease",
- "serde",
- "serde_json",
  "syn 2.0.98",
  "tree-sitter",
 ]
@@ -269,8 +285,6 @@ name = "codegen-sdk-macros"
 version = "0.1.0"
 dependencies = [
  "codegen-sdk-common",
- "codegen-sdk-cst-generator",
- "convert_case",
 ]
 
 [[package]]
@@ -1049,6 +1063,15 @@ name = "tree-sitter-python"
 version = "0.23.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d065aaa27f3aaceaf60c1f0e0ac09e1cb9eb8ed28e7bcdaa52129cffc7f4b04"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-query"
+version = "0.5.0"
+source = "git+https://github.com/tree-sitter-grammars/tree-sitter-query#0555ac0da902abff06076e40501102cee3ba68bd"
 dependencies = [
  "cc",
  "tree-sitter-language",

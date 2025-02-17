@@ -1,9 +1,10 @@
+#![recursion_limit = "256"]
 use std::path::PathBuf;
 
 use codegen_sdk_common::{
+    ParseError,
     language::Language,
     traits::{CSTNode, FromNode},
-    ParseError,
 };
 use codegen_sdk_macros::{include_language, parse_language};
 

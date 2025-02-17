@@ -7,12 +7,10 @@ edition = "2021"
 convert_case = { workspace = true }
 phf = { version = "0.11.3", features = ["macros"] }
 prettyplease = "0.2.29"
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
 syn = "2.0.98"
 tree-sitter = { workspace = true }
 log = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
-anyhow = { version = "1.0.95", features = ["backtrace"] }
+anyhow = { workspace = true }
 [dev-dependencies]
 codegen-sdk-common = { path = "../codegen-sdk-common" , features = ["python"] }

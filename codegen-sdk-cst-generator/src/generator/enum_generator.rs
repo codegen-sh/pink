@@ -1,6 +1,6 @@
 use super::naming::{normalize_string, normalize_type_name};
 use crate::generator::state::State;
-use crate::parser::TypeDefinition;
+use codegen_sdk_common::parser::TypeDefinition;
 fn get_cases(
     variants: &Vec<TypeDefinition>,
     cases: &mut String,
