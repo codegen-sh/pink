@@ -1,4 +1,4 @@
-use codegen_sdk_common::File;
+use codegen_sdk_common::{File, HasNode};
 pub use codegen_sdk_cst::*;
 pub trait Named {
     fn name(&self) -> &str;

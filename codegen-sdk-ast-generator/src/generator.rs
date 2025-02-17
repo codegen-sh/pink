@@ -12,6 +12,12 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
             &self.path
         }}
     }}
+    impl HasNode for {language_struct_name}File {{
+        type Node = {language_name}::{root_node_name};
+        fn node(&self) -> &Self::Node {{
+            &self.node
+        }}
+    }}
 
     ",
         language_struct_name = language.struct_name,

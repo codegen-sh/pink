@@ -14,6 +14,27 @@ pub trait CSTNode: Send {
         String::from_utf8(self.text().to_vec()).unwrap()
     }
 }
+pub trait HasNode {
+    type Node: CSTNode;
+    fn node(&self) -> &Self::Node;
+}
+impl<T: HasNode + Send> CSTNode for T {
+    fn start_byte(&self) -> usize {
+        self.node().start_byte()
+    }
+    fn end_byte(&self) -> usize {
+        self.node().end_byte()
+    }
+    fn start_position(&self) -> Point {
+        self.node().start_position()
+    }
+    fn end_position(&self) -> Point {
+        self.node().end_position()
+    }
+    fn text(&self) -> &Bytes {
+        self.node().text()
+    }
+}
 pub trait HasChildren {
     type Child: Send;
     fn children(&self) -> &Vec<Self::Child>;
