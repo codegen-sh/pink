@@ -15,7 +15,6 @@ pub struct Language {
     pub file_extensions: &'static [&'static str],
     pub tree_sitter_language: tree_sitter::Language,
     pub tag_query: &'static str,
-    query_tree: tree_sitter::Tree,
     nodes: Vec<Node>,
 }
 impl Language {
@@ -27,7 +26,6 @@ impl Language {
         tree_sitter_language: tree_sitter::Language,
         tag_query: &'static str,
     ) -> anyhow::Result<Self> {
-        let query_tree = parse_query_tree(tag_query)?;
         let nodes = parse_node_types(node_types)?;
         Ok(Self {
             name,
@@ -36,7 +34,6 @@ impl Language {
             file_extensions,
             tree_sitter_language,
             tag_query,
-            query_tree,
             nodes,
         })
     }
@@ -56,26 +53,6 @@ impl Language {
             .type_name
             .to_case(Case::Pascal)
     }
-
-    pub fn queries(&self) -> HashMap<String, Query<'_>> {
-        Query::from_queries(&self.query_tree, self.tag_query)
-    }
-    pub fn definitions(&self) -> HashMap<String, Query> {
-        self.queries_with_prefix("definition")
-    }
-    fn queries_with_prefix(&self, prefix: &str) -> HashMap<String, Query<'_>> {
-        let mut queries = HashMap::new();
-        for (name, query) in self.queries() {
-            if name.starts_with(prefix) {
-                let name = name.split(".").last().unwrap();
-                queries.insert(name.to_string(), query);
-            }
-        }
-        queries
-    }
-    pub fn references(&self) -> HashMap<String, Query> {
-        self.queries_with_prefix("reference")
-    }
 }
 #[cfg(feature = "java")]
 pub mod java;
@@ -87,6 +64,7 @@ pub mod json;
 pub mod jsx;
 #[cfg(feature = "python")]
 pub mod python;
+pub mod query;
 #[cfg(feature = "typescript")]
 pub mod tsx;
 #[cfg(feature = "typescript")]
@@ -107,5 +85,6 @@ lazy_static! {
         &json::JSON,
         #[cfg(feature = "java")]
         &java::Java,
+        &query::Query,
     ];
 }
