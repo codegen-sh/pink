@@ -14,6 +14,8 @@ pub struct {name} {
     end_position: Point,
     #[debug(ignore)]
     buffer: Bytes,
+    #[debug(ignore)]
+    kind_id: u16,
 ";
 const FOOTER_TEMPLATE: &str = "
 }
@@ -36,6 +38,9 @@ impl CSTNode for {{name}} {
     fn buffer(&self) -> &Bytes {
         &self.buffer
     }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
 }
 impl HasChildren for {{name}} {
     type Child = {{children}};
@@ -51,6 +56,7 @@ impl FromNode for {{name}} {
             start_position: node.start_position(),
             end_position: node.end_position(),
             buffer: buffer.clone(),
+            kind_id: node.kind_id(),
             {{fields}}
         })
     }

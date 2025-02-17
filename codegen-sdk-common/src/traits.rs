@@ -18,6 +18,7 @@ pub trait CSTNode: Send + Debug {
     fn source(&self) -> String {
         String::from_utf8(self.text().to_vec()).unwrap()
     }
+    fn kind_id(&self) -> u16;
 }
 pub trait HasNode: Send + Debug {
     type Node: CSTNode;
@@ -38,6 +39,9 @@ impl<T: HasNode> CSTNode for T {
     }
     fn buffer(&self) -> &Bytes {
         self.node().buffer()
+    }
+    fn kind_id(&self) -> u16 {
+        self.node().kind_id()
     }
 }
 pub trait HasChildren {
