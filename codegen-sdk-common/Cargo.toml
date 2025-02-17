@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = {workspace = true}
 bytes = { workspace = true }
 tree-sitter = { workspace = true }
 ouroboros = { workspace = true }
@@ -20,6 +21,7 @@ anyhow = { workspace = true }
 convert_case = { workspace = true }
 tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query"}
 tree-sitter-language = "0.1.4"
+env_logger={workspace = true}
 [features]
 python = ["dep:tree-sitter-python"]
 json = ["dep:tree-sitter-json"]
