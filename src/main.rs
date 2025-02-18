@@ -63,6 +63,18 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     let cache = Cache::new().unwrap();
     let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
+    let mut cached = 0;
+    for file in files_to_parse.iter() {
+        let path = cache.get_path(file);
+        if path.exists() {
+            cached += 1;
+        }
+    }
+    log::info!(
+        "{} files cached. {}% of total",
+        cached,
+        cached * 100 / files_to_parse.len()
+    );
     let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
         .filter_map(|file| parse_file(&cache, file, &tx))
