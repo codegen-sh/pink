@@ -1,6 +1,6 @@
 use crate::{
     errors::ParseError,
-    parser::{parse_node_types, Node},
+    parser::{Node, parse_node_types},
 };
 use convert_case::{Case, Casing};
 use tree_sitter::Parser;

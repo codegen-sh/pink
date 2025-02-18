@@ -1,6 +1,6 @@
-use crate::ts_query;
 use crate::CSTLanguage;
-use codegen_sdk_common::{naming::normalize_type_name, CSTNode, HasChildren, Language};
+use crate::ts_query;
+use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_name};
 use derive_more::Debug;
 use std::collections::HashMap;
 fn captures_for_field_definition(

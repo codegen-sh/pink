@@ -1,4 +1,4 @@
-use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE};
 use std::path::PathBuf;
 
 pub fn get_serialize_path(path: &PathBuf) -> anyhow::Result<PathBuf> {

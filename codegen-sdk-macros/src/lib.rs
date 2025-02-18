@@ -1,5 +1,5 @@
 extern crate proc_macro;
-use codegen_sdk_common::language::{Language, LANGUAGES};
+use codegen_sdk_common::language::{LANGUAGES, Language};
 use proc_macro::TokenStream;
 fn get_language(language: &str) -> &Language {
     for lang in LANGUAGES.iter() {
