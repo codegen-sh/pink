@@ -4,7 +4,18 @@ use super::enum_generator::generate_enum;
 use crate::generator::state::State;
 use codegen_sdk_common::naming::{normalize_field_name, normalize_type_name};
 const HEADER_TEMPLATE: &str = "
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Archive, Serialize)]
+#[rkyv(serialize_bounds(
+    __S: rkyv::ser::Writer + rkyv::ser::Allocator,
+    __S::Error: rkyv::rancor::Source,
+))]
+#[rkyv(deserialize_bounds(__D::Error: rkyv::rancor::Source))]
+#[rkyv(bytecheck(
+    bounds(
+        __C: rkyv::validation::ArchiveContext,
+        __C::Error: rkyv::rancor::Source,
+    )
+))]
 pub struct {name} {
     start_byte: usize,
     end_byte: usize,
@@ -53,8 +64,8 @@ impl FromNode for {{name}} {
         Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
-            start_position: node.start_position(),
-            end_position: node.end_position(),
+            start_position: node.start_position().into(),
+            end_position: node.end_position().into(),
             buffer: buffer.clone(),
             kind_id: node.kind_id(),
             {{fields}}
@@ -109,6 +120,7 @@ fn generate_required_field(
     constructor_fields: &mut Vec<String>,
     original_name: &str,
 ) {
+    state.structs.push_str("#[rkyv(omit_bounds)]");
     state.structs.push_str(&format!(
         "    pub {field_name}: Box<{type_name}>,\n",
         field_name = field_name,
@@ -127,6 +139,7 @@ fn generate_optional_field(
     constructor_fields: &mut Vec<String>,
     original_name: &str,
 ) {
+    state.structs.push_str("#[rkyv(omit_bounds)]");
     state.structs.push_str(&format!(
         "    pub {field_name}: Box<Option<{type_name}>>,\n",
         field_name = field_name,
@@ -198,9 +211,11 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     }
     let mut children_type_name = "Self".to_string();
     if let Some(children) = &node.children {
+        state.structs.push_str("#[rkyv(omit_bounds)]");
         children_type_name =
             generate_children(children, state, &node.type_name, &mut constructor_fields);
     } else {
+        state.structs.push_str("#[rkyv(omit_bounds)]");
         constructor_fields.push("    children: vec![]".to_string());
     }
     state

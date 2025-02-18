@@ -21,6 +21,9 @@ convert_case = { workspace = true }
 tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", optional = true}
 tree-sitter-language = "0.1.4"
 phf = { version = "0.11.3", features = ["macros"] }
+rkyv = { workspace = true }
+xdg = "2.5.2"
+base64 = "0.22.1"
 [features]
 python = ["dep:tree-sitter-python"]
 json = ["dep:tree-sitter-json"]

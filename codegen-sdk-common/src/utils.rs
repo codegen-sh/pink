@@ -1,4 +1,4 @@
-use crate::{ParseError, traits::FromNode};
+use crate::{traits::FromNode, ParseError};
 use bytes::Bytes;
 use std::backtrace::Backtrace;
 use tree_sitter::{self};

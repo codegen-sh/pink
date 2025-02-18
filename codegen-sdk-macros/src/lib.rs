@@ -1,5 +1,5 @@
 extern crate proc_macro;
-use codegen_sdk_common::language::{LANGUAGES, Language};
+use codegen_sdk_common::language::{Language, LANGUAGES};
 use proc_macro::TokenStream;
 fn get_language(language: &str) -> &Language {
     for lang in LANGUAGES.iter() {
@@ -44,7 +44,16 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     format!(
         "#[cfg(feature = \"{name}\")]
     if {name}::{struct_name}::should_parse(file_path)? {{
+        let serialized_path = get_serialize_path(file_path).unwrap();
+        if serialized_path.exists() {{
+            let raw = std::fs::read(serialized_path)?;
+            let parsed =
+                from_bytes::<<{name}::{struct_name} as CSTLanguage>::Program, rkyv::rancor::Failure>(&raw)?;
+            return Ok(Box::new(parsed));
+        }}
         let parsed = {name}::{struct_name}::parse_file(file_path)?;
+        let file = File::create(serialized_path)?;
+        let raw = to_bytes_in::<IoWriter<File>, rkyv::rancor::Failure>(&parsed, IoWriter::new(file))?;
         return Ok(Box::new(parsed));
     }}
  ",

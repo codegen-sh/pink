@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 
 use crate::errors::ParseError;
+use crate::point::Point;
 use bytes::Bytes;
-use tree_sitter::{self, Point};
+use tree_sitter::{self};
 pub trait FromNode: Sized {
     fn from_node(node: tree_sitter::Node, buffer: &Bytes) -> Result<Self, ParseError>;
 }

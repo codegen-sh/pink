@@ -34,7 +34,8 @@ pub fn generate_enum(
 ) {
     state.enums.push_str(&format!(
         "
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
+    #[repr(C, u8)]
     pub enum {enum_name} {{\n",
         enum_name = enum_name
     ));

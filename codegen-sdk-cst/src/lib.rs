@@ -1,11 +1,15 @@
 #![recursion_limit = "256"]
+#![feature(trivial_bounds)]
 use bytes::Bytes;
+use codegen_sdk_common::serialize::get_serialize_path;
 use codegen_sdk_common::{
-    ParseError,
     language::Language,
     traits::{CSTNode, FromNode},
+    ParseError,
 };
 use codegen_sdk_macros::{include_languages, parse_languages};
+use rkyv::{api::high::to_bytes_in, from_bytes, ser::writer::IoWriter};
+use std::fs::File;
 use std::path::PathBuf;
 pub trait CSTLanguage {
     type Program: CSTNode + FromNode + Send;
@@ -21,7 +25,8 @@ pub trait CSTLanguage {
     }
     fn parse_file(file_path: &PathBuf) -> Result<Self::Program, ParseError> {
         let content = std::fs::read_to_string(file_path)?;
-        Self::parse(&content)
+        let parsed = Self::parse(&content)?;
+        Ok(parsed)
     }
 
     fn should_parse(file_path: &PathBuf) -> Result<bool, ParseError> {

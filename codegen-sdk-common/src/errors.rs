@@ -27,4 +27,6 @@ pub enum ParseError {
         node_type: String,
         backtrace: Backtrace,
     },
+    #[error("Failed to serialize: {0}")]
+    Serialize(#[from] rkyv::rancor::Failure),
 }
