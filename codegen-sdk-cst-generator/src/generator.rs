@@ -1,14 +1,15 @@
-use codegen_sdk_common::naming::normalize_type_name;
-use codegen_sdk_common::parser::Node;
+use std::collections::HashSet;
+
+use codegen_sdk_common::{naming::normalize_type_name, parser::Node};
 use enum_generator::generate_enum;
 use state::State;
-use std::collections::HashSet;
 use struct_generator::generate_struct;
 mod enum_generator;
 mod format;
 mod state;
 mod struct_generator;
 const IMPORTS: &str = "
+use std::sync::Arc;
 use tree_sitter;
 use derive_more::Debug;
 use codegen_sdk_common::*;
@@ -61,10 +62,10 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::parse_node_types;
+    use codegen_sdk_common::language::python::Python;
 
     use super::*;
-    use codegen_sdk_common::language::python::Python;
+    use crate::parser::parse_node_types;
     #[test]
     fn test_generate_cst() {
         let node_types = parse_node_types(&Python).unwrap();

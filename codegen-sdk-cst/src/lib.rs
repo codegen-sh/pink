@@ -1,15 +1,16 @@
 #![recursion_limit = "256"]
 #![feature(trivial_bounds)]
+use std::path::PathBuf;
+use std::sync::Arc;
 use bytes::Bytes;
-use codegen_sdk_common::serialize::get_serialize_path;
 use codegen_sdk_common::{
-    ParseError,
     language::Language,
+    serialize::{get_serialize_path, get_writer, read_bytes},
     traits::{CSTNode, FromNode},
+    ParseError,
 };
 use codegen_sdk_macros::{include_languages, parse_languages};
-use rkyv::{api::high::to_bytes, from_bytes};
-use std::path::PathBuf;
+use rkyv::{api::high::to_bytes_in, from_bytes};
 pub trait CSTLanguage {
     type Program: CSTNode + FromNode + Send;
     fn language() -> &'static Language;
@@ -19,6 +20,7 @@ pub trait CSTLanguage {
         if tree.root_node().has_error() {
             Err(ParseError::SyntaxError)
         } else {
+            let buffer = Arc::new(buffer);
             Self::Program::from_node(tree.root_node(), &buffer)
         }
     }

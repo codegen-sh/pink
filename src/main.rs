@@ -1,8 +1,9 @@
+use std::{path, time::Instant};
+
 use clap::Parser;
 use codegen_sdk_common::{language::LANGUAGES, traits::CSTNode};
 use glob::glob;
 use rayon::prelude::*;
-use std::{path, time::Instant};
 use sysinfo::System;
 #[derive(Debug, Parser)]
 struct Args {
@@ -57,9 +58,9 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
         .unwrap();
     let (tx, rx) = crossbeam::channel::unbounded();
     let mut errors = Vec::new();
+    log_languages();
     let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
-    log_languages();
     let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
         .filter_map(|file| parse_file(file, &tx))

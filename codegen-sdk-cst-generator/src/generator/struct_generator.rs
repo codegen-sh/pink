@@ -1,8 +1,10 @@
-use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};
+use codegen_sdk_common::{
+    naming::{normalize_field_name, normalize_type_name},
+    parser::{Children, Fields, Node, TypeDefinition},
+};
 
 use super::enum_generator::generate_enum;
 use crate::generator::state::State;
-use codegen_sdk_common::naming::{normalize_field_name, normalize_type_name};
 const HEADER_TEMPLATE: &str = "
 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
 #[rkyv(serialize_bounds(
@@ -24,7 +26,7 @@ pub struct {name} {
     #[debug(\"[{},{}]\", end_position.row, end_position.column)]
     end_position: Point,
     #[debug(ignore)]
-    buffer: Bytes,
+    buffer: Arc<Bytes>,
     #[debug(ignore)]
     kind_id: u16,
 ";
@@ -60,7 +62,7 @@ impl HasChildren for {{name}} {
     }
 }
 impl FromNode for {{name}} {
-    fn from_node(node: tree_sitter::Node, buffer: &Bytes) -> Result<Self, ParseError> {
+    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
         Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
