@@ -91,7 +91,7 @@ impl Query {
         }
         panic!("No kind found for query. {:#?}", self.node);
     }
-    fn struct_name(&self) -> String {
+    pub fn struct_name(&self) -> String {
         normalize_type_name(&self.kind())
     }
 
@@ -120,7 +120,7 @@ impl Query {
     //     );
     // }
 
-    fn source(&self) -> String {
+    pub fn source(&self) -> String {
         self.node.source()
     }
 }
