@@ -3,7 +3,7 @@ use tree_sitter::Parser;
 
 use crate::{
     errors::ParseError,
-    parser::{parse_node_types, Node},
+    parser::{Node, parse_node_types},
 };
 pub struct Language {
     pub name: &'static str,

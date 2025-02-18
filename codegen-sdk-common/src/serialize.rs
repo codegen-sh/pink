@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE};
 use bytes::Bytes;
 use rkyv::ser::writer::IoWriter;
 use sha2::{Digest, Sha256};

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use codegen_sdk_common::{naming::normalize_type_name, CSTNode, HasChildren, Language};
+use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_name};
 use derive_more::Debug;
 
-use crate::{ts_query, CSTLanguage};
+use crate::{CSTLanguage, ts_query};
 fn captures_for_field_definition(
     node: &ts_query::FieldDefinition,
 ) -> impl Iterator<Item = &ts_query::Capture> {
