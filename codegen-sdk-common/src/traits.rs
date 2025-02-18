@@ -1,8 +1,8 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 use bytes::Bytes;
 use tree_sitter::{self};
-use std::sync::Arc;
+
 use crate::{errors::ParseError, point::Point};
 pub trait FromNode: Sized {
     fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError>;

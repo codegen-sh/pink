@@ -1,11 +1,11 @@
 #![recursion_limit = "256"]
 #![feature(trivial_bounds)]
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
+
 use bytes::Bytes;
 use codegen_sdk_common::{
     language::Language,
-    serialize::{get_serialize_path, get_writer, read_bytes},
+    serialize::Cache,
     traits::{CSTNode, FromNode},
     ParseError,
 };
@@ -41,7 +41,10 @@ pub trait CSTLanguage {
     }
 }
 include_languages!();
-pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, ParseError> {
+pub fn parse_file(
+    cache: &Cache,
+    file_path: &PathBuf,
+) -> Result<Box<dyn CSTNode + Send>, ParseError> {
     parse_languages!();
     Err(ParseError::UnknownLanguage)
 }

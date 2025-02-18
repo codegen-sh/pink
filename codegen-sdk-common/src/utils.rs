@@ -1,8 +1,8 @@
-use std::backtrace::Backtrace;
+use std::{backtrace::Backtrace, sync::Arc};
 
 use bytes::Bytes;
 use tree_sitter::{self};
-use std::sync::Arc;
+
 use crate::{traits::FromNode, ParseError};
 pub fn named_children_without_field_names<T: FromNode>(
     node: tree_sitter::Node,
