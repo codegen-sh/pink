@@ -5,3 +5,10 @@ edition = "2021"
 
 [dependencies]
 codegen-sdk-cst = { path = "../codegen-sdk-cst" }
+codegen-sdk-common = { path = "../codegen-sdk-common"}
+
+[build-dependencies]
+codegen-sdk-common = { path = "../codegen-sdk-common"}
+env_logger = { workspace = true }
+rayon = { workspace = true }
+codegen-sdk-ast-generator = { path = "../codegen-sdk-ast-generator"}

@@ -7,12 +7,13 @@ edition = "2021"
 tree-sitter = { workspace = true }
 ouroboros = { workspace = true }
 bytes = { workspace = true }
-codegen-sdk-common = { path = "../codegen-sdk-common" }
+codegen-sdk-common = { path = "../codegen-sdk-common", features = ["ts_query"] }
 codegen-sdk-macros = { path = "../codegen-sdk-macros" }
+derive_more = { version = "2.0.1", features = ["debug", "display"] }
 convert_case = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = { path = "../codegen-sdk-common", features = ["python", "typescript"] }
+codegen-sdk-common = { path = "../codegen-sdk-common", features = ["all"] }
 rayon = { workspace = true }
 env_logger = { workspace = true }
 [dev-dependencies]
@@ -25,4 +26,5 @@ jsx = [ "codegen-sdk-common/typescript"]
 javascript = [ "codegen-sdk-common/typescript"]
 json = [ "codegen-sdk-common/json"]
 java = [ "codegen-sdk-common/java"]
-default = ["typescript", "java", "tsx", "jsx", "javascript", "java"]
+ts_query = []
+default = ["typescript", "java", "tsx", "jsx", "javascript", "json", "ts_query"]

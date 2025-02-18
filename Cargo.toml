@@ -17,7 +17,7 @@ sysinfo = "0.33.1"
 [workspace]
 members = [
   "codegen-sdk-analyzer",
-  "codegen-sdk-ast",
+  "codegen-sdk-ast", "codegen-sdk-ast-generator",
   "codegen-sdk-common",
   "codegen-sdk-cst",
   "codegen-sdk-cst-generator", "codegen-sdk-macros",
@@ -37,3 +37,4 @@ bytes = "1.10.0"
 convert_case = "0.7.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
+anyhow = { version = "1.0.95", features = ["backtrace"] }

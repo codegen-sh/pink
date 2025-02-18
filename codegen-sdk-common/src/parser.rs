@@ -1,4 +1,3 @@
-use codegen_sdk_common::language::Language;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -6,6 +5,8 @@ pub struct Node {
     #[serde(rename = "type")]
     pub type_name: String,
     pub named: bool,
+    #[serde(default)]
+    pub root: bool,
     #[serde(default)]
     pub subtypes: Vec<TypeDefinition>,
     #[serde(default)]
@@ -43,17 +44,17 @@ pub struct Children {
     pub types: Vec<TypeDefinition>,
 }
 
-pub fn parse_node_types(language: &Language) -> anyhow::Result<Vec<Node>> {
-    let parsed: Vec<Node> = serde_json::from_str(language.node_types)?;
+pub fn parse_node_types(node_types: &str) -> anyhow::Result<Vec<Node>> {
+    let parsed: Vec<Node> = serde_json::from_str(node_types)?;
     Ok(parsed)
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codegen_sdk_common::language::python::Python;
+    use crate::language::python::Python;
     #[test]
     fn test_parse_node_types() {
-        let cst = parse_node_types(&Python).unwrap();
+        let cst = parse_node_types(Python.node_types).unwrap();
         assert!(!cst.is_empty());
     }
 }

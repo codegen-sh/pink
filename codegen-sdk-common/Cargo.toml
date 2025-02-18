@@ -14,9 +14,18 @@ tree-sitter-json = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
 lazy_static = "1.5.0"
 thiserror = "2.0.11"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+convert_case = { workspace = true }
+tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", optional = true}
+tree-sitter-language = "0.1.4"
+phf = { version = "0.11.3", features = ["macros"] }
 [features]
 python = ["dep:tree-sitter-python"]
 json = ["dep:tree-sitter-json"]
 java = ["dep:tree-sitter-java"]
 typescript = ["dep:tree-sitter-typescript", "dep:tree-sitter-javascript"]
-all = ["python", "typescript", "json", "java"]
+ts_query = ["dep:tree-sitter-query"]
+default = ["all"]
+all = ["python", "typescript", "json", "java", "ts_query"]
