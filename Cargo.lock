@@ -131,6 +131,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
 
 [[package]]
+name = "buildid"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0188344028070a23e23eebec37f4c5699db7b5a5fd088d97e6fae7727ac0dd77"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "log",
+ "winapi",
+]
+
+[[package]]
 name = "bytecheck"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -247,6 +259,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64",
+ "buildid",
  "bytes",
  "convert_case",
  "lazy_static",
@@ -280,6 +293,7 @@ dependencies = [
  "glob",
  "log",
  "rayon",
+ "rkyv",
  "sysinfo",
 ]
 
@@ -294,6 +308,7 @@ dependencies = [
  "convert_case",
  "derive_more",
  "env_logger",
+ "log",
  "ouroboros",
  "rayon",
  "rkyv",

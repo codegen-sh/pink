@@ -46,14 +46,16 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     if {name}::{struct_name}::should_parse(file_path)? {{
         let serialized_path = get_serialize_path(file_path).unwrap();
         if serialized_path.exists() {{
+            log::debug!(\"Deserializing {name}\");
             let raw = std::fs::read(serialized_path)?;
             let parsed =
-                from_bytes::<<{name}::{struct_name} as CSTLanguage>::Program, rkyv::rancor::Failure>(&raw)?;
+                from_bytes::<<{name}::{struct_name} as CSTLanguage>::Program, rkyv::rancor::Error>(&raw)?;
             return Ok(Box::new(parsed));
         }}
         let parsed = {name}::{struct_name}::parse_file(file_path)?;
-        let file = File::create(serialized_path)?;
-        let raw = to_bytes_in::<IoWriter<File>, rkyv::rancor::Failure>(&parsed, IoWriter::new(file))?;
+        log::debug!(\"Serializing {name}\");
+        let bytes = to_bytes::<rkyv::rancor::Error>(&parsed)?;
+        std::fs::write(serialized_path, bytes)?;
         return Ok(Box::new(parsed));
     }}
  ",

@@ -28,5 +28,5 @@ pub enum ParseError {
         backtrace: Backtrace,
     },
     #[error("Failed to serialize: {0}")]
-    Serialize(#[from] rkyv::rancor::Failure),
+    Serialize(#[from] rkyv::rancor::Error),
 }
