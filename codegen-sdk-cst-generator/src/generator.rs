@@ -62,13 +62,12 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use codegen_sdk_common::language::python::Python;
+    use codegen_sdk_common::{language::python::Python, parser::parse_node_types};
 
     use super::*;
-    use crate::parser::parse_node_types;
     #[test]
     fn test_generate_cst() {
-        let node_types = parse_node_types(&Python).unwrap();
+        let node_types = parse_node_types(&Python.node_types).unwrap();
         let cst = generate_cst(&node_types).unwrap();
         log::info!("{}", cst);
     }
