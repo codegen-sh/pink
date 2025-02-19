@@ -48,7 +48,7 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
         }
     }
     let mut result = IMPORTS.to_string();
-    result.push_str(&state.enums);
+    result.push_str(&state.enums.to_string());
     result.push_str(&state.structs);
     let formatted = format::format_cst(&result);
     match formatted {
