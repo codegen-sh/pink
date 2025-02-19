@@ -1,6 +1,7 @@
+use std::debug_assert;
+
 use convert_case::{Case, Casing};
 use phf::phf_map;
-use std::debug_assert;
 
 static MAPPINGS: phf::Map<char, &'static str> = phf_map! {
     '-' => "Minus",

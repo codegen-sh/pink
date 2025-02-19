@@ -1,8 +1,9 @@
-use crate::CSTLanguage;
-use crate::ts_query;
+use std::collections::HashMap;
+
 use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_name};
 use derive_more::Debug;
-use std::collections::HashMap;
+
+use crate::{CSTLanguage, ts_query};
 fn captures_for_field_definition(
     node: &ts_query::FieldDefinition,
 ) -> impl Iterator<Item = &ts_query::Capture> {
@@ -90,7 +91,7 @@ impl Query {
         }
         panic!("No kind found for query. {:#?}", self.node);
     }
-    fn struct_name(&self) -> String {
+    pub fn struct_name(&self) -> String {
         normalize_type_name(&self.kind())
     }
 
@@ -119,7 +120,7 @@ impl Query {
     //     );
     // }
 
-    fn source(&self) -> String {
+    pub fn source(&self) -> String {
         self.node.source()
     }
 }

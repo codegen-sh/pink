@@ -1,20 +1,21 @@
-use codegen_sdk_common::naming::normalize_type_name;
-use codegen_sdk_common::parser::Node;
+use std::collections::HashSet;
+
+use codegen_sdk_common::{naming::normalize_type_name, parser::Node};
 use enum_generator::generate_enum;
 use state::State;
-use std::collections::HashSet;
 use struct_generator::generate_struct;
 mod enum_generator;
 mod format;
 mod state;
 mod struct_generator;
 const IMPORTS: &str = "
-use tree_sitter::{self, Point};
-extern crate ouroboros;
+use std::sync::Arc;
+use tree_sitter;
 use derive_more::Debug;
 use codegen_sdk_common::*;
 use std::backtrace::Backtrace;
 use bytes::Bytes;
+use rkyv::{Archive, Deserialize, Serialize, Portable};
 ";
 
 pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
@@ -61,13 +62,12 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::parse_node_types;
+    use codegen_sdk_common::{language::python::Python, parser::parse_node_types};
 
     use super::*;
-    use codegen_sdk_common::language::python::Python;
     #[test]
     fn test_generate_cst() {
-        let node_types = parse_node_types(&Python).unwrap();
+        let node_types = parse_node_types(&Python.node_types).unwrap();
         let cst = generate_cst(&node_types).unwrap();
         log::info!("{}", cst);
     }

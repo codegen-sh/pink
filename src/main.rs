@@ -1,8 +1,9 @@
+use std::{path, time::Instant};
+
 use clap::Parser;
-use codegen_sdk_common::{language::LANGUAGES, traits::CSTNode};
+use codegen_sdk_common::{language::LANGUAGES, serialize::Cache, traits::CSTNode};
 use glob::glob;
 use rayon::prelude::*;
-use std::{path, time::Instant};
 use sysinfo::System;
 #[derive(Debug, Parser)]
 struct Args {
@@ -24,13 +25,14 @@ fn collect_files(dir: String) -> Vec<path::PathBuf> {
     files.into_iter().filter_map(|file| file.ok()).collect()
 }
 fn parse_file(
+    cache: &Cache,
     file: &path::PathBuf,
     tx: &crossbeam::channel::Sender<String>,
 ) -> Option<Box<dyn CSTNode + Send>> {
     if file.is_dir() {
         return None;
     }
-    let result = codegen_sdk_cst::parse_file(file);
+    let result = codegen_sdk_cst::parse_file(cache, file);
 
     return match result {
         Ok(program) => Some(program),
@@ -57,12 +59,25 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
         .unwrap();
     let (tx, rx) = crossbeam::channel::unbounded();
     let mut errors = Vec::new();
+    log_languages();
+    let cache = Cache::new().unwrap();
     let files_to_parse = collect_files(dir);
     log::info!("Parsing {} files", files_to_parse.len());
-    log_languages();
+    let mut cached = 0;
+    for file in files_to_parse.iter() {
+        let path = cache.get_path(file);
+        if path.exists() {
+            cached += 1;
+        }
+    }
+    log::info!(
+        "{} files cached. {}% of total",
+        cached,
+        cached * 100 / files_to_parse.len()
+    );
     let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
-        .filter_map(|file| parse_file(file, &tx))
+        .filter_map(|file| parse_file(&cache, file, &tx))
         .collect();
     drop(tx);
     for e in rx.iter() {

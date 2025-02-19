@@ -1,12 +1,16 @@
 #![recursion_limit = "256"]
+#![feature(trivial_bounds)]
+use std::{path::PathBuf, sync::Arc};
+
 use bytes::Bytes;
 use codegen_sdk_common::{
     ParseError,
     language::Language,
+    serialize::Cache,
     traits::{CSTNode, FromNode},
 };
 use codegen_sdk_macros::{include_languages, parse_languages};
-use std::path::PathBuf;
+use rkyv::{api::high::to_bytes_in, from_bytes};
 pub trait CSTLanguage {
     type Program: CSTNode + FromNode + Send;
     fn language() -> &'static Language;
@@ -16,12 +20,14 @@ pub trait CSTLanguage {
         if tree.root_node().has_error() {
             Err(ParseError::SyntaxError)
         } else {
+            let buffer = Arc::new(buffer);
             Self::Program::from_node(tree.root_node(), &buffer)
         }
     }
     fn parse_file(file_path: &PathBuf) -> Result<Self::Program, ParseError> {
         let content = std::fs::read_to_string(file_path)?;
-        Self::parse(&content)
+        let parsed = Self::parse(&content)?;
+        Ok(parsed)
     }
 
     fn should_parse(file_path: &PathBuf) -> Result<bool, ParseError> {
@@ -35,7 +41,10 @@ pub trait CSTLanguage {
     }
 }
 include_languages!();
-pub fn parse_file(file_path: &PathBuf) -> Result<Box<dyn CSTNode + Send>, ParseError> {
+pub fn parse_file(
+    cache: &Cache,
+    file_path: &PathBuf,
+) -> Result<Box<dyn CSTNode + Send>, ParseError> {
     parse_languages!();
     Err(ParseError::UnknownLanguage)
 }

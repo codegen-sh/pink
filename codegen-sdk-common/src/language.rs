@@ -1,9 +1,10 @@
+use convert_case::{Case, Casing};
+use tree_sitter::Parser;
+
 use crate::{
     errors::ParseError,
     parser::{Node, parse_node_types},
 };
-use convert_case::{Case, Casing};
-use tree_sitter::Parser;
 pub struct Language {
     pub name: &'static str,
     pub struct_name: &'static str,

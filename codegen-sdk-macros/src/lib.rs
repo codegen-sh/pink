@@ -44,7 +44,18 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     format!(
         "#[cfg(feature = \"{name}\")]
     if {name}::{struct_name}::should_parse(file_path)? {{
+        let serialized_path = cache.get_path(file_path);
+        if serialized_path.exists() {{
+            log::debug!(\"Deserializing {name}\");
+            let bytes = cache.read_entry(&serialized_path)?;
+            let parsed =
+                from_bytes::<<{name}::{struct_name} as CSTLanguage>::Program, rkyv::rancor::Error>(&bytes)?;
+            return Ok(Box::new(parsed));
+        }}
         let parsed = {name}::{struct_name}::parse_file(file_path)?;
+        log::debug!(\"Serializing {name}\");
+        let writer = cache.get_writer(&serialized_path)?;
+        let _ = to_bytes_in::<_, rkyv::rancor::Error>(&parsed, writer)?;
         return Ok(Box::new(parsed));
     }}
  ",

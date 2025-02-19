@@ -1,6 +1,9 @@
+use codegen_sdk_common::{
+    naming::{normalize_string, normalize_type_name},
+    parser::TypeDefinition,
+};
+
 use crate::generator::state::State;
-use codegen_sdk_common::naming::{normalize_string, normalize_type_name};
-use codegen_sdk_common::parser::TypeDefinition;
 fn get_cases(
     variants: &Vec<TypeDefinition>,
     cases: &mut String,
@@ -34,7 +37,8 @@ pub fn generate_enum(
 ) {
     state.enums.push_str(&format!(
         "
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
+    #[repr(C, u8)]
     pub enum {enum_name} {{\n",
         enum_name = enum_name
     ));
@@ -72,7 +76,7 @@ pub fn generate_enum(
     state.enums.push_str(&format!(
         "
     impl FromNode for {enum_name} {{
-        fn from_node(node: tree_sitter::Node, buffer: &Bytes) -> Result<Self, ParseError> {{
+        fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {{
             match node.kind() {{
                 {cases}
                 _ => Err(ParseError::UnexpectedNode {{

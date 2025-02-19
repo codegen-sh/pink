@@ -1,4 +1,5 @@
 use std::backtrace::Backtrace;
+
 use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ParseError {
@@ -27,4 +28,6 @@ pub enum ParseError {
         node_type: String,
         backtrace: Backtrace,
     },
+    #[error("Failed to serialize: {0}")]
+    Serialize(#[from] rkyv::rancor::Error),
 }

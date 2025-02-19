@@ -1,10 +1,11 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
-use crate::errors::ParseError;
 use bytes::Bytes;
-use tree_sitter::{self, Point};
+use tree_sitter::{self};
+
+use crate::{errors::ParseError, point::Point};
 pub trait FromNode: Sized {
-    fn from_node(node: tree_sitter::Node, buffer: &Bytes) -> Result<Self, ParseError>;
+    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError>;
 }
 pub trait CSTNode: Send + Debug {
     fn start_byte(&self) -> usize;
