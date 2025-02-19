@@ -31,7 +31,7 @@ fn get_cases(
             let variant_name = format_ident!("{}", variant_name);
             cases.push((
                 t.type_name.clone(),
-                quote!{ Self::#variant_name (#variant_name::from_node(node, buffer)?)},
+                quote! { Self::#variant_name (#variant_name::from_node(node, buffer)?)},
             ));
             // cases.insert(t.type_name.clone(), quote!{
             //     #t.type_name => Ok(#(#prefix)::from_node(node, buffer)?),
@@ -81,7 +81,7 @@ pub fn generate_enum(
                 continue;
             }
             let normalized_name = normalize_string(name);
-            cases.push((normalized_name, quote!{Self::Anonymous}));
+            cases.push((normalized_name, quote! {Self::Anonymous}));
         }
     }
     let mut keys = Vec::new();

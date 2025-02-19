@@ -62,7 +62,10 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
         Ok(formatted) => return Ok(formatted),
         Err(e) => {
             let mut out_file = tempfile::NamedTempFile::with_suffix(".rs")?;
-            log::error!("Failed to format CST, writing to temp file at {}", out_file.path().display());
+            log::error!(
+                "Failed to format CST, writing to temp file at {}",
+                out_file.path().display()
+            );
             out_file.write_all(result.to_string().as_bytes())?;
             out_file.keep()?;
             return Err(e);
