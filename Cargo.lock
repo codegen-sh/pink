@@ -343,6 +343,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
+ "tempfile",
  "tree-sitter",
 ]
 

@@ -3,7 +3,7 @@ use codegen_sdk_common::{
     parser::TypeDefinition,
 };
 use proc_macro2::TokenStream;
-use quote::{TokenStreamExt, format_ident, quote};
+use quote::{format_ident, quote};
 
 use crate::generator::state::State;
 fn get_cases(
