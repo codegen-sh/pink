@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 tree-sitter = { workspace = true }
-ouroboros = { workspace = true }
 bytes = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common", features = ["ts_query"] }
 codegen-sdk-macros = { path = "../codegen-sdk-macros" }
