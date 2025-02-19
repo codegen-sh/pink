@@ -1,12 +1,11 @@
 [package]
 name = "codegen-sdk-common"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bytes = { workspace = true }
 tree-sitter = { workspace = true }
-ouroboros = { workspace = true }
 tree-sitter-python = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }

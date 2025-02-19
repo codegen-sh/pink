@@ -8,16 +8,23 @@ mod enum_generator;
 mod format;
 mod state;
 mod struct_generator;
-const IMPORTS: &str = "
-use std::sync::Arc;
-use tree_sitter;
-use derive_more::Debug;
-use codegen_sdk_common::*;
-use std::backtrace::Backtrace;
-use bytes::Bytes;
-use rkyv::{Archive, Deserialize, Serialize, Portable};
-";
+use std::io::Write;
 
+use proc_macro2::TokenStream;
+use quote::quote;
+fn get_imports() -> TokenStream {
+    quote! {
+
+    use std::sync::Arc;
+    use tree_sitter;
+    use derive_more::Debug;
+    use codegen_sdk_common::*;
+    use std::backtrace::Backtrace;
+    use bytes::Bytes;
+    use rkyv::{Archive, Deserialize, Serialize, Portable};
+
+        }
+}
 pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
     let mut state = State::default();
     let mut nodes = HashSet::new();
@@ -47,15 +54,21 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
             generate_struct(node, &mut state, &name);
         }
     }
-    let mut result = IMPORTS.to_string();
-    result.push_str(&state.enums);
-    result.push_str(&state.structs);
-    let formatted = format::format_cst(&result);
+    let mut result = get_imports();
+    result.extend_one(state.enums);
+    result.extend_one(state.structs);
+    let formatted = format::format_cst(&result.to_string());
     match formatted {
         Ok(formatted) => return Ok(formatted),
         Err(e) => {
-            log::error!("Failed to format CST: {}", e);
-            return Ok(result.to_string());
+            let mut out_file = tempfile::NamedTempFile::with_suffix(".rs")?;
+            log::error!(
+                "Failed to format CST, writing to temp file at {}",
+                out_file.path().display()
+            );
+            out_file.write_all(result.to_string().as_bytes())?;
+            out_file.keep()?;
+            return Err(e);
         }
     }
 }

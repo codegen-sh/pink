@@ -1,3 +1,4 @@
+#![feature(extend_one)]
 mod generator;
 use codegen_sdk_common::language::Language;
 pub fn generate_cst(language: &Language) -> anyhow::Result<()> {

@@ -1,11 +1,10 @@
 [package]
 name = "codegen-sdk-cst"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 tree-sitter = { workspace = true }
-ouroboros = { workspace = true }
 bytes = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common", features = ["ts_query"] }
 codegen-sdk-macros = { path = "../codegen-sdk-macros" }

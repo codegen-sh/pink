@@ -1,16 +1,18 @@
 [package]
 name = "codegen-sdk-cst-generator"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 convert_case = { workspace = true }
 prettyplease = "0.2.29"
-syn = "2.0.98"
+syn = { version = "2.0.98", features = ["proc-macro"] }
 tree-sitter = { workspace = true }
 log = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
 anyhow = { workspace = true }
-
+quote = "1.0.38"
+proc-macro2 = "1.0.93"
+tempfile = "3.8.1"
 [dev-dependencies]
 codegen-sdk-common = { path = "../codegen-sdk-common" , features = ["python"] }

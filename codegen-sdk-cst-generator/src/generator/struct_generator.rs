@@ -1,80 +1,12 @@
 use codegen_sdk_common::{
     naming::{normalize_field_name, normalize_type_name},
-    parser::{Children, Fields, Node, TypeDefinition},
+    parser::{Children, FieldDefinition, Fields, Node, TypeDefinition},
 };
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
 
 use super::enum_generator::generate_enum;
 use crate::generator::state::State;
-const HEADER_TEMPLATE: &str = "
-#[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-#[rkyv(serialize_bounds(
-    __S: rkyv::ser::Writer + rkyv::ser::Allocator,
-    __S::Error: rkyv::rancor::Source,
-))]
-#[rkyv(deserialize_bounds(__D::Error: rkyv::rancor::Source))]
-#[rkyv(bytecheck(
-    bounds(
-        __C: rkyv::validation::ArchiveContext,
-        __C::Error: rkyv::rancor::Source,
-    )
-))]
-pub struct {name} {
-    start_byte: usize,
-    end_byte: usize,
-    #[debug(\"[{},{}]\", start_position.row, start_position.column)]
-    start_position: Point,
-    #[debug(\"[{},{}]\", end_position.row, end_position.column)]
-    end_position: Point,
-    #[debug(ignore)]
-    buffer: Arc<Bytes>,
-    #[debug(ignore)]
-    kind_id: u16,
-";
-const FOOTER_TEMPLATE: &str = "
-}
-";
-
-const CONSTRUCTOR_TEMPLATE: &str = "
-impl CSTNode for {{name}} {
-    fn start_byte(&self) -> usize {
-        self.start_byte
-    }
-    fn end_byte(&self) -> usize {
-        self.end_byte
-    }
-    fn start_position(&self) -> Point {
-        self.start_position
-    }
-    fn end_position(&self) -> Point {
-        self.end_position
-    }
-    fn buffer(&self) -> &Bytes {
-        &self.buffer
-    }
-    fn kind_id(&self) -> u16 {
-        self.kind_id
-    }
-}
-impl HasChildren for {{name}} {
-    type Child = {{children}};
-    fn children(&self) -> &Vec<Self::Child> {
-       self.children.as_ref()
-    }
-}
-impl FromNode for {{name}} {
-    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-        Ok(Self {
-            start_byte: node.start_byte(),
-            end_byte: node.end_byte(),
-            start_position: node.start_position().into(),
-            end_position: node.end_position().into(),
-            buffer: buffer.clone(),
-            kind_id: node.kind_id(),
-            {{fields}}
-        })
-    }
-}
-";
 fn convert_type_definition(
     type_name: &Vec<TypeDefinition>,
     state: &mut State,
@@ -101,132 +33,181 @@ fn convert_type_definition(
 fn generate_multiple_field(
     field_name: &str,
     converted_type_name: &str,
-    state: &mut State,
-    constructor_fields: &mut Vec<String>,
     original_name: &str,
-) {
-    state.structs.push_str(&format!(
-        "    pub {field_name}: Vec<{}>,\n",
-        converted_type_name
-    ));
-    constructor_fields.push(format!(
-        "    {field_name}: get_multiple_children_by_field_name(&node, \"{name}\", buffer)?",
-        field_name = field_name,
-        name = original_name
-    ));
+) -> (TokenStream, TokenStream) {
+    let field_name = format_ident!("{}", field_name);
+    let converted_type_name = format_ident!("{}", converted_type_name);
+    let struct_field = quote! {
+           pub #field_name: Vec<#converted_type_name>
+    };
+    let constructor_field = quote! {
+        #field_name: get_multiple_children_by_field_name(&node, #original_name, buffer)?
+    };
+    (struct_field, constructor_field)
 }
 fn generate_required_field(
     field_name: &str,
     converted_type_name: &str,
-    state: &mut State,
-    constructor_fields: &mut Vec<String>,
     original_name: &str,
-) {
-    state.structs.push_str("#[rkyv(omit_bounds)]");
-    state.structs.push_str(&format!(
-        "    pub {field_name}: Box<{type_name}>,\n",
-        field_name = field_name,
-        type_name = converted_type_name
-    ));
-    constructor_fields.push(format!(
-        "    {field_name}: Box::new(get_child_by_field_name(&node, \"{name}\", buffer)?)",
-        field_name = field_name,
-        name = original_name
-    ));
+) -> (TokenStream, TokenStream) {
+    let field_name = format_ident!("{}", field_name);
+    let converted_type_name = format_ident!("{}", converted_type_name);
+    let struct_field = quote! {
+        #[rkyv(omit_bounds)]
+        pub #field_name: Box<#converted_type_name>
+    };
+    let constructor_field = quote! {
+        #field_name: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
+    };
+    (struct_field, constructor_field)
 }
 fn generate_optional_field(
     field_name: &str,
     converted_type_name: &str,
-    state: &mut State,
-    constructor_fields: &mut Vec<String>,
     original_name: &str,
-) {
-    state.structs.push_str("#[rkyv(omit_bounds)]");
-    state.structs.push_str(&format!(
-        "    pub {field_name}: Box<Option<{type_name}>>,\n",
-        field_name = field_name,
-        type_name = converted_type_name
-    ));
-    constructor_fields.push(format!(
-        "    {field_name}: Box::new(get_optional_child_by_field_name(&node, \"{name}\", buffer)?)",
-        field_name = field_name,
-        name = original_name
-    ));
+) -> (TokenStream, TokenStream) {
+    let field_name = format_ident!("{}", field_name);
+    let converted_type_name = format_ident!("{}", converted_type_name);
+    let struct_field = quote! {
+        #[rkyv(omit_bounds)]
+        pub #field_name: Box<Option<#converted_type_name>>
+    };
+    let constructor_field = quote! {
+        #field_name: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
+    };
+    (struct_field, constructor_field)
+}
+fn generate_field(
+    field: &FieldDefinition,
+    state: &mut State,
+    node: &Node,
+    name: &str,
+) -> (TokenStream, TokenStream) {
+    let field_name = normalize_field_name(name);
+    let converted_type_name = convert_type_definition(&field.types, state, &node.type_name, name);
+    if field.multiple {
+        return generate_multiple_field(&field_name, &converted_type_name, name);
+    } else if field.required {
+        return generate_required_field(&field_name, &converted_type_name, name);
+    } else {
+        return generate_optional_field(&field_name, &converted_type_name, name);
+    }
 }
 fn generate_fields(
     fields: &Fields,
     state: &mut State,
     node: &Node,
-    constructor_fields: &mut Vec<String>,
-) {
+) -> (Vec<TokenStream>, Vec<TokenStream>) {
+    let mut struct_fields = Vec::new();
+    let mut constructor_fields = Vec::new();
     for (name, field) in &fields.fields {
-        let field_name = normalize_field_name(name);
-        let converted_type_name =
-            convert_type_definition(&field.types, state, &node.type_name, name);
-        if field.multiple {
-            generate_multiple_field(
-                &field_name,
-                &converted_type_name,
-                state,
-                constructor_fields,
-                name,
-            );
-        } else if field.required {
-            generate_required_field(
-                &field_name,
-                &converted_type_name,
-                state,
-                constructor_fields,
-                name,
-            );
-        } else {
-            generate_optional_field(
-                &field_name,
-                &converted_type_name,
-                state,
-                constructor_fields,
-                name,
-            );
-        }
+        let (struct_field, constructor_field) = generate_field(field, state, node, name);
+        struct_fields.push(struct_field);
+        constructor_fields.push(constructor_field);
     }
+    (struct_fields, constructor_fields)
 }
 fn generate_children(
     children: &Children,
     state: &mut State,
     node_name: &str,
-    constructor_fields: &mut Vec<String>,
-) -> String {
+) -> (String, TokenStream) {
     let converted_type_name =
         convert_type_definition(&children.types, state, node_name, "children");
-    constructor_fields
-        .push("    children: named_children_without_field_names(node, buffer)?".to_string());
-
-    converted_type_name
+    let constructor_field = quote! {
+        children: named_children_without_field_names(node, buffer)?
+    };
+    (converted_type_name, constructor_field)
 }
 pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
-    state
-        .structs
-        .push_str(&HEADER_TEMPLATE.replace("{name}", name));
     let mut constructor_fields = Vec::new();
+    let mut struct_fields = Vec::new();
     if let Some(fields) = &node.fields {
-        generate_fields(fields, state, node, &mut constructor_fields);
+        (struct_fields, constructor_fields) = generate_fields(fields, state, node);
     }
     let mut children_type_name = "Self".to_string();
     if let Some(children) = &node.children {
-        state.structs.push_str("#[rkyv(omit_bounds)]");
-        children_type_name =
-            generate_children(children, state, &node.type_name, &mut constructor_fields);
+        let constructor_field;
+        (children_type_name, constructor_field) =
+            generate_children(children, state, &node.type_name);
+        constructor_fields.push(constructor_field);
     } else {
-        state.structs.push_str("#[rkyv(omit_bounds)]");
-        constructor_fields.push("    children: vec![]".to_string());
+        constructor_fields.push(quote! {
+            children: vec![]
+        });
     }
-    state
-        .structs
-        .push_str(&format!("    pub children: Vec<{}>,\n", children_type_name));
-    state.structs.push_str(FOOTER_TEMPLATE);
-    let constructor = &CONSTRUCTOR_TEMPLATE
-        .replace("{{fields}}", &constructor_fields.join(",\n       "))
-        .replace("{{name}}", name)
-        .replace("{{children}}", &children_type_name);
-    state.structs.push_str(&constructor);
+    let name = format_ident!("{}", name);
+    let children_type_name = format_ident!("{}", children_type_name);
+    let definition = quote! {
+            #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
+    #[rkyv(serialize_bounds(
+        __S: rkyv::ser::Writer + rkyv::ser::Allocator,
+        __S::Error: rkyv::rancor::Source,
+    ))]
+    #[rkyv(deserialize_bounds(__D::Error: rkyv::rancor::Source))]
+    #[rkyv(bytecheck(
+        bounds(
+            __C: rkyv::validation::ArchiveContext,
+            __C::Error: rkyv::rancor::Source,
+        )
+    ))]
+    pub struct #name {
+        start_byte: usize,
+        end_byte: usize,
+        #[debug("[{},{}]", start_position.row, start_position.column)]
+        start_position: Point,
+        #[debug("[{},{}]", end_position.row, end_position.column)]
+        end_position: Point,
+        #[debug(ignore)]
+        buffer: Arc<Bytes>,
+        #[debug(ignore)]
+        kind_id: u16,
+        #[rkyv(omit_bounds)]
+        pub children: Vec<#children_type_name>,
+        #(#struct_fields),*
+    }
+    };
+    state.structs.extend_one(definition);
+    let implementation = quote! {
+        impl CSTNode for #name {
+            fn start_byte(&self) -> usize {
+                self.start_byte
+            }
+            fn end_byte(&self) -> usize {
+                self.end_byte
+            }
+            fn start_position(&self) -> Point {
+                self.start_position
+            }
+            fn end_position(&self) -> Point {
+                self.end_position
+            }
+            fn buffer(&self) -> &Bytes {
+                &self.buffer
+            }
+            fn kind_id(&self) -> u16 {
+                self.kind_id
+            }
+        }
+        impl HasChildren for #name {
+            type Child = #children_type_name;
+            fn children(&self) -> &Vec<Self::Child> {
+               self.children.as_ref()
+            }
+        }
+        impl FromNode for #name {
+            fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                Ok(Self {
+                    start_byte: node.start_byte(),
+                    end_byte: node.end_byte(),
+                    start_position: node.start_position().into(),
+                    end_position: node.end_position().into(),
+                    buffer: buffer.clone(),
+                    kind_id: node.kind_id(),
+                    #(#constructor_fields),*
+                })
+            }
+        }
+    };
+    state.structs.extend_one(implementation);
 }
