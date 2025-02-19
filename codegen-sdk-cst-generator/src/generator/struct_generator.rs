@@ -38,7 +38,6 @@ fn generate_multiple_field(
     let field_name = format_ident!("{}", field_name);
     let converted_type_name = format_ident!("{}", converted_type_name);
     let struct_field = quote! {
-        #[rkyv(omit_bounds)]
            pub #field_name: Vec<#converted_type_name>
     };
     let constructor_field = quote! {
