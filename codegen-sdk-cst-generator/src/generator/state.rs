@@ -158,10 +158,11 @@ impl<'a> State<'a> {
         } else {
             quote! {}
         };
+        let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
         #[derive(Debug, Clone)]
-        pub enum Types {
+        pub enum #enum_name {
                 #(#enum_tokens),*
             }
             #from_tokens
