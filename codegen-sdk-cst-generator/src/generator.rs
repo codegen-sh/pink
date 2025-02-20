@@ -39,9 +39,7 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
             enums.push(quote! {
                 #name(#name)
             });
-            state
-                .variants
-                .insert(name, node.subtypes.clone());
+            state.variants.insert(name, node.subtypes.clone());
         } else if node.children.is_none() && node.fields.is_none() {
             state
                 .anonymous_nodes

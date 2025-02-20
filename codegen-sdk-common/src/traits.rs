@@ -21,7 +21,6 @@ pub trait CSTNode: Send + Debug {
     }
     fn kind_id(&self) -> u16;
     fn kind(&self) -> &str;
-
 }
 pub trait HasNode: Send + Debug {
     type Node: CSTNode + HasChildren;
@@ -49,7 +48,6 @@ impl<T: HasNode> CSTNode for T {
     fn kind_id(&self) -> u16 {
         self.node().kind_id()
     }
-    
 }
 impl<T: HasNode> HasChildren for T {
     type Child = <T::Node as HasChildren>::Child;

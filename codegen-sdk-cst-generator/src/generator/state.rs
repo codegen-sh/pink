@@ -130,7 +130,7 @@ impl<'a> State<'a> {
                 // }
             });
         }
-        
+
         for subenum in self.subenums.iter() {
             subenums.push(format_ident!("{}", normalize_type_name(&subenum)));
         }

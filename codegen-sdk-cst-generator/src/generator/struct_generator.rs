@@ -141,23 +141,11 @@ fn generate_field(
     let converted_type_name =
         convert_type_definition(&field.types, state, original_name, &node.type_name);
     if field.multiple {
-        return generate_multiple_field(
-            &field_name,
-            &converted_type_name,
-            original_name,
-        );
+        return generate_multiple_field(&field_name, &converted_type_name, original_name);
     } else if field.required {
-        return generate_required_field(
-            &field_name,
-            &converted_type_name,
-            original_name,
-        );
+        return generate_required_field(&field_name, &converted_type_name, original_name);
     } else {
-        return generate_optional_field(
-            &field_name,
-            &converted_type_name,
-            original_name,
-        );
+        return generate_optional_field(&field_name, &converted_type_name, original_name);
     }
 }
 fn generate_fields(fields: &Fields, state: &mut State, node: &Node) -> Vec<FieldOutput> {

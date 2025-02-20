@@ -36,7 +36,11 @@ impl<'a> Node<'a> {
     }
     pub fn get_enum_tokens(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
-        let subenum_names = &self.subenums.iter().map(|s| format_ident!("{}", normalize_type_name(s))).collect::<Vec<_>>();
+        let subenum_names = &self
+            .subenums
+            .iter()
+            .map(|s| format_ident!("{}", normalize_type_name(s)))
+            .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
                 #name(#name)
@@ -52,7 +56,6 @@ impl<'a> Node<'a> {
         let mut children_names = vec![];
         if let Some(children) = &self.raw.children {
             children_names.extend(children.types.iter().map(|t| t.type_name.clone()));
-
         }
         for field in &self.fields {
             children_names.extend(field.types());

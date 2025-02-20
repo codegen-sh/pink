@@ -98,9 +98,7 @@ pub fn generate_enum(
             }
             let normalized_name = normalize_string(name);
             cases.push((normalized_name, quote! {Self::Anonymous}));
-
         }
-
     }
     let mut keys = Vec::new();
     let mut values = Vec::new();
