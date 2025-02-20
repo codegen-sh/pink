@@ -47,6 +47,7 @@ pub fn generate_enum(
     anonymous_nodes: bool,
 ) {
     let mut variant_tokens = Vec::new();
+    let enum_name = format_ident!("{}", enum_name);
     for t in variants {
         let variant_name = normalize_type_name(&t.type_name);
         if variant_name.is_empty() {
@@ -56,13 +57,24 @@ pub fn generate_enum(
         variant_tokens.push(quote! {
             #variant_name(#variant_name)
         });
+        state.enums.extend_one(quote! {
+            impl std::convert::From<#variant_name> for #enum_name {
+                fn from(variant: #variant_name) -> Self {
+                    Self::#variant_name(variant)
+                }
+            }
+            impl <T: std::convert::Into<#variant_name>> std::convert::From<T> for #enum_name {
+                fn from(variant: T) -> Self {
+                    Self::#variant_name(variant.into())
+                }
+            }
+        });
     }
     if anonymous_nodes {
         variant_tokens.push(quote! {
             Anonymous,
         });
     }
-    let enum_name = format_ident!("{}", enum_name);
     state.enums.extend_one(quote! {
         #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
         #[repr(C, u8)]
@@ -82,7 +94,9 @@ pub fn generate_enum(
             }
             let normalized_name = normalize_string(name);
             cases.push((normalized_name, quote! {Self::Anonymous}));
+
         }
+
     }
     let mut keys = Vec::new();
     let mut values = Vec::new();

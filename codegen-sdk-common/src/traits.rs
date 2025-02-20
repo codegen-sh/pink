@@ -8,6 +8,7 @@ pub trait FromNode: Sized {
     fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError>;
 }
 pub trait CSTNode: Send + Debug {
+    type Child: Send;
     fn start_byte(&self) -> usize;
     fn end_byte(&self) -> usize;
     fn start_position(&self) -> Point;
@@ -20,12 +21,24 @@ pub trait CSTNode: Send + Debug {
         String::from_utf8(self.text().to_vec()).unwrap()
     }
     fn kind_id(&self) -> u16;
+    fn kind(&self) -> &str;
+    fn child_by_field_name(&self, field_name: &str) -> Option<&Self::Child> {
+        self.children_by_field_name(field_name)
+            .first()
+            .map(|child| *child)
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child>;
+    fn children(&self) -> Vec<&Self::Child>;
 }
 pub trait HasNode: Send + Debug {
     type Node: CSTNode;
     fn node(&self) -> &Self::Node;
 }
 impl<T: HasNode> CSTNode for T {
+    type Child = <T::Node as CSTNode>::Child;
+    fn kind(&self) -> &str {
+        self.node().kind()
+    }
     fn start_byte(&self) -> usize {
         self.node().start_byte()
     }
@@ -44,8 +57,14 @@ impl<T: HasNode> CSTNode for T {
     fn kind_id(&self) -> u16 {
         self.node().kind_id()
     }
+    fn child_by_field_name(&self, field_name: &str) -> Option<&Self::Child> {
+        self.node().child_by_field_name(field_name)
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+        self.node().children_by_field_name(field_name)
+    }
+    fn children(&self) -> Vec<&Self::Child> {
+        self.node().children()
+    }
 }
-pub trait HasChildren {
-    type Child: Send;
-    fn children(&self) -> &Vec<Self::Child>;
-}
+pub trait HasChildren {}

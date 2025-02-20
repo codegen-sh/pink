@@ -6,6 +6,7 @@ use state::State;
 use struct_generator::generate_struct;
 mod enum_generator;
 mod format;
+mod node;
 mod state;
 mod struct_generator;
 use std::io::Write;
@@ -26,13 +27,19 @@ fn get_imports() -> TokenStream {
         }
 }
 pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
-    let mut state = State::default();
+    let mut state = State::from(node_types);
     let mut nodes = HashSet::new();
+    let mut enums = Vec::new();
+
     for node in node_types {
         if !node.subtypes.is_empty() {
+            let name = normalize_type_name(&node.type_name);
+            enums.push(quote! {
+                #name(#name)
+            });
             state
                 .variants
-                .insert(normalize_type_name(&node.type_name), node.subtypes.clone());
+                .insert(name, node.subtypes.clone());
         } else if node.children.is_none() && node.fields.is_none() {
             state
                 .anonymous_nodes
@@ -55,6 +62,7 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
         }
     }
     let mut result = get_imports();
+    result.extend_one(state.get_enum());
     result.extend_one(state.enums);
     result.extend_one(state.structs);
     let formatted = format::format_cst(&result.to_string());

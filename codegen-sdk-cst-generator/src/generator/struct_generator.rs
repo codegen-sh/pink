@@ -1,12 +1,21 @@
 use codegen_sdk_common::{
     naming::{normalize_field_name, normalize_type_name},
-    parser::{Children, FieldDefinition, Fields, Node, TypeDefinition},
+    parser::{FieldDefinition, Fields, Node, TypeDefinition},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::Ident;
 
 use super::enum_generator::generate_enum;
 use crate::generator::state::State;
+struct FieldOutput {
+    struct_field: TokenStream,
+    constructor_field: TokenStream,
+    children_field: TokenStream,
+    children_by_field_name_field: TokenStream,
+    field_name: String,
+    field_name_identifier: Ident,
+}
 fn convert_type_definition(
     type_name: &Vec<TypeDefinition>,
     state: &mut State,
@@ -34,110 +43,202 @@ fn generate_multiple_field(
     field_name: &str,
     converted_type_name: &str,
     original_name: &str,
-) -> (TokenStream, TokenStream) {
-    let field_name = format_ident!("{}", field_name);
+) -> FieldOutput {
+    let field_name_ident = format_ident!("{}", field_name);
     let converted_type_name = format_ident!("{}", converted_type_name);
     let struct_field = quote! {
-           pub #field_name: Vec<#converted_type_name>
+           pub #field_name_ident: Vec<#converted_type_name>
     };
     let constructor_field = quote! {
-        #field_name: get_multiple_children_by_field_name(&node, #original_name, buffer)?
+        #field_name_ident: get_multiple_children_by_field_name(&node, #original_name, buffer)?
     };
-    (struct_field, constructor_field)
+    let convert_child = quote! {
+        &((*child).clone().into())
+    };
+    FieldOutput {
+        struct_field,
+        constructor_field,
+        children_field: quote! {
+            children.extend(self.#field_name_ident.iter().map(#convert_child));
+        },
+        children_by_field_name_field: quote! {
+            #field_name => self.#field_name_ident.iter().map(#convert_child).collect()
+        },
+        field_name: field_name.to_string(),
+        field_name_identifier: field_name_ident,
+    }
 }
 fn generate_required_field(
     field_name: &str,
     converted_type_name: &str,
     original_name: &str,
-) -> (TokenStream, TokenStream) {
-    let field_name = format_ident!("{}", field_name);
+) -> FieldOutput {
+    let field_name_ident = format_ident!("{}", field_name);
     let converted_type_name = format_ident!("{}", converted_type_name);
     let struct_field = quote! {
         #[rkyv(omit_bounds)]
-        pub #field_name: Box<#converted_type_name>
+        pub #field_name_ident: Box<#converted_type_name>
     };
     let constructor_field = quote! {
-        #field_name: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
+        #field_name_ident: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
     };
-    (struct_field, constructor_field)
+    let convert_child = quote! {
+        &((*self.#field_name_ident).clone().into())
+    };
+    FieldOutput {
+        struct_field,
+        constructor_field,
+        children_field: quote! {
+            children.push(#convert_child);
+        },
+        children_by_field_name_field: quote! {
+            #field_name => vec![#convert_child]
+        },
+        field_name: field_name.to_string(),
+        field_name_identifier: field_name_ident,
+    }
 }
 fn generate_optional_field(
     field_name: &str,
     converted_type_name: &str,
     original_name: &str,
-) -> (TokenStream, TokenStream) {
-    let field_name = format_ident!("{}", field_name);
+) -> FieldOutput {
+    let field_name_ident = format_ident!("{}", field_name);
     let converted_type_name = format_ident!("{}", converted_type_name);
     let struct_field = quote! {
         #[rkyv(omit_bounds)]
-        pub #field_name: Box<Option<#converted_type_name>>
+        pub #field_name_ident: Box<Option<#converted_type_name>>
     };
     let constructor_field = quote! {
-        #field_name: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
+        #field_name_ident: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
     };
-    (struct_field, constructor_field)
+    let convert_child = quote! {
+        &((*child).clone().into())
+    };
+    FieldOutput {
+        struct_field,
+        constructor_field,
+        children_field: quote! {
+            if let Some(child) = self.#field_name_ident {
+                children.push(#convert_child);
+            }
+        },
+        children_by_field_name_field: quote! {
+            #field_name => self.#field_name_ident.map_or_else(|| vec![], |child| vec![#convert_child])
+        },
+        field_name: field_name.to_string(),
+        field_name_identifier: field_name_ident,
+    }
 }
 fn generate_field(
     field: &FieldDefinition,
     state: &mut State,
     node: &Node,
-    name: &str,
-) -> (TokenStream, TokenStream) {
-    let field_name = normalize_field_name(name);
-    let converted_type_name = convert_type_definition(&field.types, state, &node.type_name, name);
+    original_name: &str,
+    field_name: &str,
+) -> FieldOutput {
+    let converted_type_name =
+        convert_type_definition(&field.types, state, &node.type_name, original_name);
     if field.multiple {
-        return generate_multiple_field(&field_name, &converted_type_name, name);
+        return generate_multiple_field(
+            &field_name,
+            &converted_type_name,
+            original_name,
+        );
     } else if field.required {
-        return generate_required_field(&field_name, &converted_type_name, name);
+        return generate_required_field(
+            &field_name,
+            &converted_type_name,
+            original_name,
+        );
     } else {
-        return generate_optional_field(&field_name, &converted_type_name, name);
+        return generate_optional_field(
+            &field_name,
+            &converted_type_name,
+            original_name,
+        );
     }
 }
-fn generate_fields(
-    fields: &Fields,
-    state: &mut State,
-    node: &Node,
-) -> (Vec<TokenStream>, Vec<TokenStream>) {
-    let mut struct_fields = Vec::new();
-    let mut constructor_fields = Vec::new();
+fn generate_fields(fields: &Fields, state: &mut State, node: &Node) -> Vec<FieldOutput> {
+    let mut field_outputs = Vec::new();
     for (name, field) in &fields.fields {
-        let (struct_field, constructor_field) = generate_field(field, state, node, name);
-        struct_fields.push(struct_field);
-        constructor_fields.push(constructor_field);
+        let field_name = normalize_field_name(name);
+        let field_output = generate_field(field, state, node, name, &field_name);
+        field_outputs.push(field_output);
     }
-    (struct_fields, constructor_fields)
+    field_outputs
 }
 fn generate_children(
-    children: &Children,
+    children: &Vec<TypeDefinition>,
     state: &mut State,
     node_name: &str,
 ) -> (String, TokenStream) {
-    let converted_type_name =
-        convert_type_definition(&children.types, state, node_name, "children");
+    let converted_type_name = convert_type_definition(children, state, node_name, "children");
     let constructor_field = quote! {
         children: named_children_without_field_names(node, buffer)?
     };
     (converted_type_name, constructor_field)
 }
+fn generate_children_field(children_fields: &Vec<TokenStream>) -> TokenStream {
+    let m = if children_fields.is_empty() {
+        quote! {}
+    } else {
+        quote! {mut}
+    };
+    quote! {
+        fn children(&self) -> Vec<&Self::Child> {
+            let #m children: Vec<_> = self.children.iter().collect();
+            #(#children_fields;)*
+            children
+         }
+    }
+}
+fn collect_children(node: &Node) -> Vec<TypeDefinition> {
+    let mut children = if let Some(children) = &node.children {
+        children.types.clone()
+    } else {
+        vec![]
+    };
+    if let Some(fields) = &node.fields {
+        for field in fields.fields.values() {
+            children.extend(field.types.clone());
+        }
+    }
+    children.sort_by_key(|t| t.type_name.clone());
+    children.dedup();
+    children
+}
+
 pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     let mut constructor_fields = Vec::new();
     let mut struct_fields = Vec::new();
-    if let Some(fields) = &node.fields {
-        (struct_fields, constructor_fields) = generate_fields(fields, state, node);
-    }
+    let mut field_names = Vec::new();
+    let mut children_fields = Vec::new();
+    let mut children_by_field_name_fields = Vec::new();
     let mut children_type_name = "Self".to_string();
-    if let Some(children) = &node.children {
+    let children = collect_children(node);
+    if !children.is_empty() {
         let constructor_field;
         (children_type_name, constructor_field) =
-            generate_children(children, state, &node.type_name);
+            generate_children(&children, state, &node.type_name);
         constructor_fields.push(constructor_field);
     } else {
         constructor_fields.push(quote! {
             children: vec![]
         });
     }
-    let name = format_ident!("{}", name);
     let children_type_name = format_ident!("{}", children_type_name);
+    if let Some(fields) = &node.fields {
+        for field_output in generate_fields(fields, state, node) {
+            struct_fields.push(field_output.struct_field);
+            constructor_fields.push(field_output.constructor_field);
+            field_names.push(field_output.field_name);
+            children_fields.push(field_output.children_field);
+            children_by_field_name_fields.push(field_output.children_by_field_name_field);
+        }
+    }
+    let children_field = generate_children_field(&children_fields);
+    let name = format_ident!("{}", name);
     let definition = quote! {
             #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
     #[rkyv(serialize_bounds(
@@ -154,6 +255,7 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     pub struct #name {
         start_byte: usize,
         end_byte: usize,
+        _kind: std::string::String,
         #[debug("[{},{}]", start_position.row, start_position.column)]
         start_position: Point,
         #[debug("[{},{}]", end_position.row, end_position.column)]
@@ -170,6 +272,10 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     state.structs.extend_one(definition);
     let implementation = quote! {
         impl CSTNode for #name {
+            type Child = #children_type_name;
+            fn kind(&self) -> &str {
+                &self._kind
+            }
             fn start_byte(&self) -> usize {
                 self.start_byte
             }
@@ -188,11 +294,12 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
             fn kind_id(&self) -> u16 {
                 self.kind_id
             }
-        }
-        impl HasChildren for #name {
-            type Child = #children_type_name;
-            fn children(&self) -> &Vec<Self::Child> {
-               self.children.as_ref()
+            #children_field
+            fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                match field_name {
+                    #(#children_by_field_name_fields,)*
+                    _ => vec![],
+                }
             }
         }
         impl FromNode for #name {
@@ -200,6 +307,7 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
                 Ok(Self {
                     start_byte: node.start_byte(),
                     end_byte: node.end_byte(),
+                    _kind: node.kind().to_string(),
                     start_position: node.start_position().into(),
                     end_position: node.end_position().into(),
                     buffer: buffer.clone(),

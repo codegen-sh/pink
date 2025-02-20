@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_name};
+use codegen_sdk_common::{CSTNode, Language, naming::normalize_type_name};
 use derive_more::Debug;
 
 use crate::{CSTLanguage, ts_query};

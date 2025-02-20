@@ -29,7 +29,7 @@ pub struct FieldDefinition {
     pub types: Vec<TypeDefinition>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct TypeDefinition {
     #[serde(rename = "type")]
     pub type_name: String,
