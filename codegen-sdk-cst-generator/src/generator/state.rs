@@ -5,7 +5,10 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::node::Node;
-use crate::generator::normalize_type_name;
+use crate::generator::{
+    normalize_type_name,
+    utils::{get_from_for_enum, get_serialize_bounds},
+};
 #[derive(Default, Debug)]
 pub struct State<'a> {
     pub enums: TokenStream,
@@ -108,6 +111,7 @@ impl<'a> State<'a> {
         }
         variants
     }
+
     // Get the overarching enum for the nodes
     pub fn get_enum(&self) -> TokenStream {
         let mut enum_tokens = Vec::new();
@@ -116,19 +120,13 @@ impl<'a> State<'a> {
         for node in self.nodes.values() {
             enum_tokens.push(node.get_enum_tokens());
             let variant_name = node.normalize_name();
-            let variant_name = format_ident!("{}", variant_name);
-            from_tokens.extend_one(quote! {
-                impl std::convert::From<#variant_name> for Types {
-                    fn from(variant: #variant_name) -> Self {
-                        Self::#variant_name(variant)
-                    }
-                }
-                // impl <T: std::convert::Into<#variant_name>> std::convert::From<T> for #enum_name {
-                //     fn from(variant: T) -> Self {
-                //         Self::#variant_name(variant.into())
-                //     }
-                // }
-            });
+            from_tokens.extend_one(get_from_for_enum(&variant_name, "Types"));
+            for subenum in node.subenums.iter() {
+                from_tokens.extend_one(get_from_for_enum(
+                    &variant_name,
+                    &normalize_type_name(subenum),
+                ));
+            }
         }
 
         for subenum in self.subenums.iter() {
@@ -152,10 +150,20 @@ impl<'a> State<'a> {
             #from_tokens
         }
     }
+    pub fn get_structs(&self) -> TokenStream {
+        let mut struct_tokens = TokenStream::new();
+        for node in self.nodes.values() {
+            struct_tokens.extend_one(node.get_struct_tokens());
+        }
+        struct_tokens
+    }
 }
 #[cfg(test)]
 mod tests {
+    use assert_tokenstreams_eq::assert_tokenstreams_eq;
+
     use super::*;
+
     #[test_log::test]
     fn test_get_enum() {
         let node = codegen_sdk_common::parser::Node {
@@ -169,15 +177,19 @@ mod tests {
         let nodes = vec![node];
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
-        assert_eq!(
-            enum_tokens.to_string(),
-            quote! {
-                #[derive(Debug)]
+        assert_tokenstreams_eq!(
+            &enum_tokens,
+            &quote! {
+                #[derive(Debug, Clone)]
                 pub enum Types {
                     Test(Test)
                 }
+                impl std::convert::From<Test> for Types {
+                    fn from(variant: Test) -> Self {
+                        Self::Test(variant)
+                    }
+                }
             }
-            .to_string()
         );
     }
     #[test_log::test]
@@ -222,12 +234,11 @@ mod tests {
         let nodes = vec![child, child_two, node];
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
-        assert_eq!(
-            enum_tokens.to_string(),
-            quote! {
-                #[subenum(TestChildren)]
-                #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
-                #[repr(C, u8)]
+        assert_tokenstreams_eq!(
+            &enum_tokens,
+            &quote! {
+                #[subenum(TestChildren(derive(Archive, Deserialize, Serialize)))]
+                #[derive(Debug, Clone)]
                 pub enum Types {
                     #[subenum(TestChildren)]
                     Child(Child),
@@ -235,8 +246,33 @@ mod tests {
                     ChildTwo(ChildTwo),
                     Test(Test)
                 }
+                impl std::convert::From<Child> for Types {
+                    fn from(variant: Child) -> Self {
+                        Self::Child(variant)
+                    }
+                }
+                impl std::convert::From<Child> for TestChildren {
+                    fn from(variant: Child) -> Self {
+                        Self::Child(variant)
+                    }
+                }
+                impl std::convert::From<ChildTwo> for Types {
+                    fn from(variant: ChildTwo) -> Self {
+                        Self::ChildTwo(variant)
+                    }
+                }
+                impl std::convert::From<ChildTwo> for TestChildren {
+                    fn from(variant: ChildTwo) -> Self {
+                        Self::ChildTwo(variant)
+                    }
+                }
+                impl std::convert::From<Test> for Types {
+                    fn from(variant: Test) -> Self {
+                        Self::Test(variant)
+                    }
+                }
+
             }
-            .to_string()
         );
     }
     #[test_log::test]
@@ -284,20 +320,38 @@ mod tests {
         let nodes = vec![definition, class, function];
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
-        assert_eq!(
-            enum_tokens.to_string(),
-            quote! {
-                #[subenum(Definition)]
-                #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
-                #[repr(C, u8)]
+        assert_tokenstreams_eq!(
+            &enum_tokens,
+            &quote! {
+                #[subenum(Definition(derive(Archive, Deserialize, Serialize)))]
+                #[derive(Debug, Clone)]
                 pub enum Types {
                     #[subenum(Definition)]
                     Class(Class),
                     #[subenum(Definition)]
                     Function(Function)
                 }
+                impl std::convert::From<Class> for Types {
+                    fn from(variant: Class) -> Self {
+                        Self::Class(variant)
+                    }
+                }
+                impl std::convert::From<Class> for Definition {
+                    fn from(variant: Class) -> Self {
+                        Self::Class(variant)
+                    }
+                }
+                impl std::convert::From<Function> for Types {
+                    fn from(variant: Function) -> Self {
+                        Self::Function(variant)
+                    }
+                }
+                impl std::convert::From<Function> for Definition {
+                    fn from(variant: Function) -> Self {
+                        Self::Function(variant)
+                    }
+                }
             }
-            .to_string()
         );
     }
     #[test_log::test]
@@ -345,12 +399,11 @@ mod tests {
         let nodes = vec![node_a, node_b, node_c];
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
-        assert_eq!(
-            enum_tokens.to_string(),
-            quote! {
-                #[subenum(NodeCChildren, NodeCField)]
-                #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
-                #[repr(C, u8)]
+        assert_tokenstreams_eq!(
+            &enum_tokens,
+            &quote! {
+                #[subenum(NodeCChildren(derive(Archive, Deserialize, Serialize)), NodeCField(derive(Archive, Deserialize, Serialize)))]
+                #[derive(Debug, Clone)]
                 pub enum Types {
                     #[subenum(NodeCChildren, NodeCField)]
                     NodeA(NodeA),
@@ -358,8 +411,151 @@ mod tests {
                     NodeB(NodeB),
                     NodeC(NodeC)
                 }
+                impl std::convert::From<NodeA> for Types {
+                    fn from(variant: NodeA) -> Self {
+                        Self::NodeA(variant)
+                    }
+                }
+                impl std::convert::From<NodeA> for NodeCChildren {
+                    fn from(variant: NodeA) -> Self {
+                        Self::NodeA(variant)
+                    }
+                }
+                impl std::convert::From<NodeA> for NodeCField {
+                    fn from(variant: NodeA) -> Self {
+                        Self::NodeA(variant)
+                    }
+                }
+
+                impl std::convert::From<NodeB> for Types {
+                    fn from(variant: NodeB) -> Self {
+                        Self::NodeB(variant)
+                    }
+                }
+                impl std::convert::From<NodeB> for NodeCChildren {
+                    fn from(variant: NodeB) -> Self {
+                        Self::NodeB(variant)
+                    }
+                }
+                impl std::convert::From<NodeB> for NodeCField {
+                    fn from(variant: NodeB) -> Self {
+                        Self::NodeB(variant)
+                    }
+                }
+                impl std::convert::From<NodeC> for Types {
+                    fn from(variant: NodeC) -> Self {
+                        Self::NodeC(variant)
+                    }
+                }
             }
-            .to_string()
         );
+    }
+    #[test_log::test]
+    fn test_get_structs() {
+        let node = codegen_sdk_common::parser::Node {
+            type_name: "test".to_string(),
+            subtypes: vec![],
+            named: false,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let nodes = vec![node];
+        let state = State::from(&nodes);
+        let struct_tokens = state.get_structs();
+        let serialize_bounds = get_serialize_bounds();
+        assert_tokenstreams_eq!(
+            &struct_tokens,
+            &quote! {
+                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
+                #serialize_bounds
+                pub struct Test {
+                    start_byte: usize,
+                    end_byte: usize,
+                    _kind: std::string::String,
+                    #[debug("[{},{}]", start_position.row, start_position.column)]
+                    start_position: Point,
+                    #[debug("[{},{}]", end_position.row, end_position.column)]
+                    end_position: Point,
+                    #[debug(ignore)]
+                    buffer: Arc<Bytes>,
+                    #[debug(ignore)]
+                    kind_id: u16,
+                }
+                impl FromNode for Test {
+                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                        Ok(Self {
+                            start_byte: node.start_byte(),
+                            end_byte: node.end_byte(),
+                            _kind: node.kind().to_string(),
+                            start_position: node.start_position().into(),
+                            end_position: node.end_position().into(),
+                            buffer: buffer.clone(),
+                            kind_id: node.kind_id(),
+                        })
+                    }
+                }
+            }
+        );
+    }
+    #[test_log::test]
+    fn test_get_variants() {
+        let node_a = codegen_sdk_common::parser::Node {
+            type_name: "node_a".to_string(),
+            subtypes: vec![],
+            named: true,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let node_b = codegen_sdk_common::parser::Node {
+            type_name: "node_b".to_string(),
+            subtypes: vec![],
+            named: true,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let parent = codegen_sdk_common::parser::Node {
+            type_name: "parent".to_string(),
+            subtypes: vec![
+                TypeDefinition {
+                    type_name: "node_a".to_string(),
+                    named: true,
+                },
+                TypeDefinition {
+                    type_name: "node_b".to_string(),
+                    named: true,
+                },
+            ],
+            named: true,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let nodes = vec![node_a, node_b, parent];
+        let state = State::from(&nodes);
+
+        let variants = state.get_variants("parent");
+        assert_eq!(variants, vec!["NodeA", "NodeB"]);
+    }
+    #[test_log::test]
+    fn test_add_subenum() {
+        let node_a = codegen_sdk_common::parser::Node {
+            type_name: "node_a".to_string(),
+            subtypes: vec![],
+            named: true,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let nodes = vec![node_a];
+        let mut state = State::from(&nodes);
+
+        state.add_subenum("TestEnum", &vec!["node_a".to_string()]);
+        assert!(state.subenums.contains("TestEnum"));
+
+        let node = state.nodes.get("NodeA").unwrap();
+        assert!(node.subenums.contains(&"TestEnum".to_string()));
     }
 }

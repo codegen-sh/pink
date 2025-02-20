@@ -16,5 +16,6 @@ proc-macro2 = "1.0.93"
 tempfile = "3.8.1"
 
 [dev-dependencies]
+assert-tokenstreams-eq = "0.1.0"
 codegen-sdk-common = { path = "../codegen-sdk-common" , features = ["python"] }
 test-log = { workspace = true }

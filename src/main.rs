@@ -70,11 +70,6 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
             cached += 1;
         }
     }
-    log::info!(
-        "{} files cached. {}% of total",
-        cached,
-        cached * 100 / files_to_parse.len()
-    );
     let files: Vec<Box<dyn CSTNode + Send>> = files_to_parse
         .par_iter()
         .filter_map(|file| parse_file(&cache, file, &tx))
@@ -83,6 +78,11 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     for e in rx.iter() {
         errors.push(e);
     }
+    log::info!(
+        "{} files cached. {}% of total",
+        cached,
+        cached * 100 / files_to_parse.len()
+    );
     (files, errors)
 }
 fn main() {

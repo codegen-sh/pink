@@ -10,6 +10,7 @@ mod format;
 mod node;
 mod state;
 mod struct_generator;
+mod utils;
 use std::io::Write;
 
 use proc_macro2::TokenStream;
@@ -63,9 +64,11 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
     }
     let mut result = get_imports();
     let enums = state.get_enum();
+    let structs = state.get_structs();
     result.extend_one(state.enums);
     result.extend_one(state.structs);
     result.extend_one(enums);
+    result.extend_one(structs);
     let formatted = format::format_cst(&result.to_string());
     match formatted {
         Ok(formatted) => return Ok(formatted),
@@ -88,7 +91,6 @@ mod tests {
 
     use super::*;
     #[test_log::test]
-
     fn test_generate_cst() {
         let node_types = parse_node_types(&Python.node_types).unwrap();
         let cst = generate_cst(&node_types).unwrap();

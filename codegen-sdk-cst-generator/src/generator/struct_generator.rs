@@ -294,20 +294,6 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
                 }
             }
         }
-        impl FromNode for #name {
-            fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                Ok(Self {
-                    start_byte: node.start_byte(),
-                    end_byte: node.end_byte(),
-                    _kind: node.kind().to_string(),
-                    start_position: node.start_position().into(),
-                    end_position: node.end_position().into(),
-                    buffer: buffer.clone(),
-                    kind_id: node.kind_id(),
-                    #(#constructor_fields),*
-                })
-            }
-        }
     };
     state.structs.extend_one(implementation);
 }
