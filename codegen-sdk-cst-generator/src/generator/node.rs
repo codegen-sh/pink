@@ -28,6 +28,9 @@ impl<'a> From<&'a codegen_sdk_common::parser::Node> for Node<'a> {
     }
 }
 impl<'a> Node<'a> {
+    pub fn kind(&self) -> &str {
+        &self.raw.type_name
+    }
     pub fn normalize_name(&self) -> String {
         normalize_type_name(&self.raw.type_name)
     }
@@ -62,12 +65,14 @@ impl<'a> Node<'a> {
         for field in &self.fields {
             children_names.extend(field.types());
         }
+        children_names.sort();
+        children_names.dedup();
         children_names
     }
     pub fn children_struct_name(&self) -> String {
         let children_names = self.get_children_names();
         match children_names.len() {
-            0 => "()".to_string(),
+            0 => "Self".to_string(),
             1 => normalize_type_name(&children_names[0]),
             _ => format!("{}Children", self.normalize_name()),
         }
@@ -86,6 +91,7 @@ impl<'a> Node<'a> {
             quote! {}
         }
     }
+
     pub fn get_struct_tokens(&self) -> TokenStream {
         let constructor = self.get_constructor();
         let struct_fields = self
@@ -96,25 +102,28 @@ impl<'a> Node<'a> {
         let children_field = self.get_children_field();
         let name = format_ident!("{}", self.normalize_name());
         let serialize_bounds = get_serialize_bounds();
+        let trait_impls = self.get_trait_implementations();
+
         quote! {
-        #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-        #serialize_bounds
-        pub struct #name {
-            start_byte: usize,
-            end_byte: usize,
-            _kind: std::string::String,
-            #[debug("[{},{}]", start_position.row, start_position.column)]
-            start_position: Point,
-            #[debug("[{},{}]", end_position.row, end_position.column)]
-            end_position: Point,
-            #[debug(ignore)]
-            buffer: Arc<Bytes>,
-            #[debug(ignore)]
-            kind_id: u16,
-            #children_field
-            #(#struct_fields),*
-        }
-        #constructor
+            #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
+            #serialize_bounds
+            pub struct #name {
+                start_byte: usize,
+                end_byte: usize,
+                _kind: std::string::String,
+                #[debug("[{},{}]", start_position.row, start_position.column)]
+                start_position: Point,
+                #[debug("[{},{}]", end_position.row, end_position.column)]
+                end_position: Point,
+                #[debug(ignore)]
+                buffer: Arc<Bytes>,
+                #[debug(ignore)]
+                kind_id: u16,
+                #children_field
+                #(#struct_fields),*
+            }
+            #constructor
+            #trait_impls
         }
     }
     fn get_children_constructor(&self) -> TokenStream {
@@ -147,6 +156,104 @@ impl<'a> Node<'a> {
                         kind_id: node.kind_id(),
                         #(#constructor_fields),*
                     })
+                }
+            }
+        }
+    }
+    fn get_children_impl(&self) -> TokenStream {
+        let name = format_ident!("{}", self.normalize_name());
+        let children_type_name = format_ident!("{}", self.children_struct_name());
+        let children_field = self.get_children_field_impl();
+        let children_by_field_name = self.get_children_by_field_name_impl();
+        quote! {
+            impl HasChildren for #name {
+                type Child = #children_type_name;
+                #children_field
+                #children_by_field_name
+            }
+        }
+    }
+    pub fn get_trait_implementations(&self) -> TokenStream {
+        let name = format_ident!("{}", self.normalize_name());
+        let children_impl = self.get_children_impl();
+
+        quote! {
+            impl CSTNode for #name {
+                fn kind(&self) -> &str {
+                    &self._kind
+                }
+                fn start_byte(&self) -> usize {
+                    self.start_byte
+                }
+                fn end_byte(&self) -> usize {
+                    self.end_byte
+                }
+                fn start_position(&self) -> Point {
+                    self.start_position
+                }
+                fn end_position(&self) -> Point {
+                    self.end_position
+                }
+                fn buffer(&self) -> &Bytes {
+                    &self.buffer
+                }
+                fn kind_id(&self) -> u16 {
+                    self.kind_id
+                }
+            }
+            #children_impl
+        }
+    }
+    fn get_children_field_impl(&self) -> TokenStream {
+        let mut children_fields = Vec::new();
+        let num_children = self.get_children_names().len();
+        if num_children == 0 {
+            return quote! {
+                fn children(&self) -> Vec<Self::Child> {
+                    vec![]
+                }
+            };
+        }
+        let convert_children = num_children > 1;
+        for field in &self.fields {
+            children_fields.push(field.get_children_field(convert_children));
+        }
+
+        let m = if children_fields.is_empty() {
+            quote! {}
+        } else {
+            quote! {mut}
+        };
+        let children_init = if self.has_children() {
+            quote! {
+                self.children.iter().cloned().collect()
+            }
+        } else {
+            quote! {
+                vec![]
+            }
+        };
+        quote! {
+            fn children(&self) -> Vec<Self::Child> {
+                let #m children: Vec<_> = #children_init;
+                #(#children_fields;)*
+                children
+            }
+        }
+    }
+    fn get_children_by_field_name_impl(&self) -> TokenStream {
+        let convert_children = self.get_children_names().len() > 1;
+        let field_matches = self
+            .fields
+            .iter()
+            .map(|f| f.get_children_by_field_name_field(convert_children))
+            .collect::<Vec<_>>();
+
+        quote! {
+            fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+                match field_name {
+                    #(#field_matches,)*
+                    _ => vec![],
                 }
             }
         }
@@ -269,6 +376,40 @@ mod tests {
                         })
                     }
                 }
+                impl CSTNode for TestNode {
+                    fn kind(&self) -> &str {
+                        &self._kind
+                    }
+                    fn start_byte(&self) -> usize {
+                        self.start_byte
+                    }
+                    fn end_byte(&self) -> usize {
+                        self.end_byte
+                    }
+                    fn start_position(&self) -> Point {
+                        self.start_position
+                    }
+                    fn end_position(&self) -> Point {
+                        self.end_position
+                    }
+                    fn buffer(&self) -> &Bytes {
+                        &self.buffer
+                    }
+                    fn kind_id(&self) -> u16 {
+                        self.kind_id
+                    }
+                }
+                impl HasChildren for TestNode {
+                    type Child = Self;
+                    fn children(&self) -> Vec<Self::Child> {
+                        vec![]
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+                        match field_name {
+                            _ => vec![],
+                        }
+                    }
+                }
             }
         );
     }
@@ -308,7 +449,7 @@ mod tests {
                     buffer: Arc<Bytes>,
                     #[debug(ignore)]
                     kind_id: u16,
-                    pub TestField: TestType
+                    pub test_field: TestType
                 }
 
                 impl FromNode for TestNode {
@@ -321,8 +462,20 @@ mod tests {
                             end_position: node.end_position().into(),
                             buffer: buffer.clone(),
                             kind_id: node.kind_id(),
-                            TestField: get_child_by_field_name(&node, "test_field", buffer)?,
+                            test_field: get_child_by_field_name(&node, "test_field", buffer)?,
                         })
+                    }
+                }
+                impl HasChildren for TestNode {
+                    type Child = TestType;
+                    fn children(&self) -> Vec<&Self::Child> {
+                        vec![&self.test_field]
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                        match field_name {
+                            "test_field" => vec![&self.test_field],
+                            _ => vec![],
+                        }
                     }
                 }
             }
@@ -388,9 +541,9 @@ mod tests {
                     buffer: Arc<Bytes>,
                     #[debug(ignore)]
                     kind_id: u16,
-                    pub MultipleField: Vec<TestType>,
-                    pub OptionalField: Option<TestType>,
-                    pub RequiredField: TestType,
+                    pub multiple_field: Vec<TestType>,
+                    pub optional_field: Option<TestType>,
+                    pub required_field: TestType,
                 }
 
                 impl FromNode for TestNode {
@@ -403,10 +556,53 @@ mod tests {
                             end_position: node.end_position().into(),
                             buffer: buffer.clone(),
                             kind_id: node.kind_id(),
-                            MultipleField: get_multiple_children_by_field_name(&node, "multiple_field", buffer)?,
-                            OptionalField: get_optional_child_by_field_name(&node, "optional_field", buffer)?,
-                            RequiredField: get_child_by_field_name(&node, "required_field", buffer)?,
+                            multiple_field: get_multiple_children_by_field_name(&node, "multiple_field", buffer)?,
+                            optional_field: get_optional_child_by_field_name(&node, "optional_field", buffer)?,
+                            required_field: get_child_by_field_name(&node, "required_field", buffer)?,
                         })
+                    }
+                }
+                impl CSTNode for TestNode {
+                    fn kind(&self) -> &str {
+                        &self._kind
+                    }
+                    fn start_byte(&self) -> usize {
+                        self.start_byte
+                    }
+                    fn end_byte(&self) -> usize {
+                        self.end_byte
+                    }
+                    fn start_position(&self) -> Point {
+                        self.start_position
+                    }
+                    fn end_position(&self) -> Point {
+                        self.end_position
+                    }
+                    fn buffer(&self) -> &Bytes {
+                        &self.buffer
+                    }
+                    fn kind_id(&self) -> u16 {
+                        self.kind_id
+                    }
+                }   
+                impl HasChildren for TestNode {
+                    type Child = TestType;
+                    fn children(&self) -> Vec<&Self::Child> {
+                        let mut children: Vec<_> = vec![];
+                        children.extend(self.multiple_field.iter());
+                        if let Some(optional_field) = &self.optional_field {
+                            children.push(optional_field);
+                        }
+                        children.push(&(*self.multiple_field));
+                        children
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                        match field_name {
+                            "multiple_field" => vec![&self.multiple_field],
+                            "optional_field" => vec![&self.optional_field],
+                            "required_field" => vec![&self.required_field],
+                            _ => vec![],
+                        }
                     }
                 }
             }
@@ -455,6 +651,41 @@ mod tests {
                         })
                     }
                 }
+                impl CSTNode for TestNode {
+                    fn kind(&self) -> &str {
+                        &self._kind
+                    }
+                    fn start_byte(&self) -> usize {
+                        self.start_byte
+                    }
+                    fn end_byte(&self) -> usize {
+                        self.end_byte
+                    }
+                    fn start_position(&self) -> Point {
+                        self.start_position
+                    }
+                    fn end_position(&self) -> Point {
+                        self.end_position
+                    }
+                    fn buffer(&self) -> &Bytes {
+                        &self.buffer
+                    }
+                    fn kind_id(&self) -> u16 {
+                        self.kind_id
+                    }
+                }
+                impl HasChildren for TestNode {
+                    type Child = TestNodeChildren;
+                    fn children(&self) -> Vec<&Self::Child> {
+                        let children: Vec<_> = self.children.iter().collect();
+                        children
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                        match field_name {
+                            _ => vec![],
+                        }
+                    }
+                }
             }
         );
     }
@@ -498,6 +729,155 @@ mod tests {
                             kind_id: node.kind_id(),
                             children: named_children_without_field_names(node, buffer)?,
                         })
+                    }
+                }
+                impl CSTNode for TestNode {
+                    fn kind(&self) -> &str {
+                        &self._kind
+                    }
+                    fn start_byte(&self) -> usize {
+                        self.start_byte
+                    }
+                    fn end_byte(&self) -> usize {
+                        self.end_byte
+                    }
+                    fn start_position(&self) -> Point {
+                        self.start_position
+                    }
+                    fn end_position(&self) -> Point {
+                        self.end_position
+                    }
+                    fn buffer(&self) -> &Bytes {
+                        &self.buffer
+                    }
+                    fn kind_id(&self) -> u16 {
+                        self.kind_id
+                    }
+                }
+                impl HasChildren for TestNode {
+                    type Child = ChildType;
+                    fn children(&self) -> Vec<&Self::Child> {
+                        let children: Vec<_> = self.children.iter().collect();
+                        children
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                        match field_name {
+                            _ => vec![],
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    #[test]
+    fn test_get_trait_implementations() {
+        let raw_node = create_test_node("test_node");
+        let node = Node::from(&raw_node);
+        let tokens = node.get_trait_implementations();
+
+        assert_tokenstreams_eq!(
+            &tokens,
+            &quote! {
+                impl CSTNode for TestNode {
+                    fn kind(&self) -> &str {
+                        &self._kind
+                    }
+                    fn start_byte(&self) -> usize {
+                        self.start_byte
+                    }
+                    fn end_byte(&self) -> usize {
+                        self.end_byte
+                    }
+                    fn start_position(&self) -> Point {
+                        self.start_position
+                    }
+                    fn end_position(&self) -> Point {
+                        self.end_position
+                    }
+                    fn buffer(&self) -> &Bytes {
+                        &self.buffer
+                    }
+                    fn kind_id(&self) -> u16 {
+                        self.kind_id
+                    }
+                }
+                impl HasChildren for TestNode {
+                    type Child = Self;
+                    fn children(&self) -> Vec<&Self::Child> {
+                        vec![]
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                        match field_name {
+                            _ => vec![],
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    #[test]
+    fn test_get_children_field_impl() {
+        let raw_node = create_test_node_with_fields(
+            "test_node",
+            vec![(
+                "test_field",
+                FieldDefinition {
+                    types: vec![TypeDefinition {
+                        type_name: "test_type".to_string(),
+                        named: true,
+                    }],
+                    multiple: false,
+                    required: true,
+                },
+            )],
+        );
+        let node = Node::from(&raw_node);
+
+        assert_tokenstreams_eq!(
+            &node.get_children_field_impl(),
+            &quote! {
+                fn children(&self) -> Vec<&Self::Child> {
+                    let mut children: Vec<_> = vec![];
+                    children.push(&(*self.test_field));
+                    children
+                }
+            }
+        );
+    }
+
+    #[test]
+    fn test_get_children_by_field_name_impl() {
+        let raw_node = create_test_node_with_fields(
+            "test_node",
+            vec![(
+                "test_field",
+                FieldDefinition {
+                    types: vec![
+                        TypeDefinition {
+                            type_name: "test_type".to_string(),
+                            named: true,
+                        },
+                        TypeDefinition {
+                            type_name: "test_type_2".to_string(),
+                            named: true,
+                        },
+                    ],
+                    multiple: false,
+                    required: true,
+                },
+            )],
+        );
+        let node = Node::from(&raw_node);
+
+        assert_tokenstreams_eq!(
+            &node.get_children_by_field_name_impl(),
+            &quote! {
+                fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                    match field_name {
+                        "test_field" => vec![&Self::Child::try_from(Types::from((*self.test_field).clone())).unwrap()],
+                        _ => vec![],
                     }
                 }
             }

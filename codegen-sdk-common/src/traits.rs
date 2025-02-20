@@ -22,7 +22,7 @@ pub trait CSTNode: Send + Debug {
     fn kind_id(&self) -> u16;
     fn kind(&self) -> &str;
 }
-pub trait HasNode: Send + Debug {
+pub trait HasNode: Send + Debug + Clone {
     type Node: CSTNode + HasChildren;
     fn node(&self) -> &Self::Node;
 }
@@ -51,23 +51,23 @@ impl<T: HasNode> CSTNode for T {
 }
 impl<T: HasNode> HasChildren for T {
     type Child = <T::Node as HasChildren>::Child;
-    fn child_by_field_name(&self, field_name: &str) -> Option<&Self::Child> {
+    fn child_by_field_name(&self, field_name: &str) -> Option<Self::Child> {
         self.node().child_by_field_name(field_name)
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
         self.node().children_by_field_name(field_name)
     }
-    fn children(&self) -> Vec<&Self::Child> {
+    fn children(&self) -> Vec<Self::Child> {
         self.node().children()
     }
 }
 pub trait HasChildren {
-    type Child: Send;
-    fn child_by_field_name(&self, field_name: &str) -> Option<&Self::Child> {
+    type Child: Send + Debug + Clone;
+    fn child_by_field_name(&self, field_name: &str) -> Option<Self::Child> {
         self.children_by_field_name(field_name)
             .first()
-            .map(|child| *child)
+            .map(|child| child.clone())
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child>;
-    fn children(&self) -> Vec<&Self::Child>;
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child>;
+    fn children(&self) -> Vec<Self::Child>;
 }

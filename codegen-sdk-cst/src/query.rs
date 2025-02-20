@@ -6,38 +6,38 @@ use derive_more::Debug;
 use crate::{CSTLanguage, ts_query};
 fn captures_for_field_definition(
     node: &ts_query::FieldDefinition,
-) -> impl Iterator<Item = &ts_query::Capture> {
+) -> impl Iterator<Item = ts_query::Capture> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
             ts_query::FieldDefinitionChildren::NamedNode(named) => {
-                captures.extend(captures_for_named_node(named));
+                captures.extend(captures_for_named_node(&named));
             }
             ts_query::FieldDefinitionChildren::FieldDefinition(field) => {
-                captures.extend(captures_for_field_definition(field));
+                captures.extend(captures_for_field_definition(&field));
             }
             _ => {}
         }
     }
     captures.into_iter()
 }
-fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = &ts_query::Capture> {
+fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = ts_query::Capture> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
             ts_query::NamedNodeChildren::Capture(capture) => captures.push(capture),
             ts_query::NamedNodeChildren::NamedNode(named) => {
-                captures.extend(captures_for_named_node(named));
+                captures.extend(captures_for_named_node(&named));
             }
             ts_query::NamedNodeChildren::FieldDefinition(field) => {
-                captures.extend(captures_for_field_definition(field));
+                captures.extend(captures_for_field_definition(&field));
             }
             _ => {}
         }
     }
     captures.into_iter()
 }
-fn captures_for_node(node: &ts_query::Definition) -> impl Iterator<Item = &ts_query::Capture> {
+fn captures_for_node(node: &ts_query::Definition) -> impl Iterator<Item = ts_query::Capture> {
     let mut captures = Vec::new();
     match node {
         ts_query::Definition::NamedNode(named) => captures.extend(captures_for_named_node(named)),
@@ -60,7 +60,7 @@ impl Query {
         for node in parsed.children() {
             match node {
                 ts_query::Definition::NamedNode(named) => {
-                    let query = Self::from_named_node(named);
+                    let query = Self::from_named_node(&named);
                     queries.insert(query.name(), query);
                 }
                 node => {
@@ -90,7 +90,7 @@ impl Query {
     }
     /// Get the kind of the query (the node to be matched)
     pub fn kind(&self) -> String {
-        if let ts_query::Types::Identifier(identifier) = &(*self.node.name) {
+        if let ts_query::NamedNodeName::Identifier(identifier) = &(*self.node.name) {
             return identifier.source();
         }
         panic!("No kind found for query. {:#?}", self.node);
@@ -99,7 +99,7 @@ impl Query {
         normalize_type_name(&self.kind())
     }
 
-    fn captures(&self) -> Vec<&ts_query::Capture> {
+    fn captures(&self) -> Vec<ts_query::Capture> {
         captures_for_named_node(&self.node).collect()
     }
     /// Get the name of the query (IE @reference.class)

@@ -4,6 +4,7 @@ use codegen_sdk_common::{naming::normalize_type_name, parser::Node};
 use enum_generator::generate_enum;
 use state::State;
 use struct_generator::generate_struct;
+mod constants;
 mod enum_generator;
 mod field;
 mod format;
@@ -25,7 +26,7 @@ fn get_imports() -> TokenStream {
     use subenum::subenum;
     use std::backtrace::Backtrace;
     use bytes::Bytes;
-    use rkyv::{Archive, Deserialize, Serialize, Portable};
+    use rkyv::{Archive, Deserialize, Serialize};
 
         }
 }
@@ -65,8 +66,8 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
     let mut result = get_imports();
     let enums = state.get_enum();
     let structs = state.get_structs();
-    result.extend_one(state.enums);
-    result.extend_one(state.structs);
+    // result.extend_one(state.enums);
+    // result.extend_one(state.structs);
     result.extend_one(enums);
     result.extend_one(structs);
     let formatted = format::format_cst(&result.to_string());

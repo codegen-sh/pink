@@ -1,19 +1,16 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use codegen_sdk_common::parser::TypeDefinition;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use super::node::Node;
-use crate::generator::{
-    normalize_type_name,
-    utils::{get_from_for_enum, get_serialize_bounds},
-};
+use super::{node::Node, utils::get_from_node};
+use crate::generator::{constants::TYPE_NAME, normalize_type_name, utils::get_from_for_enum};
 #[derive(Default, Debug)]
 pub struct State<'a> {
     pub enums: TokenStream,
     pub structs: TokenStream,
-    pub subenums: HashSet<String>,
+    pub subenums: BTreeSet<String>,
     nodes: BTreeMap<String, Node<'a>>,
     pub variants: HashMap<String, Vec<TypeDefinition>>,
     pub anonymous_nodes: HashMap<String, String>,
@@ -21,7 +18,7 @@ pub struct State<'a> {
 impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
     fn from(raw_nodes: &'a Vec<codegen_sdk_common::parser::Node>) -> Self {
         let mut nodes = BTreeMap::new();
-        let mut subenums = HashSet::new();
+        let mut subenums = BTreeSet::new();
         for raw_node in raw_nodes {
             if raw_node.subtypes.is_empty() {
                 let node = Node::from(raw_node);
@@ -111,7 +108,25 @@ impl<'a> State<'a> {
         }
         variants
     }
-
+    fn get_variant_map(&self, enum_name: &str) -> BTreeMap<String, TokenStream> {
+        let mut variant_map = BTreeMap::new();
+        for node in self.nodes.values() {
+            let variant_name = format_ident!("{}", node.normalize_name());
+            if node.subenums.contains(&enum_name.to_string()) {
+                variant_map.insert(
+                    node.kind().to_string(),
+                    quote! {
+                        Ok(Self::#variant_name(#variant_name::from_node(node, buffer)?))
+                    },
+                );
+            }
+        }
+        variant_map
+    }
+    fn get_from_node(&self, enum_name: &str) -> TokenStream {
+        let variant_map = self.get_variant_map(enum_name);
+        get_from_node(enum_name, &variant_map)
+    }
     // Get the overarching enum for the nodes
     pub fn get_enum(&self) -> TokenStream {
         let mut enum_tokens = Vec::new();
@@ -120,7 +135,7 @@ impl<'a> State<'a> {
         for node in self.nodes.values() {
             enum_tokens.push(node.get_enum_tokens());
             let variant_name = node.normalize_name();
-            from_tokens.extend_one(get_from_for_enum(&variant_name, "Types"));
+            from_tokens.extend_one(get_from_for_enum(&variant_name, TYPE_NAME));
             for subenum in node.subenums.iter() {
                 from_tokens.extend_one(get_from_for_enum(
                     &variant_name,
@@ -128,7 +143,9 @@ impl<'a> State<'a> {
                 ));
             }
         }
-
+        for subenum in self.subenums.iter() {
+            from_tokens.extend_one(self.get_from_node(subenum));
+        }
         for subenum in self.subenums.iter() {
             subenums.push(format_ident!("{}", normalize_type_name(&subenum)));
         }
@@ -163,6 +180,7 @@ mod tests {
     use assert_tokenstreams_eq::assert_tokenstreams_eq;
 
     use super::*;
+    use crate::generator::utils::get_serialize_bounds;
 
     #[test_log::test]
     fn test_get_enum() {
@@ -271,7 +289,17 @@ mod tests {
                         Self::Test(variant)
                     }
                 }
-
+                impl FromNode for TestChildren {
+                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                        match node.kind() {
+                            "child" => Ok(Self::Child(node.from_node(node, buffer)?)),
+                            "child_two" => Ok(Self::ChildTwo(node.from_node(node, buffer)?)),
+                            _ => Err(ParseError::UnexpectedNode {
+                                node_type: node.kind().to_string(),
+                                backtrace: Backtrace::capture(),
+                            }),                        }
+                    }
+                }
             }
         );
     }
@@ -349,6 +377,17 @@ mod tests {
                 impl std::convert::From<Function> for Definition {
                     fn from(variant: Function) -> Self {
                         Self::Function(variant)
+                    }
+                }
+                impl FromNode for Definition {
+                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                        match node.kind() {
+                            "class" => Ok(Self::Class(node.from_node(node)?)),
+                            "function" => Ok(Self::Function(node.from_node(node)?)),
+                            _ => Err(ParseError::UnexpectedNode {
+                                node_type: node.kind().to_string(),
+                                backtrace: Backtrace::capture(),
+                            }),                        }
                     }
                 }
             }
@@ -447,6 +486,29 @@ mod tests {
                         Self::NodeC(variant)
                     }
                 }
+                impl FromNode for NodeCChildren {
+                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                        match node.kind() {
+                            "node_a" => Ok(Self::NodeA(NodeA::from_node(node, buffer)?)),
+                            "node_b" => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
+                            _ => Err(ParseError::UnexpectedNode {
+                                node_type: node.kind().to_string(),
+                                backtrace: Backtrace::capture(),
+                            }),                        }
+                    }
+                }
+                impl FromNode for NodeCField {
+                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                        match node.kind() {
+                            "node_a" => Ok(Self::NodeA(NodeA::from_node(node, buffer)?)),
+                            "node_b" => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
+                            _ => Err(ParseError::UnexpectedNode {
+                                node_type: node.kind().to_string(),
+                                backtrace: Backtrace::capture(),
+                            }),                        }
+                    }
+                }
+                
             }
         );
     }
@@ -495,6 +557,41 @@ mod tests {
                         })
                     }
                 }
+                impl CSTNode for Test {
+                    fn kind(&self) -> &str {
+                        &self._kind
+                    }
+                    fn start_byte(&self) -> usize {
+                        self.start_byte
+                    }
+                    fn end_byte(&self) -> usize {
+                        self.end_byte
+                    }
+                    fn start_position(&self) -> Point {
+                        self.start_position
+                    }
+                    fn end_position(&self) -> Point {
+                        self.end_position
+                    }
+                    fn buffer(&self) -> &Bytes {
+                        &self.buffer
+                    }
+                    fn kind_id(&self) -> u16 {
+                        self.kind_id
+                    }
+                }
+                impl HasChildren for Test {
+                    type Child = Self;
+                    fn children(&self) -> Vec<&Self::Child> {
+                        vec![]
+                    }
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                        match field_name {
+                            _ => vec![],
+                        }
+                    }
+                }
+                     
             }
         );
     }
