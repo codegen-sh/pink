@@ -5,6 +5,7 @@ use enum_generator::generate_enum;
 use state::State;
 use struct_generator::generate_struct;
 mod enum_generator;
+mod field;
 mod format;
 mod node;
 mod state;
@@ -20,6 +21,7 @@ fn get_imports() -> TokenStream {
     use tree_sitter;
     use derive_more::Debug;
     use codegen_sdk_common::*;
+    use subenum::subenum;
     use std::backtrace::Backtrace;
     use bytes::Bytes;
     use rkyv::{Archive, Deserialize, Serialize, Portable};
@@ -86,7 +88,8 @@ mod tests {
     use codegen_sdk_common::{language::python::Python, parser::parse_node_types};
 
     use super::*;
-    #[test]
+    #[test_log::test]
+
     fn test_generate_cst() {
         let node_types = parse_node_types(&Python.node_types).unwrap();
         let cst = generate_cst(&node_types).unwrap();

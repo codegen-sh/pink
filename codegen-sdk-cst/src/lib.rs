@@ -56,7 +56,7 @@ mod tests {
     use codegen_sdk_common::traits::HasChildren;
 
     use super::*;
-    #[test]
+    #[test_log::test]
     fn test_snazzy_items() {
         let content = "
         class SnazzyItems {

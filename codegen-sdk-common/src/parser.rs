@@ -52,7 +52,7 @@ pub fn parse_node_types(node_types: &str) -> anyhow::Result<Vec<Node>> {
 mod tests {
     use super::*;
     use crate::language::python::Python;
-    #[test]
+    #[test_log::test]
     fn test_parse_node_types() {
         let cst = parse_node_types(Python.node_types).unwrap();
         assert!(!cst.is_empty());

@@ -14,7 +14,7 @@ anyhow = { workspace = true }
 quote = "1.0.38"
 proc-macro2 = "1.0.93"
 tempfile = "3.8.1"
-subenum = "1.1.2"
+
 [dev-dependencies]
 codegen-sdk-common = { path = "../codegen-sdk-common" , features = ["python"] }
-env_logger = {workspace = true}
+test-log = { workspace = true }

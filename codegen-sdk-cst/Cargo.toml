@@ -11,6 +11,7 @@ codegen-sdk-macros = { path = "../codegen-sdk-macros" }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
 convert_case = { workspace = true }
 rkyv = { workspace = true }
+subenum = "1.1.2"
 log = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
