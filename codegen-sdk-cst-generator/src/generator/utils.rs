@@ -29,8 +29,8 @@ pub fn get_serialize_bounds() -> TokenStream {
        ))]
     }
 }
-pub fn get_from_node(node: &str, variant_map: &BTreeMap<String, TokenStream>) -> TokenStream {
-    let node = format_ident!("{}", normalize_type_name(node));
+pub fn get_from_node(node: &str, named: bool, variant_map: &BTreeMap<String, TokenStream>) -> TokenStream {
+    let node = format_ident!("{}", normalize_type_name(node, named));
     let mut keys = Vec::new();
     let mut values = Vec::new();
     for (key, value) in variant_map.iter() {

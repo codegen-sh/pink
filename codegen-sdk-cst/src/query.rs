@@ -96,7 +96,7 @@ impl Query {
         panic!("No kind found for query. {:#?}", self.node);
     }
     pub fn struct_name(&self) -> String {
-        normalize_type_name(&self.kind())
+        normalize_type_name(&self.kind(), true)
     }
 
     fn captures(&self) -> Vec<ts_query::Capture> {

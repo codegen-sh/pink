@@ -1,6 +1,6 @@
 use codegen_sdk_common::{
     naming::{normalize_field_name, normalize_type_name},
-    parser::FieldDefinition,
+    parser::{FieldDefinition, TypeDefinition},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -25,15 +25,15 @@ impl<'a> Field<'a> {
         normalize_field_name(&self.name)
     }
     pub fn normalized_name(&self) -> String {
-        normalize_type_name(&self.name)
+        normalize_type_name(&self.name, true)
     }
-    pub fn types(&self) -> Vec<String> {
-        self.raw.types.iter().map(|t| t.type_name.clone()).collect()
+    pub fn types(&self) -> Vec<&TypeDefinition> {
+        self.raw.types.iter().collect()
     }
     pub fn type_name(&self) -> String {
         let types = self.types();
         if types.len() == 1 {
-            normalize_type_name(&types[0])
+            normalize_type_name(&types[0].type_name, types[0].named)
         } else {
             format!("{}{}", self.node_name, self.normalized_name())
         }

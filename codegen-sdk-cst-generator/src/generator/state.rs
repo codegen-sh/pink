@@ -40,7 +40,6 @@ impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
                     &raw_node
                         .subtypes
                         .iter()
-                        .map(|t| t.type_name.clone())
                         .collect(),
                 );
             }
@@ -56,54 +55,58 @@ impl<'a> State<'a> {
     fn add_child_subenums(&mut self) {
         let keys = self.nodes.keys().cloned().collect::<Vec<_>>();
         for name in keys.into_iter() {
-            let normalized_name = normalize_type_name(&name);
+            let normalized_name = normalize_type_name(&name, true);
             let node = self.nodes.get(&normalized_name).unwrap();
-            let mut children_types = node.get_children_names();
+            let mut children_types = node.get_children_names().into_iter().cloned().collect::<Vec<_>>();
             if children_types.len() > 1 {
                 children_types.sort();
                 children_types.dedup();
-                self.add_subenum(&node.children_struct_name(), &children_types);
+                self.add_subenum(&node.children_struct_name(), &children_types.iter().collect());
             }
         }
     }
     fn add_field_subenums(&mut self) {
-        let mut to_add = Vec::new();
+        let mut to_add: Vec<(String, Vec<TypeDefinition>)> = Vec::new();
         for node in self.nodes.values() {
             for field in &node.fields {
                 log::debug!("Adding field subenum: {}", field.normalized_name());
                 if field.types().len() > 1 {
-                    to_add.push((field.type_name(), field.types()));
+                    to_add.push((field.type_name(), field.types().into_iter().cloned().collect()));
                 }
             }
         }
-        for (name, types) in to_add {
-            self.add_subenum(&name, &types);
+        for (name, types) in to_add.into_iter() {
+            self.add_subenum(&name, &types.iter().collect());
         }
     }
-    fn add_subenum(&mut self, name: &str, nodes: &Vec<String>) {
+    fn add_subenum(&mut self, name: &str, nodes: &Vec<&TypeDefinition>) {
         self.subenums.insert(name.to_string());
         let mut nodes = nodes.clone();
-        if self.nodes.contains_key("comment") {
-            nodes.push("comment".to_string());
+        let comment = TypeDefinition {
+            type_name: "comment".to_string(),
+            named: true,
+        };
+        if self.nodes.contains_key(&comment.type_name) {
+            nodes.push(&comment);
         }
         for node in nodes {
-            let normalized_name = normalize_type_name(&node);
-            if !self.subenums.contains(&node) {
+            let normalized_name = normalize_type_name(&node.type_name, node.named);
+            if !self.subenums.contains(&node.type_name) {
                 log::debug!("Adding subenum: {} to {}", name, normalized_name);
                 if let Some(node) = self.nodes.get_mut(&normalized_name) {
                     node.add_subenum(name.to_string());
                 }
             } else {
-                let variants = self.get_variants(&node);
-                self.add_subenum(name, &variants);
+                let variants = self.get_variants(&node.type_name);
+                self.add_subenum(name, &variants.iter().collect());
             }
         }
     }
-    fn get_variants(&self, subenum: &str) -> Vec<String> {
+    fn get_variants(&self, subenum: &str) -> Vec<TypeDefinition> {
         let mut variants = Vec::new();
         for node in self.nodes.values() {
             if node.subenums.contains(&subenum.to_string()) {
-                variants.push(node.normalize_name());
+                variants.push(node.type_definition());
             }
         }
         variants
@@ -123,9 +126,10 @@ impl<'a> State<'a> {
         }
         variant_map
     }
+    // Implement the TSNode => CSTNode conversion trait on a given subenum
     fn get_from_node(&self, enum_name: &str) -> TokenStream {
         let variant_map = self.get_variant_map(enum_name);
-        get_from_node(enum_name, &variant_map)
+        get_from_node(enum_name, true, &variant_map)
     }
     // Get the overarching enum for the nodes
     pub fn get_enum(&self) -> TokenStream {
@@ -139,15 +143,14 @@ impl<'a> State<'a> {
             for subenum in node.subenums.iter() {
                 from_tokens.extend_one(get_from_for_enum(
                     &variant_name,
-                    &normalize_type_name(subenum),
+                    &normalize_type_name(subenum, true),
                 ));
             }
         }
         for subenum in self.subenums.iter() {
+            assert!(self.get_variants(subenum).len() > 0, "Subenum {} has no variants", subenum);
             from_tokens.extend_one(self.get_from_node(subenum));
-        }
-        for subenum in self.subenums.iter() {
-            subenums.push(format_ident!("{}", normalize_type_name(&subenum)));
+            subenums.push(format_ident!("{}", normalize_type_name(&subenum, true)));
         }
         let subenum_tokens = if !subenums.is_empty() {
             subenums.sort();

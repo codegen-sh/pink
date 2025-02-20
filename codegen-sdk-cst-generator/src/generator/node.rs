@@ -1,4 +1,4 @@
-use codegen_sdk_common::naming::normalize_type_name;
+use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -13,7 +13,7 @@ pub struct Node<'a> {
 impl<'a> From<&'a codegen_sdk_common::parser::Node> for Node<'a> {
     fn from(raw: &'a codegen_sdk_common::parser::Node) -> Self {
         let mut fields = Vec::new();
-        let normalized_name = normalize_type_name(&raw.type_name);
+        let normalized_name = normalize_type_name(&raw.type_name, raw.named);
         if let Some(raw_fields) = &raw.fields {
             for (name, field) in raw_fields.fields.iter() {
                 fields.push(Field::new(&normalized_name, name, field));
@@ -32,7 +32,13 @@ impl<'a> Node<'a> {
         &self.raw.type_name
     }
     pub fn normalize_name(&self) -> String {
-        normalize_type_name(&self.raw.type_name)
+        normalize_type_name(&self.raw.type_name, self.raw.named)
+    }
+    pub fn type_definition(&self) -> TypeDefinition {
+        TypeDefinition {
+            type_name: self.raw.type_name.clone(),
+            named: self.raw.named,
+        }
     }
     pub fn add_subenum(&mut self, subenum: String) {
         if !self.subenums.contains(&subenum) {
@@ -44,7 +50,7 @@ impl<'a> Node<'a> {
         let subenum_names = &self
             .subenums
             .iter()
-            .map(|s| format_ident!("{}", normalize_type_name(s)))
+            .map(|s| format_ident!("{}", normalize_type_name(s, true)))
             .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
@@ -57,10 +63,10 @@ impl<'a> Node<'a> {
             }
         }
     }
-    pub fn get_children_names(&self) -> Vec<String> {
+    pub fn get_children_names(&self) -> Vec<&TypeDefinition> {
         let mut children_names = vec![];
         if let Some(children) = &self.raw.children {
-            children_names.extend(children.types.iter().map(|t| t.type_name.clone()));
+            children_names.extend(children.types.iter());
         }
         for field in &self.fields {
             children_names.extend(field.types());
@@ -73,7 +79,7 @@ impl<'a> Node<'a> {
         let children_names = self.get_children_names();
         match children_names.len() {
             0 => "Self".to_string(),
-            1 => normalize_type_name(&children_names[0]),
+            1 => normalize_type_name(&children_names[0].type_name, children_names[0].named),
             _ => format!("{}Children", self.normalize_name()),
         }
     }

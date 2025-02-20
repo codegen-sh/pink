@@ -65,7 +65,7 @@ pub fn normalize_string(string: &str) -> String {
     let escaped = String::from_iter(string.chars().map(escape_char));
     escaped
 }
-pub fn normalize_type_name(type_name: &str) -> String {
+pub fn normalize_type_name(type_name: &str, named: bool) -> String {
     let mut cased = type_name.to_string();
     if type_name.chars().any(|c| c.is_ascii_alphabetic()) {
         cased = cased.to_case(Case::Pascal);
@@ -78,5 +78,9 @@ pub fn normalize_type_name(type_name: &str) -> String {
         "Type name '{}' contains invalid characters",
         type_name
     );
-    escaped
+    if named {
+        escaped
+    } else {
+        format!("Anonymous{}", escaped)
+    }
 }

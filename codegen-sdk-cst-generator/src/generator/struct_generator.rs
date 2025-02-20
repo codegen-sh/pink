@@ -25,15 +25,16 @@ fn convert_type_definition(
 ) -> String {
     let include_anonymous_nodes = false;
     if type_name.len() == 1 && !include_anonymous_nodes {
-        normalize_type_name(&type_name[0].type_name)
+        normalize_type_name(&type_name[0].type_name, type_name[0].named)
     } else {
         let enum_name = normalize_type_name(
             format!(
                 "{}{}",
-                normalize_type_name(node_name),
-                normalize_type_name(field_name)
+                normalize_type_name(node_name, true),
+                normalize_type_name(field_name, true)
             )
             .as_str(),
+            true
         );
         generate_enum(type_name, state, &enum_name, include_anonymous_nodes);
         enum_name

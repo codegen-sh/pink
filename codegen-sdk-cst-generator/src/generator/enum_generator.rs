@@ -15,7 +15,7 @@ fn get_cases(
 ) -> Vec<(String, TokenStream)> {
     let mut cases = Vec::new();
     for t in variants {
-        let normalized_variant_name = normalize_type_name(&t.type_name);
+        let normalized_variant_name = normalize_type_name(&t.type_name, t.named);
         if normalized_variant_name.is_empty() {
             continue;
         }
@@ -50,7 +50,7 @@ pub fn generate_enum(
     let mut variant_tokens = Vec::new();
     let enum_name = format_ident!("{}", enum_name);
     for t in variants {
-        let variant_name = normalize_type_name(&t.type_name);
+        let variant_name = normalize_type_name(&t.type_name, t.named);
         if variant_name.is_empty() {
             continue;
         }

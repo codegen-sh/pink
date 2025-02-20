@@ -37,7 +37,7 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
 
     for node in node_types {
         if !node.subtypes.is_empty() {
-            let name = normalize_type_name(&node.type_name);
+            let name = normalize_type_name(&node.type_name, node.named);
             enums.push(quote! {
                 #name(#name)
             });
@@ -45,11 +45,11 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
         } else if node.children.is_none() && node.fields.is_none() {
             state
                 .anonymous_nodes
-                .insert(node.type_name.clone(), normalize_type_name(&node.type_name));
+                .insert(node.type_name.clone(), normalize_type_name(&node.type_name, node.named));
         }
     }
     for node in node_types {
-        let name = normalize_type_name(&node.type_name);
+        let name = normalize_type_name(&node.type_name, node.named);
         if nodes.contains(&name) {
             continue;
         }
