@@ -62,7 +62,7 @@ impl<'a> State<'a> {
             if children_types.len() > 1 {
                 children_types.sort();
                 children_types.dedup();
-                self.add_subenum(&format!("{}Children", normalized_name), &children_types);
+                self.add_subenum(&node.children_struct_name(), &children_types);
             }
         }
     }
@@ -82,15 +82,31 @@ impl<'a> State<'a> {
     }
     fn add_subenum(&mut self, name: &str, nodes: &Vec<String>) {
         self.subenums.insert(name.to_string());
+        let mut nodes = nodes.clone();
+        if self.nodes.contains_key("comment") {
+            nodes.push("comment".to_string());
+        }
         for node in nodes {
-            let normalized_name = normalize_type_name(node);
-            if !self.subenums.contains(node) {
+            let normalized_name = normalize_type_name(&node);
+            if !self.subenums.contains(&node) {
                 log::debug!("Adding subenum: {} to {}", name, normalized_name);
                 if let Some(node) = self.nodes.get_mut(&normalized_name) {
                     node.add_subenum(name.to_string());
                 }
+            } else {
+                let variants = self.get_variants(&node);
+                self.add_subenum(name, &variants);
             }
         }
+    }
+    fn get_variants(&self, subenum: &str) -> Vec<String> {
+        let mut variants = Vec::new();
+        for node in self.nodes.values() {
+            if node.subenums.contains(&subenum.to_string()) {
+                variants.push(node.normalize_name());
+            }
+        }
+        variants
     }
     // Get the overarching enum for the nodes
     pub fn get_enum(&self) -> TokenStream {
@@ -106,15 +122,15 @@ impl<'a> State<'a> {
             subenums.sort();
             subenums.dedup();
             quote! {
-                #[subenum(#(#subenums),*)]
+                #[subenum(#(#subenums(derive(Archive))),*)]
             }
         } else {
             quote! {}
         };
         quote! {
-            #[derive(Debug)]
             #subenum_tokens
-            pub enum Types {
+        #[derive(Debug, Clone, Deserialize, Serialize)]
+        pub enum Types {
                 #(#enum_tokens),*
             }
         }
@@ -192,8 +208,9 @@ mod tests {
         assert_eq!(
             enum_tokens.to_string(),
             quote! {
-                #[derive(Debug)]
                 #[subenum(TestChildren)]
+                #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
+                #[repr(C, u8)]
                 pub enum Types {
                     #[subenum(TestChildren)]
                     Child(Child),
@@ -253,8 +270,9 @@ mod tests {
         assert_eq!(
             enum_tokens.to_string(),
             quote! {
-                #[derive(Debug)]
                 #[subenum(Definition)]
+                #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
+                #[repr(C, u8)]
                 pub enum Types {
                     #[subenum(Definition)]
                     Class(Class),
@@ -313,8 +331,9 @@ mod tests {
         assert_eq!(
             enum_tokens.to_string(),
             quote! {
-                #[derive(Debug)]
                 #[subenum(NodeCChildren, NodeCField)]
+                #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
+                #[repr(C, u8)]
                 pub enum Types {
                     #[subenum(NodeCChildren, NodeCField)]
                     NodeA(NodeA),

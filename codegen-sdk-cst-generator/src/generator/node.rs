@@ -30,7 +30,9 @@ impl<'a> Node<'a> {
         normalize_type_name(&self.raw.type_name)
     }
     pub fn add_subenum(&mut self, subenum: String) {
-        self.subenums.push(subenum);
+        if !self.subenums.contains(&subenum) {
+            self.subenums.push(subenum);
+        }
     }
     pub fn get_enum_tokens(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
@@ -47,7 +49,7 @@ impl<'a> Node<'a> {
         }
     }
     pub fn get_children_names(&self) -> Vec<String> {
-        let mut children_names = Vec::new();
+        let mut children_names = vec![];
         if let Some(children) = &self.raw.children {
             children_names.extend(children.types.iter().map(|t| t.type_name.clone()));
 
@@ -56,6 +58,9 @@ impl<'a> Node<'a> {
             children_names.extend(field.types());
         }
         children_names
+    }
+    pub fn children_struct_name(&self) -> String {
+        return format!("{}Children", self.normalize_name());
     }
 }
 #[cfg(test)]

@@ -1,3 +1,4 @@
+// TODO: migrate to use struct based generation
 use codegen_sdk_common::{
     naming::{normalize_field_name, normalize_type_name},
     parser::{FieldDefinition, Fields, Node, TypeDefinition},
@@ -22,7 +23,7 @@ fn convert_type_definition(
     field_name: &str,
     node_name: &str,
 ) -> String {
-    let include_anonymous_nodes = true;
+    let include_anonymous_nodes = false;
     if type_name.len() == 1 && !include_anonymous_nodes {
         normalize_type_name(&type_name[0].type_name)
     } else {
@@ -138,7 +139,7 @@ fn generate_field(
     field_name: &str,
 ) -> FieldOutput {
     let converted_type_name =
-        convert_type_definition(&field.types, state, &node.type_name, original_name);
+        convert_type_definition(&field.types, state, original_name, &node.type_name);
     if field.multiple {
         return generate_multiple_field(
             &field_name,
@@ -173,7 +174,8 @@ fn generate_children(
     state: &mut State,
     node_name: &str,
 ) -> (String, TokenStream) {
-    let converted_type_name = convert_type_definition(children, state, node_name, "children");
+    let converted_type_name = convert_type_definition(children, state, "children", node_name);
+
     let constructor_field = quote! {
         children: named_children_without_field_names(node, buffer)?
     };

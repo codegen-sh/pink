@@ -20,6 +20,7 @@ rayon = { workspace = true }
 env_logger = { workspace = true }
 [dev-dependencies]
 tempfile = "3.16.0"
+test-log = { workspace = true }
 [features]
 python = [ "codegen-sdk-common/python"]
 typescript = [ "codegen-sdk-common/typescript"]

@@ -273,6 +273,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "test-log",
  "thiserror",
  "tree-sitter",
  "tree-sitter-java",
@@ -319,6 +320,7 @@ dependencies = [
  "rkyv",
  "subenum",
  "tempfile",
+ "test-log",
  "tree-sitter",
 ]
 

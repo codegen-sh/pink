@@ -1,3 +1,4 @@
+// TODO: migrate to use struct based generation
 use codegen_sdk_common::{
     naming::{normalize_string, normalize_type_name},
     parser::TypeDefinition,
@@ -28,7 +29,7 @@ fn get_cases(
             ));
         } else if !existing_cases.contains(&t.type_name) {
             existing_cases.push(t.type_name.clone());
-            let variant_name = format_ident!("{}", variant_name);
+            let variant_name = format_ident!("{}", normalized_variant_name);
             cases.push((
                 t.type_name.clone(),
                 quote! { Self::#variant_name (#variant_name::from_node(node, buffer)?)},
@@ -75,13 +76,13 @@ pub fn generate_enum(
             Anonymous,
         });
     }
-    state.enums.extend_one(quote! {
-        #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
-        #[repr(C, u8)]
-        pub enum #enum_name {
-            #(#variant_tokens),*
-        }
-    });
+    // state.enums.extend_one(quote! {
+    //     #[derive(Debug, Clone, Archive, Portable, Deserialize, Serialize)]
+    //     #[repr(C, u8)]
+    //     pub enum #enum_name {
+    //         #(#variant_tokens),*
+    //     }
+    // });
     let mut existing_cases = Vec::new();
     let mut cases = get_cases(variants, state, None, &mut existing_cases);
     if anonymous_nodes {

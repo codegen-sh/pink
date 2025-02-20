@@ -58,15 +58,16 @@ pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
             continue;
         }
         if !node.subtypes.is_empty() {
-            generate_enum(&node.subtypes, &mut state, &name, true);
+            generate_enum(&node.subtypes, &mut state, &name, false);
         } else {
             generate_struct(node, &mut state, &name);
         }
     }
     let mut result = get_imports();
-    result.extend_one(state.get_enum());
+    let enums = state.get_enum();
     result.extend_one(state.enums);
     result.extend_one(state.structs);
+    result.extend_one(enums);
     let formatted = format::format_cst(&result.to_string());
     match formatted {
         Ok(formatted) => return Ok(formatted),
