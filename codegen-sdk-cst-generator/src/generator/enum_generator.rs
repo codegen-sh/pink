@@ -58,17 +58,20 @@ pub fn generate_enum(
         variant_tokens.push(quote! {
             #variant_name(#variant_name)
         });
+        if state.subenums.contains(&t.type_name) {
+            continue;
+        }
         state.enums.extend_one(quote! {
             impl std::convert::From<#variant_name> for #enum_name {
                 fn from(variant: #variant_name) -> Self {
                     Self::#variant_name(variant)
                 }
             }
-            impl <T: std::convert::Into<#variant_name>> std::convert::From<T> for #enum_name {
-                fn from(variant: T) -> Self {
-                    Self::#variant_name(variant.into())
-                }
-            }
+            // impl <T: std::convert::Into<#variant_name>> std::convert::From<T> for #enum_name {
+            //     fn from(variant: T) -> Self {
+            //         Self::#variant_name(variant.into())
+            //     }
+            // }
         });
     }
     if anonymous_nodes {

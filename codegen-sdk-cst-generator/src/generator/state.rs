@@ -10,7 +10,7 @@ use crate::generator::normalize_type_name;
 pub struct State<'a> {
     pub enums: TokenStream,
     pub structs: TokenStream,
-    subenums: HashSet<String>,
+    pub subenums: HashSet<String>,
     nodes: BTreeMap<String, Node<'a>>,
     pub variants: HashMap<String, Vec<TypeDefinition>>,
     pub anonymous_nodes: HashMap<String, String>,
@@ -111,10 +111,26 @@ impl<'a> State<'a> {
     // Get the overarching enum for the nodes
     pub fn get_enum(&self) -> TokenStream {
         let mut enum_tokens = Vec::new();
+        let mut from_tokens = TokenStream::new();
         let mut subenums = Vec::new();
         for node in self.nodes.values() {
             enum_tokens.push(node.get_enum_tokens());
+            let variant_name = node.normalize_name();
+            let variant_name = format_ident!("{}", variant_name);
+            from_tokens.extend_one(quote! {
+                impl std::convert::From<#variant_name> for Types {
+                    fn from(variant: #variant_name) -> Self {
+                        Self::#variant_name(variant)
+                    }
+                }
+                // impl <T: std::convert::Into<#variant_name>> std::convert::From<T> for #enum_name {
+                //     fn from(variant: T) -> Self {
+                //         Self::#variant_name(variant.into())
+                //     }
+                // }
+            });
         }
+        
         for subenum in self.subenums.iter() {
             subenums.push(format_ident!("{}", normalize_type_name(&subenum)));
         }
@@ -122,17 +138,18 @@ impl<'a> State<'a> {
             subenums.sort();
             subenums.dedup();
             quote! {
-                #[subenum(#(#subenums(derive(Archive))),*)]
+                #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
             }
         } else {
             quote! {}
         };
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone, Deserialize, Serialize)]
+        #[derive(Debug, Clone)]
         pub enum Types {
                 #(#enum_tokens),*
             }
+            #from_tokens
         }
     }
 }

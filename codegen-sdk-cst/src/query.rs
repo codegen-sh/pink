@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use codegen_sdk_common::{CSTNode, Language, naming::normalize_type_name};
+use codegen_sdk_common::{CSTNode, Language, naming::normalize_type_name, HasChildren};
 use derive_more::Debug;
 
 use crate::{CSTLanguage, ts_query};
@@ -10,8 +10,11 @@ fn captures_for_field_definition(
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
-            ts_query::FieldDefinitionChildren::Definition(definition) => {
-                captures.extend(captures_for_node(definition));
+            ts_query::FieldDefinitionChildren::NamedNode(named) => {
+                captures.extend(captures_for_named_node(named));
+            }
+            ts_query::FieldDefinitionChildren::FieldDefinition(field) => {
+                captures.extend(captures_for_field_definition(field));
             }
             _ => {}
         }
@@ -23,8 +26,11 @@ fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = &
     for child in node.children() {
         match child {
             ts_query::NamedNodeChildren::Capture(capture) => captures.push(capture),
-            ts_query::NamedNodeChildren::Definition(definition) => {
-                captures.extend(captures_for_node(definition));
+            ts_query::NamedNodeChildren::NamedNode(named) => {
+                captures.extend(captures_for_named_node(named));
+            }
+            ts_query::NamedNodeChildren::FieldDefinition(field) => {
+                captures.extend(captures_for_field_definition(field));
             }
             _ => {}
         }

@@ -54,7 +54,7 @@ fn generate_multiple_field(
         #field_name_ident: get_multiple_children_by_field_name(&node, #original_name, buffer)?
     };
     let convert_child = quote! {
-        &((*child).clone().into())
+        |child| &Self::Child::try_from(Types::from((*child).clone())).unwrap()
     };
     FieldOutput {
         struct_field,
@@ -84,7 +84,7 @@ fn generate_required_field(
         #field_name_ident: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
     };
     let convert_child = quote! {
-        &((*self.#field_name_ident).clone().into())
+        &Self::Child::try_from(Types::from((*self.#field_name_ident).clone())).unwrap()
     };
     FieldOutput {
         struct_field,
@@ -114,13 +114,13 @@ fn generate_optional_field(
         #field_name_ident: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
     };
     let convert_child = quote! {
-        &((*child).clone().into())
+        &(child.clone().into())
     };
     FieldOutput {
         struct_field,
         constructor_field,
         children_field: quote! {
-            if let Some(child) = self.#field_name_ident {
+            if let Some(child) = *self.#field_name_ident {
                 children.push(#convert_child);
             }
         },
@@ -274,7 +274,6 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
     state.structs.extend_one(definition);
     let implementation = quote! {
         impl CSTNode for #name {
-            type Child = #children_type_name;
             fn kind(&self) -> &str {
                 &self._kind
             }
@@ -296,6 +295,9 @@ pub fn generate_struct(node: &Node, state: &mut State, name: &str) {
             fn kind_id(&self) -> u16 {
                 self.kind_id
             }
+        }
+        impl HasChildren for #name {
+            type Child = #children_type_name;
             #children_field
             fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
                 match field_name {
