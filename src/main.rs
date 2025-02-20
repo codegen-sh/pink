@@ -91,6 +91,8 @@ fn main() {
     let dir = args.input;
     let start = Instant::now();
     let (files, errors) = parse_files(dir);
+    let num_errors = errors.len();
+    drop(errors);
     let end = Instant::now();
     let duration: std::time::Duration = end.duration_since(start);
     let memory = get_memory();
@@ -99,7 +101,7 @@ fn main() {
         files.len(),
         duration.as_secs(),
         duration.subsec_millis(),
-        errors.len(),
+        num_errors,
         memory / 1024 / 1024
     );
 }
