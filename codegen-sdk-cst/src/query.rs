@@ -59,7 +59,7 @@ impl Query {
         let mut queries = HashMap::new();
         for node in parsed.children() {
             match node {
-                ts_query::Definition::NamedNode(named) => {
+                ts_query::ProgramChildren::NamedNode(named) => {
                     let query = Self::from_named_node(&named);
                     queries.insert(query.name(), query);
                 }
