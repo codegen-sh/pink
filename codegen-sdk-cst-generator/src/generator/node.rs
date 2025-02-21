@@ -72,7 +72,7 @@ impl<'a> Node<'a> {
         for field in &self.fields {
             children_names.extend(field.types().into_iter().cloned());
         }
-        if children_names.len() > 0 && children_names.contains(&comment) {
+        if children_names.len() > 0 && !children_names.contains(&comment) {
             children_names.push(comment);
         }
         children_names.sort();
