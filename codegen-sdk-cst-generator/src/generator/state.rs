@@ -1,5 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
-
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use codegen_sdk_common::parser::TypeDefinition;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -36,10 +35,17 @@ impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
             subenums,
             ..Default::default()
         };
-        for raw_node in raw_nodes {
-            // Add subtypes to the state
-            if !raw_node.subtypes.is_empty() {
+        let mut subenums = VecDeque::new();
+        for raw_node in raw_nodes.iter().filter(|n| !n.subtypes.is_empty()) {
+            subenums.push_back(raw_node.clone());
+        }
+        while let Some(raw_node) = subenums.pop_front() {
+            if raw_node.subtypes.iter().any(|s| subenums.iter().any(|n| n.type_name == s.type_name)) {
+                subenums.push_back(raw_node);
+            } else {
+                // Add subtypes to the state
                 ret.add_subenum(&raw_node.type_name, &raw_node.subtypes.iter().collect());
+
             }
         }
         log::info!("Adding child subenums");
@@ -107,7 +113,9 @@ impl<'a> State<'a> {
         let comment = get_comment_type();
         let mut variants = vec![comment];
         for node in self.nodes.values() {
+            log::debug!("Checking subenum: {} for {}", subenum, node.kind());
             if node.subenums.contains(&subenum.to_string()) {
+                log::debug!("Found variant: {} for {}", node.kind(), subenum);
                 variants.push(node.type_definition());
             }
         }
@@ -118,6 +126,7 @@ impl<'a> State<'a> {
         for node in self.nodes.values() {
             let variant_name = format_ident!("{}", node.normalize_name());
             if node.subenums.contains(&enum_name.to_string()) {
+                log::debug!("Adding variant: {} for {}", node.kind(), enum_name);
                 variant_map.insert(
                     node.kind().to_string(),
                     quote! {
@@ -197,7 +206,7 @@ mod tests {
         let node = codegen_sdk_common::parser::Node {
             type_name: "test".to_string(),
             subtypes: vec![],
-            named: false,
+            named: true,
             root: false,
             fields: None,
             children: None,
@@ -208,10 +217,10 @@ mod tests {
         assert_tokenstreams_eq!(
             &quote! {
                 #[derive(Debug, Clone)]
-                pub enum Types {
+                pub enum NodeTypes {
                     Test(Test)
                 }
-                impl std::convert::From<Test> for Types {
+                impl std::convert::From<Test> for NodeTypes {
                     fn from(variant: Test) -> Self {
                         Self::Test(variant)
                     }
@@ -266,14 +275,14 @@ mod tests {
             &quote! {
                 #[subenum(TestChildren(derive(Archive, Deserialize, Serialize)))]
                 #[derive(Debug, Clone)]
-                pub enum Types {
+                pub enum NodeTypes {
                     #[subenum(TestChildren)]
                     Child(Child),
                     #[subenum(TestChildren)]
                     ChildTwo(ChildTwo),
                     Test(Test)
                 }
-                impl std::convert::From<Child> for Types {
+                impl std::convert::From<Child> for NodeTypes {
                     fn from(variant: Child) -> Self {
                         Self::Child(variant)
                     }
@@ -283,7 +292,7 @@ mod tests {
                         Self::Child(variant)
                     }
                 }
-                impl std::convert::From<ChildTwo> for Types {
+                impl std::convert::From<ChildTwo> for NodeTypes {
                     fn from(variant: ChildTwo) -> Self {
                         Self::ChildTwo(variant)
                     }
@@ -293,7 +302,7 @@ mod tests {
                         Self::ChildTwo(variant)
                     }
                 }
-                impl std::convert::From<Test> for Types {
+                impl std::convert::From<Test> for NodeTypes {
                     fn from(variant: Test) -> Self {
                         Self::Test(variant)
                     }
@@ -362,13 +371,13 @@ mod tests {
             &quote! {
                 #[subenum(Definition(derive(Archive, Deserialize, Serialize)))]
                 #[derive(Debug, Clone)]
-                pub enum Types {
+                pub enum NodeTypes {
                     #[subenum(Definition)]
                     Class(Class),
                     #[subenum(Definition)]
                     Function(Function)
                 }
-                impl std::convert::From<Class> for Types {
+                impl std::convert::From<Class> for NodeTypes {
                     fn from(variant: Class) -> Self {
                         Self::Class(variant)
                     }
@@ -378,7 +387,7 @@ mod tests {
                         Self::Class(variant)
                     }
                 }
-                impl std::convert::From<Function> for Types {
+                impl std::convert::From<Function> for NodeTypes {
                     fn from(variant: Function) -> Self {
                         Self::Function(variant)
                     }
@@ -452,14 +461,14 @@ mod tests {
             &quote! {
                 #[subenum(NodeCChildren(derive(Archive, Deserialize, Serialize)), NodeCField(derive(Archive, Deserialize, Serialize)))]
                 #[derive(Debug, Clone)]
-                pub enum Types {
+                pub enum NodeTypes {
                     #[subenum(NodeCChildren, NodeCField)]
                     NodeA(NodeA),
                     #[subenum(NodeCChildren, NodeCField)]
                     NodeB(NodeB),
                     NodeC(NodeC)
                 }
-                impl std::convert::From<NodeA> for Types {
+                impl std::convert::From<NodeA> for NodeTypes {
                     fn from(variant: NodeA) -> Self {
                         Self::NodeA(variant)
                     }
@@ -475,7 +484,7 @@ mod tests {
                     }
                 }
 
-                impl std::convert::From<NodeB> for Types {
+                impl std::convert::From<NodeB> for NodeTypes {
                     fn from(variant: NodeB) -> Self {
                         Self::NodeB(variant)
                     }
@@ -490,7 +499,7 @@ mod tests {
                         Self::NodeB(variant)
                     }
                 }
-                impl std::convert::From<NodeC> for Types {
+                impl std::convert::From<NodeC> for NodeTypes {
                     fn from(variant: NodeC) -> Self {
                         Self::NodeC(variant)
                     }
@@ -527,7 +536,7 @@ mod tests {
         let node = codegen_sdk_common::parser::Node {
             type_name: "test".to_string(),
             subtypes: vec![],
-            named: false,
+            named: true,
             root: false,
             fields: None,
             children: None,
@@ -591,10 +600,10 @@ mod tests {
                 }
                 impl HasChildren for Test {
                     type Child = Self;
-                    fn children(&self) -> Vec<&Self::Child> {
+                    fn children(&self) -> Vec<Self::Child> {
                         vec![]
                     }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
                         match field_name {
                             _ => vec![],
                         }
