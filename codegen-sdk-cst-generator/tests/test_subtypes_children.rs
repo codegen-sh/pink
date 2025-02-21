@@ -105,5 +105,5 @@ fn test_subtypes_with_children() {
             }
         }
     };
-    assert_tokenstreams_eq!(&output, &expected);
+    assert_tokenstreams_eq!(&expected, &output);
 }

@@ -206,7 +206,6 @@ mod tests {
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
-            &enum_tokens,
             &quote! {
                 #[derive(Debug, Clone)]
                 pub enum Types {
@@ -217,7 +216,8 @@ mod tests {
                         Self::Test(variant)
                     }
                 }
-            }
+            },
+            &enum_tokens
         );
     }
     #[test_log::test]
@@ -263,7 +263,6 @@ mod tests {
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
-            &enum_tokens,
             &quote! {
                 #[subenum(TestChildren(derive(Archive, Deserialize, Serialize)))]
                 #[derive(Debug, Clone)]
@@ -310,7 +309,8 @@ mod tests {
                             }),                        }
                     }
                 }
-            }
+            },
+            &enum_tokens
         );
     }
     #[test_log::test]
@@ -359,7 +359,6 @@ mod tests {
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
-            &enum_tokens,
             &quote! {
                 #[subenum(Definition(derive(Archive, Deserialize, Serialize)))]
                 #[derive(Debug, Clone)]
@@ -400,7 +399,8 @@ mod tests {
                             }),                        }
                     }
                 }
-            }
+            },
+            &enum_tokens
         );
     }
     #[test_log::test]
@@ -449,7 +449,6 @@ mod tests {
         let state = State::from(&nodes);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
-            &enum_tokens,
             &quote! {
                 #[subenum(NodeCChildren(derive(Archive, Deserialize, Serialize)), NodeCField(derive(Archive, Deserialize, Serialize)))]
                 #[derive(Debug, Clone)]
@@ -519,7 +518,8 @@ mod tests {
                     }
                 }
 
-            }
+            },
+            &enum_tokens
         );
     }
     #[test_log::test]
@@ -537,7 +537,6 @@ mod tests {
         let struct_tokens = state.get_structs();
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
-            &struct_tokens,
             &quote! {
                 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
                 #serialize_bounds
@@ -602,7 +601,8 @@ mod tests {
                     }
                 }
 
-            }
+            },
+            &struct_tokens
         );
     }
     #[test_log::test]
@@ -644,7 +644,19 @@ mod tests {
         let state = State::from(&nodes);
 
         let variants = state.get_variants("parent");
-        assert_eq!(variants, vec!["NodeA", "NodeB"]);
+        assert_eq!(
+            vec![
+                TypeDefinition {
+                    type_name: "node_a".to_string(),
+                    named: true,
+                },
+                TypeDefinition {
+                    type_name: "node_b".to_string(),
+                    named: true,
+                },
+            ],
+            variants
+        );
     }
     #[test_log::test]
     fn test_add_subenum() {
@@ -659,7 +671,13 @@ mod tests {
         let nodes = vec![node_a];
         let mut state = State::from(&nodes);
 
-        state.add_subenum("TestEnum", &vec!["node_a".to_string()]);
+        state.add_subenum(
+            "TestEnum",
+            &vec![&TypeDefinition {
+                type_name: "node_a".to_string(),
+                named: true,
+            }],
+        );
         assert!(state.subenums.contains("TestEnum"));
 
         let node = state.nodes.get("NodeA").unwrap();

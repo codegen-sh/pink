@@ -336,16 +336,16 @@ mod tests {
         let mut node = Node::from(&base_node);
 
         let tokens = node.get_enum_tokens();
-        assert_eq!(tokens.to_string(), quote! { Test(Test) }.to_string());
+        assert_eq!(quote! { Test(Test) }.to_string(), tokens.to_string());
         node.add_subenum("subenum".to_string());
         let tokens = node.get_enum_tokens();
         assert_eq!(
-            tokens.to_string(),
             quote! {
                 #[subenum(Subenum)]
-                Test (Test)
+                Test(Test)
             }
-            .to_string()
+            .to_string(),
+            tokens.to_string()
         );
     }
 
@@ -355,7 +355,6 @@ mod tests {
         let node = Node::from(&raw_node);
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
-            &node.get_struct_tokens(),
             &quote! {
                 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
                 #serialize_bounds
@@ -420,7 +419,8 @@ mod tests {
                         }
                     }
                 }
-            }
+            },
+            &node.get_struct_tokens()
         );
     }
 
@@ -443,7 +443,6 @@ mod tests {
         let node = Node::from(&raw_node);
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
-            &node.get_struct_tokens(),
             &quote! {
                 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
                 #serialize_bounds
@@ -488,7 +487,8 @@ mod tests {
                         }
                     }
                 }
-            }
+            },
+            &node.get_struct_tokens()
         );
     }
 
@@ -535,7 +535,6 @@ mod tests {
         let node = Node::from(&raw_node);
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
-            &node.get_struct_tokens(),
             &quote! {
                 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
                 #serialize_bounds
@@ -615,7 +614,8 @@ mod tests {
                         }
                     }
                 }
-            }
+            },
+            &node.get_struct_tokens()
         );
     }
 
@@ -627,7 +627,6 @@ mod tests {
         let serialize_bounds = get_serialize_bounds();
 
         assert_tokenstreams_eq!(
-            &node.get_struct_tokens(),
             &quote! {
                 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
                 #serialize_bounds
@@ -696,7 +695,8 @@ mod tests {
                         }
                     }
                 }
-            }
+            },
+            &node.get_struct_tokens()
         );
     }
 
@@ -707,7 +707,6 @@ mod tests {
         let serialize_bounds = get_serialize_bounds();
 
         assert_tokenstreams_eq!(
-            &node.get_struct_tokens(),
             &quote! {
                 #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
                 #serialize_bounds
@@ -776,7 +775,8 @@ mod tests {
                         }
                     }
                 }
-            }
+            },
+            &node.get_struct_tokens()
         );
     }
 
@@ -787,7 +787,6 @@ mod tests {
         let tokens = node.get_trait_implementations();
 
         assert_tokenstreams_eq!(
-            &tokens,
             &quote! {
                 impl CSTNode for TestNode {
                     fn kind(&self) -> &str {
@@ -823,7 +822,8 @@ mod tests {
                         }
                     }
                 }
-            }
+            },
+            &tokens
         );
     }
 
@@ -846,14 +846,14 @@ mod tests {
         let node = Node::from(&raw_node);
 
         assert_tokenstreams_eq!(
-            &node.get_children_field_impl(),
             &quote! {
                 fn children(&self) -> Vec<Self::Child> {
                     let mut children: Vec<_> = vec![];
                     children.push(Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap());
                     children
                 }
-            }
+            },
+            &node.get_children_field_impl()
         );
     }
 
@@ -876,7 +876,6 @@ mod tests {
         let node = Node::from(&raw_node);
 
         assert_tokenstreams_eq!(
-            &node.get_children_by_field_name_impl(),
             &quote! {
                 fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
                     match field_name {
@@ -884,7 +883,8 @@ mod tests {
                         _ => vec![],
                     }
                 }
-            }
+            },
+            &node.get_children_by_field_name_impl()
         );
     }
 }
