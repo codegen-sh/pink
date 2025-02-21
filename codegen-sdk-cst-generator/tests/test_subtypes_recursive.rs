@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap};
 
 use assert_tokenstreams_eq::assert_tokenstreams_eq;
 use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};

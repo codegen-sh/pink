@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use assert_tokenstreams_eq::assert_tokenstreams_eq;
-use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};
+use codegen_sdk_common::parser::{Fields, Node, TypeDefinition};
 use codegen_sdk_cst_generator::generate_cst;
 use quote::quote;
 

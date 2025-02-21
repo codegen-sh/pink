@@ -1,23 +1,19 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use codegen_sdk_common::parser::TypeDefinition;
+use codegen_sdk_common::naming::normalize_type_name;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::{node::Node, utils::get_from_node};
 use crate::generator::{
     constants::TYPE_NAME,
-    normalize_type_name,
     utils::{get_comment_type, get_from_for_enum},
 };
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct State<'a> {
-    pub enums: TokenStream,
-    pub structs: TokenStream,
     pub subenums: BTreeSet<String>,
     nodes: BTreeMap<String, Node<'a>>,
-    pub variants: HashMap<String, Vec<TypeDefinition>>,
-    pub anonymous_nodes: HashMap<String, String>,
 }
 impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
     fn from(raw_nodes: &'a Vec<codegen_sdk_common::parser::Node>) -> Self {
@@ -34,7 +30,6 @@ impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
         let mut ret = State {
             nodes,
             subenums,
-            ..Default::default()
         };
         let mut subenums = VecDeque::new();
         for raw_node in raw_nodes.iter().filter(|n| !n.subtypes.is_empty()) {
@@ -200,6 +195,7 @@ impl<'a> State<'a> {
 }
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use assert_tokenstreams_eq::assert_tokenstreams_eq;
 
     use super::*;

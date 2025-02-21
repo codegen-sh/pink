@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use assert_tokenstreams_eq::assert_tokenstreams_eq;
 use codegen_sdk_common::parser::{Children, Node, TypeDefinition};
 use codegen_sdk_cst_generator::generate_cst;

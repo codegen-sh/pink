@@ -15,7 +15,8 @@ log = { workspace = true }
 rayon = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
-
+[dev-dependencies]
+test-log = { workspace = true }
 [workspace]
 members = [
   "codegen-sdk-analyzer",

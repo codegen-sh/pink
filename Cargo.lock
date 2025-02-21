@@ -247,6 +247,7 @@ version = "0.1.0"
 dependencies = [
  "codegen-sdk-ast",
  "salsa",
+ "test-log",
 ]
 
 [[package]]
@@ -312,6 +313,7 @@ dependencies = [
  "rayon",
  "rkyv",
  "sysinfo",
+ "test-log",
 ]
 
 [[package]]
