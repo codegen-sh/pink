@@ -39,13 +39,7 @@ impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
         for raw_node in raw_nodes {
             // Add subtypes to the state
             if !raw_node.subtypes.is_empty() {
-                ret.add_subenum(
-                    &raw_node.type_name,
-                    &raw_node
-                        .subtypes
-                        .iter()
-                        .collect(),
-                );
+                ret.add_subenum(&raw_node.type_name, &raw_node.subtypes.iter().collect());
             }
         }
         log::info!("Adding child subenums");
@@ -65,7 +59,10 @@ impl<'a> State<'a> {
             if children_types.len() > 1 {
                 children_types.sort();
                 children_types.dedup();
-                self.add_subenum(&node.children_struct_name(), &children_types.iter().collect());
+                self.add_subenum(
+                    &node.children_struct_name(),
+                    &children_types.iter().collect(),
+                );
             }
         }
     }
@@ -75,7 +72,10 @@ impl<'a> State<'a> {
             for field in &node.fields {
                 log::debug!("Adding field subenum: {}", field.normalized_name());
                 if field.types().len() > 1 {
-                    to_add.push((field.type_name(), field.types().into_iter().cloned().collect()));
+                    to_add.push((
+                        field.type_name(),
+                        field.types().into_iter().cloned().collect(),
+                    ));
                 }
             }
         }
@@ -150,7 +150,11 @@ impl<'a> State<'a> {
             }
         }
         for subenum in self.subenums.iter() {
-            assert!(self.get_variants(subenum).len() > 0, "Subenum {} has no variants", subenum);
+            assert!(
+                self.get_variants(subenum).len() > 0,
+                "Subenum {} has no variants",
+                subenum
+            );
             from_tokens.extend_one(self.get_from_node(subenum));
             subenums.push(format_ident!("{}", normalize_type_name(&subenum, true)));
         }
@@ -514,7 +518,7 @@ mod tests {
                             }),                        }
                     }
                 }
-                
+
             }
         );
     }
@@ -597,7 +601,7 @@ mod tests {
                         }
                     }
                 }
-                     
+
             }
         );
     }

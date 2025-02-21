@@ -34,7 +34,7 @@ fn convert_type_definition(
                 normalize_type_name(field_name, true)
             )
             .as_str(),
-            true
+            true,
         );
         generate_enum(type_name, state, &enum_name, include_anonymous_nodes);
         enum_name

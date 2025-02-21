@@ -108,7 +108,6 @@ impl<'a> Field<'a> {
         let convert_child = self.get_convert_child(convert_children);
 
         if self.raw.multiple {
-            
             quote! {
                 #field_name => self.#field_name_ident.iter().map(|child| #convert_child).collect()
             }
@@ -220,7 +219,8 @@ mod tests {
             quote! {
                 #[rkyv(omit_bounds)]
                 pub test_field: Box<TestType>
-            }.to_string()
+            }
+            .to_string()
         );
 
         // Test optional field
@@ -232,7 +232,8 @@ mod tests {
             quote! {
                 #[rkyv(omit_bounds)]
                 pub test_field: Box<Option<TestType>>
-            }.to_string()
+            }
+            .to_string()
         );
 
         // Test multiple field
@@ -244,7 +245,8 @@ mod tests {
             quote! {
                 #[rkyv(omit_bounds)]
                 pub test_field: Vec<TestType>
-            }.to_string()
+            }
+            .to_string()
         );
     }
 
@@ -255,7 +257,8 @@ mod tests {
 
         assert_eq!(
             field.get_constructor_field().to_string(),
-            quote!(test_field: Box::new(get_child_by_field_name(&node, "test_field", buffer)?)).to_string()
+            quote!(test_field: Box::new(get_child_by_field_name(&node, "test_field", buffer)?))
+                .to_string()
         );
 
         // Test optional field
@@ -273,7 +276,8 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_constructor_field().to_string(),
-            quote!(test_field: get_multiple_children_by_field_name(&node, "test_field", buffer)?).to_string()
+            quote!(test_field: get_multiple_children_by_field_name(&node, "test_field", buffer)?)
+                .to_string()
         );
     }
 
@@ -295,7 +299,8 @@ mod tests {
             optional_field.get_children_field(true).to_string(),
             quote!(if let Some(child) = self.test_field.as_ref() {
                 children.push(Self::Child::try_from(NodeTypes::from(child.clone())).unwrap());
-            }).to_string()
+            })
+            .to_string()
         );
 
         // Test multiple field

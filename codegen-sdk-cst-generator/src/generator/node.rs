@@ -594,7 +594,7 @@ mod tests {
                     fn kind_id(&self) -> u16 {
                         self.kind_id
                     }
-                }   
+                }
                 impl HasChildren for TestNode {
                     type Child = TestType;
                     fn children(&self) -> Vec<&Self::Child> {
@@ -860,7 +860,7 @@ mod tests {
     #[test]
     fn test_get_children_by_field_name_impl() {
         let raw_node = create_test_node_with_fields(
-            "test_node", 
+            "test_node",
             vec![(
                 "test_field",
                 FieldDefinition {

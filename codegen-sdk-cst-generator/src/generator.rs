@@ -43,9 +43,10 @@ pub fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
             });
             state.variants.insert(name, node.subtypes.clone());
         } else if node.children.is_none() && node.fields.is_none() {
-            state
-                .anonymous_nodes
-                .insert(node.type_name.clone(), normalize_type_name(&node.type_name, node.named));
+            state.anonymous_nodes.insert(
+                node.type_name.clone(),
+                normalize_type_name(&node.type_name, node.named),
+            );
         }
     }
     for node in node_types {
