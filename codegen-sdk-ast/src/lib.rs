@@ -1,4 +1,4 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 use codegen_sdk_common::{File, HasNode};
 pub use codegen_sdk_cst::*;
 pub trait Named {

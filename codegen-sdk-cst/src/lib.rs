@@ -1,4 +1,4 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 #![feature(trivial_bounds)]
 use std::{path::PathBuf, sync::Arc};
 
