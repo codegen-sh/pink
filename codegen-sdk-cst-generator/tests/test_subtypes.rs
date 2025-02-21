@@ -398,12 +398,10 @@ fn test_deeply_nested_subtypes() {
         // Function declaration with its subtype
         Node {
             type_name: "function_declaration".to_string(),
-            subtypes: vec![
-                TypeDefinition {
-                    type_name: "method_declaration".to_string(),
-                    named: true,
-                },
-            ],
+            subtypes: vec![TypeDefinition {
+                type_name: "method_declaration".to_string(),
+                named: true,
+            }],
             named: true,
             root: false,
             fields: None,

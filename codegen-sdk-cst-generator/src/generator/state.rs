@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+
 use codegen_sdk_common::parser::TypeDefinition;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -40,12 +41,15 @@ impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
             subenums.push_back(raw_node.clone());
         }
         while let Some(raw_node) = subenums.pop_front() {
-            if raw_node.subtypes.iter().any(|s| subenums.iter().any(|n| n.type_name == s.type_name)) {
+            if raw_node
+                .subtypes
+                .iter()
+                .any(|s| subenums.iter().any(|n| n.type_name == s.type_name))
+            {
                 subenums.push_back(raw_node);
             } else {
                 // Add subtypes to the state
                 ret.add_subenum(&raw_node.type_name, &raw_node.subtypes.iter().collect());
-
             }
         }
         log::info!("Adding child subenums");

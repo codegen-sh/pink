@@ -659,7 +659,8 @@ mod tests {
 
     #[test]
     fn test_get_struct_tokens_with_children() {
-        let raw_node = create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
+        let raw_node =
+            create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let node = Node::from(&raw_node);
         let serialize_bounds = get_serialize_bounds();
 
