@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use codegen_sdk_common::parser::TypeDefinition;
-use codegen_sdk_common::naming::normalize_type_name;
+use codegen_sdk_common::{Language, naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -14,22 +13,25 @@ use crate::generator::{
 pub struct State<'a> {
     pub subenums: BTreeSet<String>,
     nodes: BTreeMap<String, Node<'a>>,
+    language: &'a Language,
 }
-impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
-    fn from(raw_nodes: &'a Vec<codegen_sdk_common::parser::Node>) -> Self {
+impl<'a> State<'a> {
+    pub fn new(language: &'a Language) -> Self {
         let mut nodes = BTreeMap::new();
         let mut subenums = BTreeSet::new();
+        let raw_nodes = language.nodes();
         for raw_node in raw_nodes {
             if raw_node.subtypes.is_empty() {
-                let node = Node::from(raw_node);
+                let node = Node::new(raw_node, language);
                 nodes.insert(node.normalize_name(), node);
             } else {
                 subenums.insert(raw_node.type_name.clone());
             }
         }
-        let mut ret = State {
+        let mut ret = Self {
             nodes,
             subenums,
+            language,
         };
         let mut subenums = VecDeque::new();
         for raw_node in raw_nodes.iter().filter(|n| !n.subtypes.is_empty()) {
@@ -53,8 +55,6 @@ impl<'a> From<&'a Vec<codegen_sdk_common::parser::Node>> for State<'a> {
         ret.add_field_subenums();
         ret
     }
-}
-impl<'a> State<'a> {
     fn add_child_subenums(&mut self) {
         let keys = self.nodes.keys().cloned().collect::<Vec<_>>();
         for name in keys.into_iter() {
@@ -120,14 +120,14 @@ impl<'a> State<'a> {
         }
         variants
     }
-    fn get_variant_map(&self, enum_name: &str) -> BTreeMap<String, TokenStream> {
+    fn get_variant_map(&self, enum_name: &str) -> BTreeMap<u16, TokenStream> {
         let mut variant_map = BTreeMap::new();
         for node in self.nodes.values() {
             let variant_name = format_ident!("{}", node.normalize_name());
             if node.subenums.contains(&enum_name.to_string()) {
                 log::debug!("Adding variant: {} for {}", node.kind(), enum_name);
                 variant_map.insert(
-                    node.kind().to_string(),
+                    node.kind_id(),
                     quote! {
                         Ok(Self::#variant_name(#variant_name::from_node(node, buffer)?))
                     },

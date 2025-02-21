@@ -1,4 +1,4 @@
-use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
+use codegen_sdk_common::{Language, naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -9,14 +9,15 @@ pub struct Node<'a> {
     raw: &'a codegen_sdk_common::parser::Node,
     pub subenums: Vec<String>,
     pub fields: Vec<Field<'a>>,
+    language: &'a Language,
 }
-impl<'a> From<&'a codegen_sdk_common::parser::Node> for Node<'a> {
-    fn from(raw: &'a codegen_sdk_common::parser::Node) -> Self {
+impl<'a> Node<'a> {
+    pub fn new(raw: &'a codegen_sdk_common::parser::Node, language: &'a Language) -> Self {
         let mut fields = Vec::new();
         let normalized_name = normalize_type_name(&raw.type_name, raw.named);
         if let Some(raw_fields) = &raw.fields {
             for (name, field) in raw_fields.fields.iter() {
-                fields.push(Field::new(&normalized_name, name, field));
+                fields.push(Field::new(&normalized_name, name, field, language));
             }
         }
         fields.sort_by_key(|f| f.normalized_name().clone());
@@ -24,12 +25,14 @@ impl<'a> From<&'a codegen_sdk_common::parser::Node> for Node<'a> {
             raw,
             subenums: Vec::new(),
             fields,
+            language,
         }
     }
-}
-impl<'a> Node<'a> {
     pub fn kind(&self) -> &str {
         &self.raw.type_name
+    }
+    pub fn kind_id(&self) -> u16 {
+        self.language.kind_id(&self.raw.type_name, self.raw.named)
     }
     pub fn normalize_name(&self) -> String {
         normalize_type_name(&self.raw.type_name, self.raw.named)
@@ -741,7 +744,7 @@ mod tests {
     #[test]
     fn test_get_struct_tokens_with_single_child_type() {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
-        let node = Node::from(&raw_node);
+        let node = Node::new(&raw_node, &Language::Typescript);
         let serialize_bounds = get_serialize_bounds();
 
         assert_tokenstreams_eq!(

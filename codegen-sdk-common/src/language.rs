@@ -1,10 +1,12 @@
 use convert_case::{Case, Casing};
+use std::num::NonZeroU16;
 use tree_sitter::Parser;
 
 use crate::{
     errors::ParseError,
     parser::{Node, parse_node_types},
 };
+#[derive(Debug)]
 pub struct Language {
     pub name: &'static str,
     pub struct_name: &'static str,
@@ -50,6 +52,18 @@ impl Language {
             .type_name
             .to_case(Case::Pascal)
     }
+    pub fn kind_id(&self, name: &str, named: bool) -> u16 {
+        self.tree_sitter_language.id_for_node_kind(name, named)
+    }
+    pub fn kind_name(&self, id: u16) -> Option<&str> {
+        self.tree_sitter_language.node_kind_for_id(id)
+    }
+    pub fn field_id(&self, name: &str) -> Option<NonZeroU16> {
+        self.tree_sitter_language.field_id_for_name(name)
+    }
+    pub fn field_name(&self, id: u16) -> Option<&str> {
+        self.tree_sitter_language.field_name_for_id(id)
+    }   
 }
 #[cfg(feature = "java")]
 pub mod java;

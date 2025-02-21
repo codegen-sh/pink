@@ -1,4 +1,4 @@
-use codegen_sdk_common::parser::Node;
+use codegen_sdk_common::Language;
 use state::State;
 mod constants;
 mod field;
@@ -24,8 +24,8 @@ fn get_imports() -> TokenStream {
 
         }
 }
-pub fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
-    let state = State::from(node_types);
+pub fn generate_cst(language: &Language) -> anyhow::Result<String> {
+    let state = State::new(language);
     let mut result = get_imports();
     let enums = state.get_enum();
     let structs = state.get_structs();

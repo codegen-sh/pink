@@ -1,25 +1,35 @@
 use codegen_sdk_common::{
+    Language,
     naming::{normalize_field_name, normalize_type_name},
     parser::{FieldDefinition, TypeDefinition},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
 use super::constants::TYPE_NAME;
 #[derive(Debug)]
 pub struct Field<'a> {
     raw: &'a FieldDefinition,
     name: String,
     node_name: String,
+    language: &'a Language,
 }
 
 impl<'a> Field<'a> {
-    pub fn new(node_name: &str, name: &str, raw: &'a FieldDefinition) -> Self {
+    pub fn new(
+        node_name: &str,
+        name: &str,
+        raw: &'a FieldDefinition,
+        language: &'a Language,
+    ) -> Self {
         Self {
             node_name: node_name.to_string(),
             name: name.to_string(),
             raw,
+            language,
         }
+    }
+    fn field_id(&self) -> u16 {
+        self.language.field_id(&self.name).unwrap().into()
     }
     pub fn name(&self) -> String {
         normalize_field_name(&self.name)
@@ -120,6 +130,25 @@ impl<'a> Field<'a> {
                 #field_name => self.#field_name_ident.as_ref().iter().map(|child| #convert_child).collect()
             }
         }
+    }
+    pub fn get_children_by_field_id_field(&self, convert_children: bool) -> TokenStream {
+        let field_id = self.field_id();
+        let field_name_ident = format_ident!("{}", self.name());
+        let convert_child = self.get_convert_child(convert_children);
+
+        if self.raw.multiple {
+            quote! {
+                #field_id => self.#field_name_ident.iter().map(|child| #convert_child).collect()
+            }
+        } else if self.raw.required {
+            quote! {
+                #field_id => vec![#convert_child]
+            }
+        } else {
+            quote! {
+                #field_id => self.#field_name_ident.as_ref().iter().map(|child| #convert_child).collect()
+            }
+        } 
     }
     pub fn get_struct_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());

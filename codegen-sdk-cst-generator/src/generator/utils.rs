@@ -32,7 +32,7 @@ pub fn get_serialize_bounds() -> TokenStream {
 pub fn get_from_node(
     node: &str,
     named: bool,
-    variant_map: &BTreeMap<String, TokenStream>,
+    variant_map: &BTreeMap<u16, TokenStream>,
 ) -> TokenStream {
     let node = format_ident!("{}", normalize_type_name(node, named));
     let mut keys = Vec::new();
@@ -44,7 +44,7 @@ pub fn get_from_node(
     quote! {
         impl FromNode for #node {
             fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                match node.kind() {
+                match node.kind_id() {
                     #(#keys => #values,)*
                     _ => Err(ParseError::UnexpectedNode {
                         node_type: node.kind().to_string(),
