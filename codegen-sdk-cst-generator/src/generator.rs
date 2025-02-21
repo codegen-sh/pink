@@ -30,7 +30,7 @@ fn get_imports() -> TokenStream {
 
         }
 }
-pub(crate) fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
+pub fn generate_cst(node_types: &Vec<Node>) -> anyhow::Result<String> {
     let mut state = State::from(node_types);
     let mut nodes = HashSet::new();
     let mut enums = Vec::new();

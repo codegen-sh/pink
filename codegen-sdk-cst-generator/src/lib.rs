@@ -1,7 +1,8 @@
 #![feature(extend_one)]
 mod generator;
 use codegen_sdk_common::language::Language;
-pub fn generate_cst(language: &Language) -> anyhow::Result<()> {
+pub use generator::generate_cst;
+pub fn generate_cst_to_file(language: &Language) -> anyhow::Result<()> {
     let node_types = language.nodes();
     let cst = generator::generate_cst(&node_types)?;
     let out_dir = std::env::var("OUT_DIR")?;

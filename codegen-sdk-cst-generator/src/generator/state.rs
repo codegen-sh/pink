@@ -5,7 +5,11 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::{node::Node, utils::get_from_node};
-use crate::generator::{constants::TYPE_NAME, normalize_type_name, utils::get_from_for_enum};
+use crate::generator::{
+    constants::TYPE_NAME,
+    normalize_type_name,
+    utils::{get_comment_type, get_from_for_enum},
+};
 #[derive(Default, Debug)]
 pub struct State<'a> {
     pub enums: TokenStream,
@@ -57,7 +61,7 @@ impl<'a> State<'a> {
         for name in keys.into_iter() {
             let normalized_name = normalize_type_name(&name, true);
             let node = self.nodes.get(&normalized_name).unwrap();
-            let mut children_types = node.get_children_names().into_iter().cloned().collect::<Vec<_>>();
+            let mut children_types = node.get_children_names();
             if children_types.len() > 1 {
                 children_types.sort();
                 children_types.dedup();
@@ -82,10 +86,7 @@ impl<'a> State<'a> {
     fn add_subenum(&mut self, name: &str, nodes: &Vec<&TypeDefinition>) {
         self.subenums.insert(name.to_string());
         let mut nodes = nodes.clone();
-        let comment = TypeDefinition {
-            type_name: "comment".to_string(),
-            named: true,
-        };
+        let comment = get_comment_type();
         if self.nodes.contains_key(&comment.type_name) {
             nodes.push(&comment);
         }
@@ -103,7 +104,8 @@ impl<'a> State<'a> {
         }
     }
     fn get_variants(&self, subenum: &str) -> Vec<TypeDefinition> {
-        let mut variants = Vec::new();
+        let comment = get_comment_type();
+        let mut variants = vec![comment];
         for node in self.nodes.values() {
             if node.subenums.contains(&subenum.to_string()) {
                 variants.push(node.type_definition());

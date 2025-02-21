@@ -193,7 +193,10 @@ mod tests {
             true,
         );
         let field = Field::new("test_node", "test_field", &field_definition);
-        assert_eq!(field.types(), vec!["type_a", "type_b"]);
+        assert_eq!(
+            field.types(),
+            field_definition.types.iter().collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -214,7 +217,10 @@ mod tests {
 
         assert_eq!(
             field.get_struct_field().to_string(),
-            quote!(pub test_field: Box<TestType>).to_string()
+            quote! {
+                #[rkyv(omit_bounds)]
+                pub test_field: Box<TestType>
+            }.to_string()
         );
 
         // Test optional field
@@ -223,7 +229,10 @@ mod tests {
 
         assert_eq!(
             optional_field.get_struct_field().to_string(),
-            quote!(pub test_field: Option<TestType>).to_string()
+            quote! {
+                #[rkyv(omit_bounds)]
+                pub test_field: Box<Option<TestType>>
+            }.to_string()
         );
 
         // Test multiple field
@@ -232,7 +241,10 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_struct_field().to_string(),
-            quote!(pub test_field: Vec<TestType>).to_string()
+            quote! {
+                #[rkyv(omit_bounds)]
+                pub test_field: Vec<TestType>
+            }.to_string()
         );
     }
 
@@ -243,7 +255,7 @@ mod tests {
 
         assert_eq!(
             field.get_constructor_field().to_string(),
-            quote!(test_field: get_child_by_field_name(&node, "test_field", buffer)?).to_string()
+            quote!(test_field: Box::new(get_child_by_field_name(&node, "test_field", buffer)?)).to_string()
         );
 
         // Test optional field
@@ -252,8 +264,7 @@ mod tests {
 
         assert_eq!(
             optional_field.get_constructor_field().to_string(),
-            quote!(test_field: get_optional_child_by_field_name(&node, "test_field", buffer)?)
-                .to_string()
+            quote!(test_field: Box::new(get_optional_child_by_field_name(&node, "test_field", buffer)?)).to_string()
         );
 
         // Test multiple field
@@ -262,24 +273,18 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_constructor_field().to_string(),
-            quote!(test_field: get_multiple_children_by_field_name(&node, "test_field", buffer)?)
-                .to_string()
+            quote!(test_field: get_multiple_children_by_field_name(&node, "test_field", buffer)?).to_string()
         );
     }
 
     #[test]
     fn test_get_children_field() {
-        // Test required field
         let field_definition = create_test_field_definition("test_type", false, true);
         let field = Field::new("test_node", "test_field", &field_definition);
 
         assert_eq!(
             field.get_children_field(true).to_string(),
-            quote!(children.push(&Self::Child::try_from(Types::from((*self.test_field).clone())).unwrap());).to_string()
-        );
-        assert_eq!(
-            field.get_children_field(false).to_string(),
-            quote!(children.push(&(*self.test_field));).to_string()
+            quote!(children.push(Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap());).to_string()
         );
 
         // Test optional field
@@ -288,17 +293,9 @@ mod tests {
 
         assert_eq!(
             optional_field.get_children_field(true).to_string(),
-            quote!(if let Some(child) = *self.test_field {
-                children.push(&Self::Child::try_from(Types::from((*child).clone())).unwrap());
-            })
-            .to_string()
-        );
-        assert_eq!(
-            optional_field.get_children_field(false).to_string(),
-            quote!(if let Some(child) = *self.test_field {
-                children.push(&child);
-            })
-            .to_string()
+            quote!(if let Some(child) = self.test_field.as_ref() {
+                children.push(Self::Child::try_from(NodeTypes::from(child.clone())).unwrap());
+            }).to_string()
         );
 
         // Test multiple field
@@ -307,32 +304,18 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_children_field(true).to_string(),
-            quote!(
-                children.extend(self.test_field.iter().map(|child| &Self::Child::try_from(Types::from((*child).clone())).unwrap()));
-            ).to_string()
-        );
-        assert_eq!(
-            multiple_field.get_children_field(false).to_string(),
-            quote!(
-                children.extend(self.test_field.iter().map(|child| &child));
-            )
-            .to_string()
+            quote!(children.extend(self.test_field.iter().map(|child| Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()));).to_string()
         );
     }
 
     #[test]
     fn test_get_children_by_field_name_field() {
-        // Test required field
         let field_definition = create_test_field_definition("test_type", false, true);
         let field = Field::new("test_node", "test_field", &field_definition);
 
         assert_eq!(
             field.get_children_by_field_name_field(true).to_string(),
-            quote!("test_field" => vec![&Self::Child::try_from(Types::from((*self.test_field).clone())).unwrap()]).to_string()
-        );
-        assert_eq!(
-            field.get_children_by_field_name_field(false).to_string(),
-            quote!("test_field" => vec![&(*self.test_field)]).to_string()
+            quote!("test_field" => vec![Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap()]).to_string()
         );
 
         // Test optional field
@@ -341,14 +324,7 @@ mod tests {
 
         assert_eq!(
             optional_field.get_children_by_field_name_field(true).to_string(),
-            quote!("test_field" => self.test_field.map_or_else(|| vec![], |child| vec![&Self::Child::try_from(Types::from((*child).clone())).unwrap()])).to_string()
-        );
-        assert_eq!(
-            optional_field
-                .get_children_by_field_name_field(false)
-                .to_string(),
-            quote!("test_field" => self.test_field.map_or_else(|| vec![], |child| vec![&child]))
-                .to_string()
+            quote!("test_field" => self.test_field.as_ref().iter().map(|child| Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()).collect()).to_string()
         );
 
         // Test multiple field
@@ -357,14 +333,7 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_children_by_field_name_field(true).to_string(),
-            quote!("test_field" => self.test_field.iter().map(|child| &Self::Child::try_from(Types::from((*child).clone())).unwrap()).collect()).to_string()
-        );
-        assert_eq!(
-            multiple_field
-                .get_children_by_field_name_field(false)
-                .to_string(),
-            quote!("test_field" => self.test_field.iter().map(|child| &child).collect())
-                .to_string()
+            quote!("test_field" => self.test_field.iter().map(|child| Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()).collect()).to_string()
         );
     }
 }

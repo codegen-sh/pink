@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use codegen_sdk_common::naming::normalize_type_name;
+use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 pub fn get_from_for_enum(variant: &str, enum_name: &str) -> TokenStream {
@@ -48,5 +48,11 @@ pub fn get_from_node(node: &str, named: bool, variant_map: &BTreeMap<String, Tok
                     }),                }
             }
         }
+    }
+}
+pub fn get_comment_type() -> TypeDefinition {
+    TypeDefinition {
+        type_name: "comment".to_string(),
+        named: true,
     }
 }

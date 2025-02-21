@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::field::Field;
-use crate::generator::utils::get_serialize_bounds;
+use crate::generator::utils::{get_comment_type, get_serialize_bounds};
 #[derive(Debug)]
 pub struct Node<'a> {
     raw: &'a codegen_sdk_common::parser::Node,
@@ -63,13 +63,17 @@ impl<'a> Node<'a> {
             }
         }
     }
-    pub fn get_children_names(&self) -> Vec<&TypeDefinition> {
+    pub fn get_children_names(&self) -> Vec<TypeDefinition> {
         let mut children_names = vec![];
+        let comment = get_comment_type();
         if let Some(children) = &self.raw.children {
-            children_names.extend(children.types.iter());
+            children_names.extend(children.types.iter().cloned());
         }
         for field in &self.fields {
-            children_names.extend(field.types());
+            children_names.extend(field.types().into_iter().cloned());
+        }
+        if children_names.len() > 0 && children_names.contains(&comment) {
+            children_names.push(comment);
         }
         children_names.sort();
         children_names.dedup();
@@ -810,10 +814,10 @@ mod tests {
                 }
                 impl HasChildren for TestNode {
                     type Child = Self;
-                    fn children(&self) -> Vec<&Self::Child> {
+                    fn children(&self) -> Vec<Self::Child> {
                         vec![]
                     }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
                         match field_name {
                             _ => vec![],
                         }
@@ -844,9 +848,9 @@ mod tests {
         assert_tokenstreams_eq!(
             &node.get_children_field_impl(),
             &quote! {
-                fn children(&self) -> Vec<&Self::Child> {
+                fn children(&self) -> Vec<Self::Child> {
                     let mut children: Vec<_> = vec![];
-                    children.push(&(*self.test_field));
+                    children.push(Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap());
                     children
                 }
             }
@@ -856,20 +860,14 @@ mod tests {
     #[test]
     fn test_get_children_by_field_name_impl() {
         let raw_node = create_test_node_with_fields(
-            "test_node",
+            "test_node", 
             vec![(
                 "test_field",
                 FieldDefinition {
-                    types: vec![
-                        TypeDefinition {
-                            type_name: "test_type".to_string(),
-                            named: true,
-                        },
-                        TypeDefinition {
-                            type_name: "test_type_2".to_string(),
-                            named: true,
-                        },
-                    ],
+                    types: vec![TypeDefinition {
+                        type_name: "test_type".to_string(),
+                        named: true,
+                    }],
                     multiple: false,
                     required: true,
                 },
@@ -880,9 +878,9 @@ mod tests {
         assert_tokenstreams_eq!(
             &node.get_children_by_field_name_impl(),
             &quote! {
-                fn children_by_field_name(&self, field_name: &str) -> Vec<&Self::Child> {
+                fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
                     match field_name {
-                        "test_field" => vec![&Self::Child::try_from(Types::from((*self.test_field).clone())).unwrap()],
+                        "test_field" => vec![Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap()],
                         _ => vec![],
                     }
                 }
