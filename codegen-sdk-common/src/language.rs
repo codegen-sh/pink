@@ -1,5 +1,7 @@
-use convert_case::{Case, Casing};
 use std::num::NonZeroU16;
+
+use convert_case::{Case, Casing};
+use mockall::automock;
 use tree_sitter::Parser;
 
 use crate::{
@@ -8,16 +10,17 @@ use crate::{
 };
 #[derive(Debug)]
 pub struct Language {
-    pub name: &'static str,
+    name: &'static str,
     pub struct_name: &'static str,
     pub node_types: &'static str,
     pub file_extensions: &'static [&'static str],
-    pub tree_sitter_language: tree_sitter::Language,
+    tree_sitter_language: tree_sitter::Language,
     pub tag_query: &'static str,
     nodes: Vec<Node>,
 }
+#[automock]
 impl Language {
-    pub(crate) fn new(
+    pub fn new(
         name: &'static str,
         struct_name: &'static str,
         node_types: &'static str,
@@ -55,15 +58,18 @@ impl Language {
     pub fn kind_id(&self, name: &str, named: bool) -> u16 {
         self.tree_sitter_language.id_for_node_kind(name, named)
     }
-    pub fn kind_name(&self, id: u16) -> Option<&str> {
+    pub fn kind_name(&self, id: u16) -> Option<&'static str> {
         self.tree_sitter_language.node_kind_for_id(id)
     }
     pub fn field_id(&self, name: &str) -> Option<NonZeroU16> {
         self.tree_sitter_language.field_id_for_name(name)
     }
-    pub fn field_name(&self, id: u16) -> Option<&str> {
+    pub fn field_name(&self, id: u16) -> Option<&'static str> {
         self.tree_sitter_language.field_name_for_id(id)
-    }   
+    }
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
 }
 #[cfg(feature = "java")]
 pub mod java;

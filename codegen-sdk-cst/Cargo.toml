@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 tree-sitter = { workspace = true }
 bytes = { workspace = true }
-codegen-sdk-common = { path = "../codegen-sdk-common", features = ["ts_query"] }
+codegen-sdk-common = { workspace = true }
 codegen-sdk-macros = { path = "../codegen-sdk-macros" }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
 convert_case = { workspace = true }
@@ -17,7 +17,7 @@ enum_delegate = { workspace = true }
 derive-visitor = "0.4.0"
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = { path = "../codegen-sdk-common", features = ["all"] }
+codegen-sdk-common = { workspace = true }
 rayon = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }

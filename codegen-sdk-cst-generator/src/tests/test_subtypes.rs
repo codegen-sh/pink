@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use assert_tokenstreams_eq::assert_tokenstreams_eq;
 use codegen_sdk_common::parser::{Fields, Node, TypeDefinition};
-use codegen_sdk_cst_generator::generate_cst;
 use quote::quote;
 
-#[test]
+use crate::{generate_cst, test_util::get_language};
+
+#[test_log::test]
 fn test_basic_subtypes() {
     // Define nodes with basic subtype relationships
     let nodes = vec![
@@ -44,7 +45,8 @@ fn test_basic_subtypes() {
         },
     ];
 
-    let output = generate_cst(&nodes).unwrap();
+    let language = get_language(nodes);
+    let output = generate_cst(&language).unwrap();
     let expected = quote! {
         use std::{backtrace::Backtrace, sync::Arc};
         use bytes::Bytes;
@@ -170,7 +172,8 @@ fn test_nested_subtypes() {
         },
     ];
 
-    let output = generate_cst(&nodes).unwrap();
+    let language = get_language(nodes);
+    let output = generate_cst(&language).unwrap();
     let expected = quote! {
         use std::{backtrace::Backtrace, sync::Arc};
         use bytes::Bytes;
@@ -273,7 +276,7 @@ fn test_nested_subtypes() {
     assert_tokenstreams_eq!(&output, &expected);
 }
 
-#[test]
+#[test_log::test]
 fn test_subtypes_with_fields() {
     let nodes = vec![
         Node {
@@ -336,7 +339,8 @@ fn test_subtypes_with_fields() {
         },
     ];
 
-    let output = generate_cst(&nodes).unwrap();
+    let language = get_language(nodes);
+    let output = generate_cst(&language).unwrap();
     let expected = quote! {
         use std::{backtrace::Backtrace, sync::Arc};
         use bytes::Bytes;
@@ -433,8 +437,8 @@ fn test_deeply_nested_subtypes() {
             children: None,
         },
     ];
-
-    let output = generate_cst(&nodes).unwrap();
+    let language = get_language(nodes);
+    let output = generate_cst(&language).unwrap();
     let expected = quote! {
         use std::{backtrace::Backtrace, sync::Arc};
         use bytes::Bytes;

@@ -66,16 +66,6 @@ pub trait CSTNode {
     fn is_extra(&self) -> bool {
         unimplemented!("is_extra not implemented")
     }
-
-    /// Returns the field id for the given field name
-    fn field_id_for_name(&self, name: &str) -> Option<u16> {
-        unimplemented!("field_id_for_name not implemented")
-    }
-
-    /// Returns the field name for the given field id
-    fn field_name_for_id(&self, id: u16) -> Option<&str> {
-        unimplemented!("field_name_for_id not implemented")
-    }
     fn id(&self) -> usize;
 }
 trait CSTNodeExt: CSTNode {
@@ -173,12 +163,6 @@ impl<T: HasNode> CSTNode for T {
         self.node().is_extra()
     }
 
-    fn field_id_for_name(&self, name: &str) -> Option<u16> {
-        self.node().field_id_for_name(name)
-    }
-    fn field_name_for_id(&self, id: u16) -> Option<&str> {
-        self.node().field_name_for_id(id)
-    }
     fn id(&self) -> usize {
         self.node().id()
     }
@@ -211,9 +195,7 @@ pub trait HasChildren {
     }
 
     /// Returns all children with the given field name
-    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
-        unimplemented!("children_by_field_id not implemented")
-    }
+    fn children_by_field_id(&self, _field_id: u16) -> Vec<Self::Child>;
 
     /// Returns the first child with the given field name
     fn child_by_field_name(&self, field_name: &str) -> Option<Self::Child> {

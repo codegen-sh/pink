@@ -1,4 +1,6 @@
-use codegen_sdk_common::Language;
+#[double]
+use codegen_sdk_common::language::Language;
+use mockall_double::double;
 use state::State;
 mod constants;
 mod field;
@@ -45,18 +47,5 @@ pub fn generate_cst(language: &Language) -> anyhow::Result<String> {
             out_file.keep()?;
             return Err(e);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use codegen_sdk_common::{language::python::Python, parser::parse_node_types};
-
-    use super::*;
-    #[test_log::test]
-    fn test_generate_cst() {
-        let node_types = parse_node_types(&Python.node_types).unwrap();
-        let cst = generate_cst(&node_types).unwrap();
-        log::info!("{}", cst);
     }
 }

@@ -1,11 +1,12 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use assert_tokenstreams_eq::assert_tokenstreams_eq;
 use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};
-use codegen_sdk_cst_generator::generate_cst;
 use quote::quote;
 
-#[test]
+use crate::{generate_cst, test_util::get_language};
+
+#[test_log::test]
 fn test_recursive_subtypes() {
     let nodes = vec![
         // Expression can contain other expressions recursively
@@ -88,7 +89,8 @@ fn test_recursive_subtypes() {
         },
     ];
 
-    let output = generate_cst(&nodes).unwrap();
+    let language = get_language(nodes);
+    let output = generate_cst(&language).unwrap();
     let expected = quote! {
         use bytes::Bytes;
         use codegen_sdk_common::*;

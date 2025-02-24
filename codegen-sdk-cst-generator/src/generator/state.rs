@@ -1,19 +1,21 @@
+#[double]
+use codegen_sdk_common::language::Language;
+use mockall_double::double;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use codegen_sdk_common::{Language, naming::normalize_type_name, parser::TypeDefinition};
+use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use super::{node::Node, utils::get_from_node};
+use super::node::Node;
 use crate::generator::{
     constants::TYPE_NAME,
-    utils::{get_comment_type, get_from_for_enum},
+    utils::{get_comment_type, get_from_node},
 };
 #[derive(Debug)]
 pub struct State<'a> {
     pub subenums: BTreeSet<String>,
     nodes: BTreeMap<String, Node<'a>>,
-    language: &'a Language,
 }
 impl<'a> State<'a> {
     pub fn new(language: &'a Language) -> Self {
@@ -28,11 +30,7 @@ impl<'a> State<'a> {
                 subenums.insert(raw_node.type_name.clone());
             }
         }
-        let mut ret = Self {
-            nodes,
-            subenums,
-            language,
-        };
+        let mut ret = Self { nodes, subenums };
         let mut subenums = VecDeque::new();
         for raw_node in raw_nodes.iter().filter(|n| !n.subtypes.is_empty()) {
             subenums.push_back(raw_node.clone());
@@ -148,7 +146,6 @@ impl<'a> State<'a> {
         let mut subenums = Vec::new();
         for node in self.nodes.values() {
             enum_tokens.push(node.get_enum_tokens());
-            let variant_name = node.normalize_name();
         }
         for subenum in self.subenums.iter() {
             assert!(
@@ -190,10 +187,14 @@ impl<'a> State<'a> {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+
     use assert_tokenstreams_eq::assert_tokenstreams_eq;
 
     use super::*;
-    use crate::generator::utils::get_serialize_bounds;
+    use crate::{
+        generator::utils::get_serialize_bounds,
+        test_util::{get_language, get_language_no_nodes},
+    };
 
     #[test_log::test]
     fn test_get_enum() {
@@ -206,7 +207,8 @@ mod tests {
             children: None,
         };
         let nodes = vec![node];
-        let state = State::from(&nodes);
+        let language = get_language(nodes);
+        let state = State::new(&language);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
             &quote! {
@@ -263,7 +265,8 @@ mod tests {
             }),
         };
         let nodes = vec![child, child_two, node];
-        let state = State::from(&nodes);
+        let language = get_language_no_nodes();
+        let state = State::new(&language);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
             &quote! {
@@ -359,7 +362,8 @@ mod tests {
             children: None,
         };
         let nodes = vec![definition, class, function];
-        let state = State::from(&nodes);
+        let language = get_language(nodes);
+        let state = State::new(&language);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
             &quote! {
@@ -449,7 +453,8 @@ mod tests {
             children: None,
         };
         let nodes = vec![node_a, node_b, node_c];
-        let state = State::from(&nodes);
+        let language = get_language(nodes);
+        let state = State::new(&language);
         let enum_tokens = state.get_enum();
         assert_tokenstreams_eq!(
             &quote! {
@@ -536,7 +541,8 @@ mod tests {
             children: None,
         };
         let nodes = vec![node];
-        let state = State::from(&nodes);
+        let language = get_language(nodes);
+        let state = State::new(&language);
         let struct_tokens = state.get_structs();
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
@@ -644,7 +650,8 @@ mod tests {
             children: None,
         };
         let nodes = vec![node_a, node_b, parent];
-        let state = State::from(&nodes);
+        let language = get_language(nodes);
+        let state = State::new(&language);
 
         let variants = state.get_variants("parent");
         assert_eq!(
@@ -672,7 +679,8 @@ mod tests {
             children: None,
         };
         let nodes = vec![node_a];
-        let mut state = State::from(&nodes);
+        let language = get_language(nodes);
+        let mut state = State::new(&language);
 
         state.add_subenum(
             "TestEnum",

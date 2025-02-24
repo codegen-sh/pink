@@ -1,4 +1,7 @@
-use codegen_sdk_common::{Language, naming::normalize_type_name, parser::TypeDefinition};
+#[double]
+use codegen_sdk_common::language::Language;
+use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
+use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -197,11 +200,13 @@ impl<'a> Node<'a> {
         let children_type_name = format_ident!("{}", self.children_struct_name());
         let children_field = self.get_children_field_impl();
         let children_by_field_name = self.get_children_by_field_name_impl();
+        let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
             impl HasChildren for #name {
                 type Child = #children_type_name;
                 #children_field
                 #children_by_field_name
+                #children_by_field_id
             }
         }
     }
@@ -299,11 +304,32 @@ impl<'a> Node<'a> {
             }
         }
     }
+    fn get_children_by_field_id_impl(&self) -> TokenStream {
+        let convert_children = self.get_children_names().len() > 1;
+        let field_matches = self
+            .fields
+            .iter()
+            .map(|f| f.get_children_by_field_id_field(convert_children))
+            .collect::<Vec<_>>();
+
+        quote! {
+            fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+                match field_id {
+                    #(#field_matches,)*
+                    _ => vec![],
+                }
+            }
+        }
+    }
 }
 #[cfg(test)]
 mod tests {
     use assert_tokenstreams_eq::assert_tokenstreams_eq;
-    use codegen_sdk_common::parser::{FieldDefinition, Fields, TypeDefinition};
+    use codegen_sdk_common::{
+        language::typescript::Typescript,
+        parser::{FieldDefinition, Fields, TypeDefinition},
+    };
+    use crate::test_util::get_language_no_nodes;
 
     use super::*;
 
@@ -364,7 +390,8 @@ mod tests {
     #[test_log::test]
     fn test_get_enum_tokens() {
         let base_node = create_test_node("test");
-        let mut node = Node::from(&base_node);
+        let language = get_language_no_nodes();
+        let mut node = Node::new(&base_node, &language);
 
         let tokens = node.get_enum_tokens();
         assert_eq!(quote! { Test(Test) }.to_string(), tokens.to_string());
@@ -383,7 +410,8 @@ mod tests {
     #[test]
     fn test_get_struct_tokens_simple() {
         let raw_node = create_test_node("test_node");
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
             &quote! {
@@ -471,7 +499,8 @@ mod tests {
                 },
             )],
         );
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
             &quote! {
@@ -589,7 +618,8 @@ mod tests {
                 ),
             ],
         );
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
         let serialize_bounds = get_serialize_bounds();
         assert_tokenstreams_eq!(
             &quote! {
@@ -692,7 +722,8 @@ mod tests {
     fn test_get_struct_tokens_with_children() {
         let raw_node =
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
         let serialize_bounds = get_serialize_bounds();
 
         assert_tokenstreams_eq!(
@@ -772,7 +803,8 @@ mod tests {
     #[test]
     fn test_get_struct_tokens_with_single_child_type() {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
-        let node = Node::new(&raw_node, &Language::Typescript);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
         let serialize_bounds = get_serialize_bounds();
 
         assert_tokenstreams_eq!(
@@ -852,7 +884,8 @@ mod tests {
     #[test]
     fn test_get_trait_implementations() {
         let raw_node = create_test_node("test_node");
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
         let tokens = node.get_trait_implementations();
 
         assert_tokenstreams_eq!(
@@ -912,7 +945,8 @@ mod tests {
                 },
             )],
         );
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
 
         assert_tokenstreams_eq!(
             &quote! {
@@ -942,7 +976,8 @@ mod tests {
                 },
             )],
         );
-        let node = Node::from(&raw_node);
+        let language = get_language_no_nodes();
+        let node = Node::new(&raw_node, &language);
 
         assert_tokenstreams_eq!(
             &quote! {

@@ -1,9 +1,10 @@
 use assert_tokenstreams_eq::assert_tokenstreams_eq;
 use codegen_sdk_common::parser::{Children, Node, TypeDefinition};
-use codegen_sdk_cst_generator::generate_cst;
 use quote::quote;
 
-#[test]
+use crate::{generate_cst, test_util::get_language};
+
+#[test_log::test]
 fn test_subtypes_with_children() {
     let nodes = vec![
         // A block can contain multiple statements
@@ -65,8 +66,8 @@ fn test_subtypes_with_children() {
             children: None,
         },
     ];
-
-    let output = generate_cst(&nodes).unwrap();
+    let language = get_language(nodes);
+    let output = generate_cst(&language).unwrap();
     let expected = quote! {
         use bytes::Bytes;
         use codegen_sdk_common::*;

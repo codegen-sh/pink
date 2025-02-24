@@ -6,8 +6,8 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
 codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
-codegen-sdk-cst = { path = "codegen-sdk-cst" , features = ["typescript", "javascript", "tsx", "jsx"]}
-codegen-sdk-common = { path = "codegen-sdk-common"}
+codegen-sdk-cst = { path = "codegen-sdk-cst" , features = ["typescript"]}
+codegen-sdk-common = { workspace = true }
 crossbeam = "0.8.4"
 glob = "0.3.2"
 env_logger = { workspace = true }
@@ -43,3 +43,5 @@ anyhow = { version = "1.0.95", features = ["backtrace"] }
 rkyv = { version = "0.8.10", features = ["bytes-1","pointer_width_64"] }
 test-log = "0.2.17"
 enum_delegate = "0.2.0"
+mockall = "0.13.1"
+codegen-sdk-common = { path = "codegen-sdk-common" }
