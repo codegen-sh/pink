@@ -6,7 +6,7 @@ fn main() {
     // println!("cargo:rerun-if-changed=build.rs");
     LANGUAGES.par_iter().for_each(|language| {
         generate_cst_to_file(language).unwrap_or_else(|e| {
-            log::error!("Error generating CST for {}: {}", language.name, e);
+            log::error!("Error generating CST for {}: {}", language.name(), e);
         });
     });
 }

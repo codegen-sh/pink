@@ -2,8 +2,8 @@
 mod generator;
 #[double]
 use codegen_sdk_common::language::Language;
-use mockall_double::double;
 pub use generator::generate_cst;
+use mockall_double::double;
 pub fn generate_cst_to_file(language: &Language) -> anyhow::Result<()> {
     let cst = generator::generate_cst(language)?;
     let out_dir = std::env::var("OUT_DIR")?;

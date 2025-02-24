@@ -47,7 +47,7 @@ fn log_languages() {
     for language in LANGUAGES.iter() {
         log::info!(
             "Supported language: {} with extensions: {:?}",
-            language.name,
+            language.name(),
             language.file_extensions
         );
     }

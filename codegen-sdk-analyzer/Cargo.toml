@@ -5,6 +5,6 @@ edition = "2024"
 
 [dependencies]
 salsa = "0.16.1"
-codegen-sdk-ast = { path = "../codegen-sdk-ast" }
+codegen-sdk-ast = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }

@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-codegen-sdk-cst = { path = "../codegen-sdk-cst" }
-codegen-sdk-common = { path = "../codegen-sdk-common"}
+codegen-sdk-cst = { workspace = true }
+codegen-sdk-common = { workspace = true }
 
 [build-dependencies]
-codegen-sdk-common = { path = "../codegen-sdk-common"}
+codegen-sdk-common = { workspace = true }
 env_logger = { workspace = true }
 rayon = { workspace = true }
 codegen-sdk-ast-generator = { path = "../codegen-sdk-ast-generator"}

@@ -329,9 +329,9 @@ mod tests {
         language::typescript::Typescript,
         parser::{FieldDefinition, Fields, TypeDefinition},
     };
-    use crate::test_util::get_language_no_nodes;
 
     use super::*;
+    use crate::test_util::get_language_no_nodes;
 
     fn create_test_node(name: &str) -> codegen_sdk_common::parser::Node {
         codegen_sdk_common::parser::Node {

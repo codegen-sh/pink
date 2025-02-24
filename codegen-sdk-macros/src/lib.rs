@@ -3,7 +3,7 @@ use codegen_sdk_common::language::{LANGUAGES, Language};
 use proc_macro::TokenStream;
 fn get_language(language: &str) -> &Language {
     for lang in LANGUAGES.iter() {
-        if lang.name.to_lowercase() == language.to_lowercase() {
+        if lang.name().to_lowercase() == language.to_lowercase() {
             return lang;
         }
     }
@@ -29,7 +29,7 @@ pub mod {name} {{
         }}
     }}
 }}",
-        name = language.name,
+        name = language.name(),
         struct_name = language.struct_name,
         root = root
     )
@@ -59,7 +59,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
         return Ok(Box::new(parsed));
     }}
  ",
-        name = language.name,
+        name = language.name(),
         struct_name = language.struct_name
     )
     .parse()
@@ -70,7 +70,7 @@ pub fn parse_languages(_item: TokenStream) -> TokenStream {
     let mut output = String::new();
     output.push_str("use codegen_sdk_macros::parse_language;");
     for language in LANGUAGES.iter() {
-        output.push_str(&format!("parse_language!({});", language.name));
+        output.push_str(&format!("parse_language!({});", language.name()));
     }
     output.parse().unwrap()
 }
@@ -79,7 +79,7 @@ pub fn include_languages(_item: TokenStream) -> TokenStream {
     let mut output = String::new();
     output.push_str("use codegen_sdk_macros::include_language;");
     for language in LANGUAGES.iter() {
-        output.push_str(&format!("include_language!({});", language.name));
+        output.push_str(&format!("include_language!({});", language.name()));
     }
     output.parse().unwrap()
 }

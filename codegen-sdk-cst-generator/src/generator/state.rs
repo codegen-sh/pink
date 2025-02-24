@@ -1,9 +1,9 @@
-#[double]
-use codegen_sdk_common::language::Language;
-use mockall_double::double;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
+#[double]
+use codegen_sdk_common::language::Language;
 use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
+use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 

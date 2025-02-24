@@ -68,7 +68,7 @@ pub trait CSTNode {
     }
     fn id(&self) -> usize;
 }
-trait CSTNodeExt: CSTNode {
+pub trait CSTNodeExt: CSTNode {
     /// Get the next sibling of this node in its parent
     fn next_sibling<Child: CSTNode + Clone, Parent: HasChildren<Child = Child>>(
         &self,

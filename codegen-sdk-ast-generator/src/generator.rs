@@ -21,7 +21,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
 
     ",
         language_struct_name = language.struct_name,
-        language_name = language.name,
+        language_name = language.name(),
         root_node_name = language.root_node()
     );
     // for (name, query) in language.definitions() {
