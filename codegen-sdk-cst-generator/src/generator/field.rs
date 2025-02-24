@@ -5,6 +5,7 @@ use codegen_sdk_common::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+
 use super::constants::TYPE_NAME;
 #[derive(Debug)]
 pub struct Field<'a> {
@@ -148,7 +149,7 @@ impl<'a> Field<'a> {
             quote! {
                 #field_id => self.#field_name_ident.as_ref().iter().map(|child| #convert_child).collect()
             }
-        } 
+        }
     }
     pub fn get_struct_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());

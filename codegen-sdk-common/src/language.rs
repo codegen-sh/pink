@@ -1,5 +1,6 @@
-use convert_case::{Case, Casing};
 use std::num::NonZeroU16;
+
+use convert_case::{Case, Casing};
 use tree_sitter::Parser;
 
 use crate::{
@@ -63,7 +64,7 @@ impl Language {
     }
     pub fn field_name(&self, id: u16) -> Option<&str> {
         self.tree_sitter_language.field_name_for_id(id)
-    }   
+    }
 }
 #[cfg(feature = "java")]
 pub mod java;

@@ -190,6 +190,7 @@ impl<'a> State<'a> {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+
     use assert_tokenstreams_eq::assert_tokenstreams_eq;
 
     use super::*;
