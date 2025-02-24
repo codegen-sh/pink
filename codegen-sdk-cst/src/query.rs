@@ -127,6 +127,20 @@ impl Query {
     pub fn source(&self) -> String {
         self.node.source()
     }
+    // fn execute<T: HasChildren>(&self, node: &T) -> Vec<Box<dyn CSTNode + Send>> {
+    //     let mut result = Vec::new();
+
+    //     for child in node.children() {
+    //         if self
+    //             .captures()
+    //             .iter()
+    //             .any(|capture| capture.source() == child.kind())
+    //         {
+    //             result.push(child);
+    //         }
+    //     }
+    //     result
+    // }
 }
 
 pub trait HasQuery {

@@ -118,20 +118,36 @@ impl<'a> Node<'a> {
         let trait_impls = self.get_trait_implementations();
 
         quote! {
-            #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
+            #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
             #serialize_bounds
             pub struct #name {
+                #[drive(skip)]
                 start_byte: usize,
+                #[drive(skip)]
                 end_byte: usize,
+                #[drive(skip)]
                 _kind: std::string::String,
                 #[debug("[{},{}]", start_position.row, start_position.column)]
+                #[drive(skip)]
                 start_position: Point,
                 #[debug("[{},{}]", end_position.row, end_position.column)]
+                #[drive(skip)]
                 end_position: Point,
                 #[debug(ignore)]
+                #[drive(skip)]
                 buffer: Arc<Bytes>,
                 #[debug(ignore)]
+                #[drive(skip)]
                 kind_id: u16,
+                #[debug(ignore)]
+                #[drive(skip)]
+                is_error: bool,
+                #[debug(ignore)]
+                #[drive(skip)]
+                named: bool,
+                #[debug(ignore)]
+                #[drive(skip)]
+                id: usize,
                 #children_field
                 #(#struct_fields),*
             }
@@ -167,6 +183,9 @@ impl<'a> Node<'a> {
                         end_position: node.end_position().into(),
                         buffer: buffer.clone(),
                         kind_id: node.kind_id(),
+                        is_error: node.is_error(),
+                        named: node.is_named(),
+                        id: node.id(),
                         #(#constructor_fields),*
                     })
                 }
@@ -212,6 +231,15 @@ impl<'a> Node<'a> {
                 }
                 fn kind_id(&self) -> u16 {
                     self.kind_id
+                }
+                fn is_error(&self) -> bool {
+                    self.is_error
+                }
+                fn is_named(&self) -> bool {
+                    self.named
+                }
+                fn id(&self) -> usize {
+                    self.id
                 }
             }
             #children_impl

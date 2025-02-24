@@ -149,13 +149,6 @@ impl<'a> State<'a> {
         for node in self.nodes.values() {
             enum_tokens.push(node.get_enum_tokens());
             let variant_name = node.normalize_name();
-            from_tokens.extend_one(get_from_for_enum(&variant_name, TYPE_NAME));
-            for subenum in node.subenums.iter() {
-                from_tokens.extend_one(get_from_for_enum(
-                    &variant_name,
-                    &normalize_type_name(subenum, true),
-                ));
-            }
         }
         for subenum in self.subenums.iter() {
             assert!(
@@ -178,7 +171,8 @@ impl<'a> State<'a> {
         let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Drive)]
+        #[enum_delegate::implement(CSTNode)]
         pub enum #enum_name {
                 #(#enum_tokens),*
             }
