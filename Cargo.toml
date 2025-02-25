@@ -23,8 +23,14 @@ jsx = [ "codegen-sdk-cst/jsx"]
 javascript = [ "codegen-sdk-cst/typescript"]
 json = [ "codegen-sdk-cst/json"]
 java = [ "codegen-sdk-cst/java"]
+# ruby = [ "codegen-sdk-cst/ruby"]
+# rust = [ "codegen-sdk-cst/rust"]
+go = [ "codegen-sdk-cst/go"]
+# markdown = [ "codegen-sdk-cst/markdown"]
+yaml = [ "codegen-sdk-cst/yaml"]
+toml = [ "codegen-sdk-cst/toml"]
 ts_query = []
-default = ["json", "ts_query"]
+default = ["json", "ts_query", "yaml", "toml"]
 [dev-dependencies]
 test-log = { workspace = true }
 [workspace]
@@ -45,6 +51,12 @@ tree-sitter-typescript = "0.23.2"
 tree-sitter-javascript = "0.23.1"
 tree-sitter-json = "0.24.0"
 tree-sitter-java = "0.23.5"
+tree-sitter-ruby = "0.23.1"
+tree-sitter-rust = "0.23.2"
+tree-sitter-go = "0.23.4"
+tree-sitter-md = "0.3.2"
+tree-sitter-yaml = "0.7.0"
+tree-sitter-toml-ng = "0.7.0"
 bytes = "1.10.0"
 convert_case = "0.7.1"
 serde = { version = "1.0.217", features = ["derive"] }
