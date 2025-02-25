@@ -41,7 +41,6 @@ fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = t
     captures.into_iter()
 }
 #[derive(Debug)]
-#[debug("{}", self.source())]
 pub struct Query<'a> {
     node: ts_query::NamedNode,
     language: &'a Language,
@@ -140,9 +139,6 @@ impl<'a> Query<'a> {
     //     );
     // }
 
-    pub fn source(&self) -> String {
-        self.node.source()
-    }
     // fn execute<T: HasChildren>(&self, node: &T) -> Vec<Box<dyn CSTNode + Send>> {
     //     let mut result = Vec::new();
 
@@ -351,7 +347,7 @@ impl<'a> Query<'a> {
             ts_query::NodeTypes::Identifier(identifier) => {
                 let to_append = self.get_default_matcher();
                 let language = format_ident!("{}", self.language.name());
-                let mut children = format_ident!("{}", struct_name);
+                let children;
                 if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
                     children = format_ident!("{}Children", struct_name);
                     // When there is only 1 possible child, we can use the default matcher
@@ -419,9 +415,9 @@ pub trait HasQuery {
     fn definitions(&self) -> BTreeMap<String, Vec<Query<'_>>> {
         self.queries_with_prefix("definition")
     }
-    fn references(&self) -> BTreeMap<String, Vec<Query<'_>>> {
-        self.queries_with_prefix("reference")
-    }
+    // fn references(&self) -> BTreeMap<String, Vec<Query<'_>>> {
+    //     self.queries_with_prefix("reference")
+    // }
 }
 impl HasQuery for Language {
     fn queries(&self) -> BTreeMap<String, Query<'_>> {

@@ -5,7 +5,7 @@ use codegen_sdk_cst::ts_query;
 use convert_case::{Case, Casing};
 use log::info;
 use proc_macro2::TokenStream;
-use quote::{TokenStreamExt, format_ident, quote};
+use quote::{format_ident, quote};
 
 use super::query::Query;
 pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStream {
@@ -69,16 +69,16 @@ pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStre
 
 #[cfg(test)]
 mod tests {
-    use codegen_sdk_common::{Language, language::typescript::Typescript};
-    use codegen_sdk_cst::query::{HasQuery, Query};
+    use codegen_sdk_common::language::typescript::Typescript;
 
     use super::*;
+    use crate::query::HasQuery;
 
     #[test_log::test]
     fn test_generate_visitor() {
         let language = &Typescript;
         let queries = language.definitions();
-        let visitor = generate_visitor(&queries.values().collect());
+        let visitor = generate_visitor(&queries.values().into_iter().flatten().collect(), language);
         insta::assert_snapshot!(
             codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()
         );

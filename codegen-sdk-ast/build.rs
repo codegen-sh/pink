@@ -3,7 +3,7 @@ use codegen_sdk_common::language::LANGUAGES;
 use rayon::prelude::*;
 fn main() {
     env_logger::init();
-    LANGUAGES.iter().for_each(|language| {
+    LANGUAGES.par_iter().for_each(|language| {
         generate_ast(language).unwrap();
     });
 }
