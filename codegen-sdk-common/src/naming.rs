@@ -36,6 +36,7 @@ static MAPPINGS: phf::Map<char, &'static str> = phf_map! {
     '"' => "DoubleQuote",
     '|' => "Pipe",
     ';' => "Semicolon",
+    '\0' => "Null",
 };
 pub fn normalize_field_name(field_name: &str) -> String {
     if field_name == "type" {

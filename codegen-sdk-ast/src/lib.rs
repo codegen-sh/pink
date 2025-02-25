@@ -10,4 +10,4 @@ impl<T: File> Named for T {
     }
 }
 use std::path::PathBuf;
-include!(concat!(env!("OUT_DIR"), "/typescript.rs"));
+include!(concat!(env!("OUT_DIR"), "/json.rs"));

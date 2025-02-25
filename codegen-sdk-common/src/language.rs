@@ -51,7 +51,7 @@ impl Language {
         self.nodes()
             .iter()
             .find(|node| node.root)
-            .unwrap()
+            .unwrap_or_else(|| panic!("No root node found for language: {}", self.name))
             .type_name
             .to_case(Case::Pascal)
     }
@@ -71,6 +71,8 @@ impl Language {
         self.name
     }
 }
+#[cfg(feature = "go")]
+pub mod go;
 #[cfg(feature = "java")]
 pub mod java;
 #[cfg(feature = "typescript")]
@@ -79,14 +81,24 @@ pub mod javascript;
 pub mod json;
 #[cfg(feature = "typescript")]
 pub mod jsx;
+#[cfg(feature = "markdown")]
+pub mod markdown;
 #[cfg(feature = "python")]
 pub mod python;
+#[cfg(feature = "ruby")]
+pub mod ruby;
+#[cfg(feature = "rust")]
+pub mod rust;
+#[cfg(feature = "toml")]
+pub mod toml;
 #[cfg(feature = "ts_query")]
 pub mod ts_query;
 #[cfg(feature = "typescript")]
 pub mod tsx;
 #[cfg(feature = "typescript")]
 pub mod typescript;
+#[cfg(feature = "yaml")]
+pub mod yaml;
 lazy_static! {
     pub static ref LANGUAGES: Vec<&'static Language> = vec![
         #[cfg(feature = "python")]
@@ -99,6 +111,18 @@ lazy_static! {
         &jsx::JSX,
         #[cfg(feature = "typescript")]
         &javascript::Javascript,
+        #[cfg(feature = "rust")]
+        &rust::Rust,
+        #[cfg(feature = "go")]
+        &go::Go,
+        #[cfg(feature = "ruby")]
+        &ruby::Ruby,
+        #[cfg(feature = "yaml")]
+        &yaml::Yaml,
+        #[cfg(feature = "toml")]
+        &toml::TOML,
+        #[cfg(feature = "markdown")]
+        &markdown::Markdown,
         #[cfg(feature = "json")]
         &json::JSON,
         #[cfg(feature = "java")]
