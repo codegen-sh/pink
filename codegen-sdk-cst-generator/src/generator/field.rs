@@ -180,7 +180,7 @@ mod tests {
     use codegen_sdk_common::parser::TypeDefinition;
 
     use super::*;
-    use crate::test_util::get_language_no_nodes;
+    use crate::test_util::{get_language_no_nodes, snapshot_tokens};
     fn create_test_field_definition(name: &str, multiple: bool, required: bool) -> FieldDefinition {
         FieldDefinition {
             types: vec![TypeDefinition {
@@ -249,42 +249,17 @@ mod tests {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
         let field = Field::new("test_node", "test_field", &field_definition, &language);
-
-        assert_eq!(
-            field.get_struct_field().to_string(),
-            quote! {
-                #[rkyv(omit_bounds)]
-                pub test_field: Box<TestType>
-            }
-            .to_string()
-        );
+        snapshot_tokens(&field.get_struct_field());
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
-        let language = get_language_no_nodes();
         let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
-
-        assert_eq!(
-            optional_field.get_struct_field().to_string(),
-            quote! {
-                #[rkyv(omit_bounds)]
-                pub test_field: Box<Option<TestType>>
-            }
-            .to_string()
-        );
+        snapshot_tokens(&optional_field.get_struct_field());
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
         let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
-
-        assert_eq!(
-            multiple_field.get_struct_field().to_string(),
-            quote! {
-                #[rkyv(omit_bounds)]
-                pub test_field: Vec<TestType>
-            }
-            .to_string()
-        );
+        snapshot_tokens(&multiple_field.get_struct_field());
     }
 
     #[test]
@@ -292,31 +267,17 @@ mod tests {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
         let field = Field::new("test_node", "test_field", &field_definition, &language);
-
-        assert_eq!(
-            field.get_constructor_field().to_string(),
-            quote!(test_field: Box::new(get_child_by_field_name(&node, "test_field", buffer)?))
-                .to_string()
-        );
+        snapshot_tokens(&field.get_constructor_field());
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
         let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
-
-        assert_eq!(
-            optional_field.get_constructor_field().to_string(),
-            quote!(test_field: Box::new(get_optional_child_by_field_name(&node, "test_field", buffer)?)).to_string()
-        );
+        snapshot_tokens(&optional_field.get_constructor_field());
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
         let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
-
-        assert_eq!(
-            multiple_field.get_constructor_field().to_string(),
-            quote!(test_field: get_multiple_children_by_field_name(&node, "test_field", buffer)?)
-                .to_string()
-        );
+        snapshot_tokens(&multiple_field.get_constructor_field());
     }
 
     #[test]

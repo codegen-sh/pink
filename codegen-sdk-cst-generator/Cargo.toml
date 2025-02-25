@@ -17,6 +17,6 @@ tempfile = "3.8.1"
 mockall_double = "0.3.1"
 
 [dev-dependencies]
-assert-tokenstreams-eq = "0.1.0"
 tree-sitter-python = { workspace = true }
 test-log = { workspace = true }
+insta = "1.42.1"

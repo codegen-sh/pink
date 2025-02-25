@@ -188,13 +188,8 @@ impl<'a> State<'a> {
 mod tests {
     use std::collections::HashMap;
 
-    use assert_tokenstreams_eq::assert_tokenstreams_eq;
-
     use super::*;
-    use crate::{
-        generator::utils::get_serialize_bounds,
-        test_util::{get_language, get_language_no_nodes},
-    };
+    use crate::test_util::{get_language, get_language_no_nodes, snapshot_tokens};
 
     #[test_log::test]
     fn test_get_enum() {
@@ -210,20 +205,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone)]
-                pub enum NodeTypes {
-                    Test(Test)
-                }
-                impl std::convert::From<Test> for NodeTypes {
-                    fn from(variant: Test) -> Self {
-                        Self::Test(variant)
-                    }
-                }
-            },
-            &enum_tokens
-        );
+        snapshot_tokens(&enum_tokens);
     }
     #[test_log::test]
     fn test_parse_children() {
@@ -265,59 +247,10 @@ mod tests {
             }),
         };
         let nodes = vec![child, child_two, node];
-        let language = get_language_no_nodes();
+        let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[subenum(TestChildren(derive(Archive, Deserialize, Serialize)))]
-                #[derive(Debug, Clone)]
-                pub enum NodeTypes {
-                    #[subenum(TestChildren)]
-                    Child(Child),
-                    #[subenum(TestChildren)]
-                    ChildTwo(ChildTwo),
-                    Test(Test)
-                }
-                impl std::convert::From<Child> for NodeTypes {
-                    fn from(variant: Child) -> Self {
-                        Self::Child(variant)
-                    }
-                }
-                impl std::convert::From<Child> for TestChildren {
-                    fn from(variant: Child) -> Self {
-                        Self::Child(variant)
-                    }
-                }
-                impl std::convert::From<ChildTwo> for NodeTypes {
-                    fn from(variant: ChildTwo) -> Self {
-                        Self::ChildTwo(variant)
-                    }
-                }
-                impl std::convert::From<ChildTwo> for TestChildren {
-                    fn from(variant: ChildTwo) -> Self {
-                        Self::ChildTwo(variant)
-                    }
-                }
-                impl std::convert::From<Test> for NodeTypes {
-                    fn from(variant: Test) -> Self {
-                        Self::Test(variant)
-                    }
-                }
-                impl FromNode for TestChildren {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        match node.kind() {
-                            "child" => Ok(Self::Child(node.from_node(node, buffer)?)),
-                            "child_two" => Ok(Self::ChildTwo(node.from_node(node, buffer)?)),
-                            _ => Err(ParseError::UnexpectedNode {
-                                node_type: node.kind().to_string(),
-                                backtrace: Backtrace::capture(),
-                            }),                        }
-                    }
-                }
-            },
-            &enum_tokens
-        );
+        snapshot_tokens(&enum_tokens);
     }
     #[test_log::test]
     fn test_parse_children_subtypes() {
@@ -365,50 +298,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[subenum(Definition(derive(Archive, Deserialize, Serialize)))]
-                #[derive(Debug, Clone)]
-                pub enum NodeTypes {
-                    #[subenum(Definition)]
-                    Class(Class),
-                    #[subenum(Definition)]
-                    Function(Function)
-                }
-                impl std::convert::From<Class> for NodeTypes {
-                    fn from(variant: Class) -> Self {
-                        Self::Class(variant)
-                    }
-                }
-                impl std::convert::From<Class> for Definition {
-                    fn from(variant: Class) -> Self {
-                        Self::Class(variant)
-                    }
-                }
-                impl std::convert::From<Function> for NodeTypes {
-                    fn from(variant: Function) -> Self {
-                        Self::Function(variant)
-                    }
-                }
-                impl std::convert::From<Function> for Definition {
-                    fn from(variant: Function) -> Self {
-                        Self::Function(variant)
-                    }
-                }
-                impl FromNode for Definition {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        match node.kind() {
-                            "class" => Ok(Self::Class(node.from_node(node)?)),
-                            "function" => Ok(Self::Function(node.from_node(node)?)),
-                            _ => Err(ParseError::UnexpectedNode {
-                                node_type: node.kind().to_string(),
-                                backtrace: Backtrace::capture(),
-                            }),                        }
-                    }
-                }
-            },
-            &enum_tokens
-        );
+        snapshot_tokens(&enum_tokens);
     }
     #[test_log::test]
     fn test_add_field_subenums() {
@@ -456,79 +346,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[subenum(NodeCChildren(derive(Archive, Deserialize, Serialize)), NodeCField(derive(Archive, Deserialize, Serialize)))]
-                #[derive(Debug, Clone)]
-                pub enum NodeTypes {
-                    #[subenum(NodeCChildren, NodeCField)]
-                    NodeA(NodeA),
-                    #[subenum(NodeCChildren, NodeCField)]
-                    NodeB(NodeB),
-                    NodeC(NodeC)
-                }
-                impl std::convert::From<NodeA> for NodeTypes {
-                    fn from(variant: NodeA) -> Self {
-                        Self::NodeA(variant)
-                    }
-                }
-                impl std::convert::From<NodeA> for NodeCChildren {
-                    fn from(variant: NodeA) -> Self {
-                        Self::NodeA(variant)
-                    }
-                }
-                impl std::convert::From<NodeA> for NodeCField {
-                    fn from(variant: NodeA) -> Self {
-                        Self::NodeA(variant)
-                    }
-                }
-
-                impl std::convert::From<NodeB> for NodeTypes {
-                    fn from(variant: NodeB) -> Self {
-                        Self::NodeB(variant)
-                    }
-                }
-                impl std::convert::From<NodeB> for NodeCChildren {
-                    fn from(variant: NodeB) -> Self {
-                        Self::NodeB(variant)
-                    }
-                }
-                impl std::convert::From<NodeB> for NodeCField {
-                    fn from(variant: NodeB) -> Self {
-                        Self::NodeB(variant)
-                    }
-                }
-                impl std::convert::From<NodeC> for NodeTypes {
-                    fn from(variant: NodeC) -> Self {
-                        Self::NodeC(variant)
-                    }
-                }
-                impl FromNode for NodeCChildren {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        match node.kind() {
-                            "node_a" => Ok(Self::NodeA(NodeA::from_node(node, buffer)?)),
-                            "node_b" => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
-                            _ => Err(ParseError::UnexpectedNode {
-                                node_type: node.kind().to_string(),
-                                backtrace: Backtrace::capture(),
-                            }),                        }
-                    }
-                }
-                impl FromNode for NodeCField {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        match node.kind() {
-                            "node_a" => Ok(Self::NodeA(NodeA::from_node(node, buffer)?)),
-                            "node_b" => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
-                            _ => Err(ParseError::UnexpectedNode {
-                                node_type: node.kind().to_string(),
-                                backtrace: Backtrace::capture(),
-                            }),                        }
-                    }
-                }
-
-            },
-            &enum_tokens
-        );
+        snapshot_tokens(&enum_tokens);
     }
     #[test_log::test]
     fn test_get_structs() {
@@ -544,75 +362,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let struct_tokens = state.get_structs();
-        let serialize_bounds = get_serialize_bounds();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-                #serialize_bounds
-                pub struct Test {
-                    start_byte: usize,
-                    end_byte: usize,
-                    _kind: std::string::String,
-                    #[debug("[{},{}]", start_position.row, start_position.column)]
-                    start_position: Point,
-                    #[debug("[{},{}]", end_position.row, end_position.column)]
-                    end_position: Point,
-                    #[debug(ignore)]
-                    buffer: Arc<Bytes>,
-                    #[debug(ignore)]
-                    kind_id: u16,
-                }
-                impl FromNode for Test {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        Ok(Self {
-                            start_byte: node.start_byte(),
-                            end_byte: node.end_byte(),
-                            _kind: node.kind().to_string(),
-                            start_position: node.start_position().into(),
-                            end_position: node.end_position().into(),
-                            buffer: buffer.clone(),
-                            kind_id: node.kind_id(),
-                        })
-                    }
-                }
-                impl CSTNode for Test {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for Test {
-                    type Child = Self;
-                    fn children(&self) -> Vec<Self::Child> {
-                        vec![]
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            _ => vec![],
-                        }
-                    }
-                }
-
-            },
-            &struct_tokens
-        );
+        snapshot_tokens(&struct_tokens);
     }
     #[test_log::test]
     fn test_get_variants() {
@@ -656,6 +406,10 @@ mod tests {
         let variants = state.get_variants("parent");
         assert_eq!(
             vec![
+                TypeDefinition {
+                    type_name: "comment".to_string(),
+                    named: true,
+                },
                 TypeDefinition {
                     type_name: "node_a".to_string(),
                     named: true,

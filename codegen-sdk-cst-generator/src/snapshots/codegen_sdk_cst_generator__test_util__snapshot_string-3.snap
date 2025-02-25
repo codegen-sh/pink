@@ -1,0 +1,5 @@
+---
+source: codegen-sdk-cst-generator/src/lib.rs
+expression: "StringDebug { string: formatted }"
+---
+# [rkyv (omit_bounds)] pub test_field : Vec < TestType >

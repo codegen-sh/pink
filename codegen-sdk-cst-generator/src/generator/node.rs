@@ -324,14 +324,13 @@ impl<'a> Node<'a> {
 }
 #[cfg(test)]
 mod tests {
-    use assert_tokenstreams_eq::assert_tokenstreams_eq;
     use codegen_sdk_common::{
         language::typescript::Typescript,
         parser::{FieldDefinition, Fields, TypeDefinition},
     };
 
     use super::*;
-    use crate::test_util::get_language_no_nodes;
+    use crate::test_util::{get_language, get_language_no_nodes, snapshot_tokens};
 
     fn create_test_node(name: &str) -> codegen_sdk_common::parser::Node {
         codegen_sdk_common::parser::Node {
@@ -394,17 +393,11 @@ mod tests {
         let mut node = Node::new(&base_node, &language);
 
         let tokens = node.get_enum_tokens();
-        assert_eq!(quote! { Test(Test) }.to_string(), tokens.to_string());
+        snapshot_tokens(&tokens);
+
         node.add_subenum("subenum".to_string());
         let tokens = node.get_enum_tokens();
-        assert_eq!(
-            quote! {
-                #[subenum(Subenum)]
-                Test(Test)
-            }
-            .to_string(),
-            tokens.to_string()
-        );
+        snapshot_tokens(&tokens);
     }
 
     #[test]
@@ -412,75 +405,7 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        let serialize_bounds = get_serialize_bounds();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-                #serialize_bounds
-                pub struct TestNode {
-                    start_byte: usize,
-                    end_byte: usize,
-                    _kind: std::string::String,
-                    #[debug("[{},{}]", start_position.row, start_position.column)]
-                    start_position: Point,
-                    #[debug("[{},{}]", end_position.row, end_position.column)]
-                    end_position: Point,
-                    #[debug(ignore)]
-                    buffer: Arc<Bytes>,
-                    #[debug(ignore)]
-                    kind_id: u16,
-                }
-
-                impl FromNode for TestNode {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        Ok(Self {
-                            start_byte: node.start_byte(),
-                            end_byte: node.end_byte(),
-                            _kind: node.kind().to_string(),
-                            start_position: node.start_position().into(),
-                            end_position: node.end_position().into(),
-                            buffer: buffer.clone(),
-                            kind_id: node.kind_id(),
-                        })
-                    }
-                }
-                impl CSTNode for TestNode {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for TestNode {
-                    type Child = Self;
-                    fn children(&self) -> Vec<Self::Child> {
-                        vec![]
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            _ => vec![],
-                        }
-                    }
-                }
-            },
-            &node.get_struct_tokens()
-        );
+        snapshot_tokens(&node.get_struct_tokens());
     }
 
     #[test]
@@ -501,81 +426,7 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        let serialize_bounds = get_serialize_bounds();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-                #serialize_bounds
-                pub struct TestNode {
-                    start_byte: usize,
-                    end_byte: usize,
-                    _kind: std::string::String,
-                    #[debug("[{},{}]", start_position.row, start_position.column)]
-                    start_position: Point,
-                    #[debug("[{},{}]", end_position.row, end_position.column)]
-                    end_position: Point,
-                    #[debug(ignore)]
-                    buffer: Arc<Bytes>,
-                    #[debug(ignore)]
-                    kind_id: u16,
-                    #[rkyv(omit_bounds)]
-                    pub test_field: Box<TestType>,
-                }
-
-                impl FromNode for TestNode {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        Ok(Self {
-                            start_byte: node.start_byte(),
-                            end_byte: node.end_byte(),
-                            _kind: node.kind().to_string(),
-                            start_position: node.start_position().into(),
-                            end_position: node.end_position().into(),
-                            buffer: buffer.clone(),
-                            kind_id: node.kind_id(),
-                            test_field: Box::new(get_child_by_field_name(&node, "test_field", buffer)?),
-                        })
-                    }
-                }
-                impl CSTNode for TestNode {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for TestNode {
-                    type Child = TestType;
-                    fn children(&self) -> Vec<Self::Child> {
-                        let mut children: Vec<_> = vec![];
-                        children.push(self.test_field.as_ref().clone());
-                        children
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            "test_field" => vec![self.test_field.as_ref().clone()],
-                            _ => vec![],
-                        }
-                    }
-                }
-            },
-            &node.get_struct_tokens()
-        );
+        snapshot_tokens(&node.get_struct_tokens());
     }
 
     #[test]
@@ -618,186 +469,19 @@ mod tests {
                 ),
             ],
         );
-        let language = get_language_no_nodes();
+        let nodes = vec![raw_node.clone()];
+        let language = get_language(nodes);
         let node = Node::new(&raw_node, &language);
-        let serialize_bounds = get_serialize_bounds();
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-                #serialize_bounds
-                pub struct TestNode {
-                    start_byte: usize,
-                    end_byte: usize,
-                    _kind: std::string::String,
-                    #[debug("[{},{}]", start_position.row, start_position.column)]
-                    start_position: Point,
-                    #[debug("[{},{}]", end_position.row, end_position.column)]
-                    end_position: Point,
-                    #[debug(ignore)]
-                    buffer: Arc<Bytes>,
-                    #[debug(ignore)]
-                    kind_id: u16,
-                    #[rkyv(omit_bounds)]
-                    pub multiple_field: Vec<TestType>,
-                    #[rkyv(omit_bounds)]
-                    pub optional_field: Box<Option<TestType>>,
-                    #[rkyv(omit_bounds)]
-                    pub required_field: Box<TestType>,
-                }
-
-                impl FromNode for TestNode {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        Ok(Self {
-                            start_byte: node.start_byte(),
-                            end_byte: node.end_byte(),
-                            _kind: node.kind().to_string(),
-                            start_position: node.start_position().into(),
-                            end_position: node.end_position().into(),
-                            buffer: buffer.clone(),
-                            kind_id: node.kind_id(),
-                            multiple_field: get_multiple_children_by_field_name(&node, "multiple_field", buffer)?,
-                            optional_field: Box::new(get_optional_child_by_field_name(&node, "optional_field", buffer)?),
-                            required_field: Box::new(get_child_by_field_name(&node, "required_field", buffer)?),
-                        })
-                    }
-                }
-                impl CSTNode for TestNode {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for TestNode {
-                    type Child = TestType;
-                    fn children(&self) -> Vec<Self::Child> {
-                        let mut children: Vec<_> = vec![];
-                        children.extend(self.multiple_field.iter().map(|child| child.clone()));
-                        if let Some(child) = self.optional_field.as_ref() {
-                            children.push(child.clone());
-                        };
-                        children.push(self.required_field.as_ref().clone());
-                        children
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            "multiple_field" => self
-                                .multiple_field
-                                .iter()
-                                .map(|child| child.clone())
-                                .collect(),
-                            "optional_field" => self
-                                .optional_field
-                                .as_ref()
-                                .iter()
-                                .map(|child| child.clone())
-                                .collect(),
-                            "required_field" => vec![self.required_field.as_ref().clone()],
-                            _ => vec![],
-                        }
-                    }
-                }
-            },
-            &node.get_struct_tokens()
-        );
+        snapshot_tokens(&node.get_struct_tokens());
     }
 
-    #[test]
+    #[test_log::test]
     fn test_get_struct_tokens_with_children() {
         let raw_node =
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        let serialize_bounds = get_serialize_bounds();
-
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-                #serialize_bounds
-                pub struct TestNode {
-                    start_byte: usize,
-                    end_byte: usize,
-                    _kind: std::string::String,
-                    #[debug("[{},{}]", start_position.row, start_position.column)]
-                    start_position: Point,
-                    #[debug("[{},{}]", end_position.row, end_position.column)]
-                    end_position: Point,
-                    #[debug(ignore)]
-                    buffer: Arc<Bytes>,
-                    #[debug(ignore)]
-                    kind_id: u16,
-                    #[rkyv(omit_bounds)]
-                    pub children: Vec<TestNodeChildren>,
-                }
-
-                impl FromNode for TestNode {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        Ok(Self {
-                            start_byte: node.start_byte(),
-                            end_byte: node.end_byte(),
-                            _kind: node.kind().to_string(),
-                            start_position: node.start_position().into(),
-                            end_position: node.end_position().into(),
-                            buffer: buffer.clone(),
-                            kind_id: node.kind_id(),
-                            children: named_children_without_field_names(node, buffer)?,
-                        })
-                    }
-                }
-                impl CSTNode for TestNode {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for TestNode {
-                    type Child = TestNodeChildren;
-                    fn children(&self) -> Vec<Self::Child> {
-                        let children: Vec<_> = self.children.iter().cloned().collect();
-                        children
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            _ => vec![],
-                        }
-                    }
-                }
-            },
-            &node.get_struct_tokens()
-        );
+        snapshot_tokens(&node.get_struct_tokens());
     }
 
     #[test]
@@ -805,80 +489,7 @@ mod tests {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        let serialize_bounds = get_serialize_bounds();
-
-        assert_tokenstreams_eq!(
-            &quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-                #serialize_bounds
-                pub struct TestNode {
-                    start_byte: usize,
-                    end_byte: usize,
-                    _kind: std::string::String,
-                    #[debug("[{},{}]", start_position.row, start_position.column)]
-                    start_position: Point,
-                    #[debug("[{},{}]", end_position.row, end_position.column)]
-                    end_position: Point,
-                    #[debug(ignore)]
-                    buffer: Arc<Bytes>,
-                    #[debug(ignore)]
-                    kind_id: u16,
-                    #[rkyv(omit_bounds)]
-                    pub children: Vec<ChildType>,
-                }
-
-                impl FromNode for TestNode {
-                    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                        Ok(Self {
-                            start_byte: node.start_byte(),
-                            end_byte: node.end_byte(),
-                            _kind: node.kind().to_string(),
-                            start_position: node.start_position().into(),
-                            end_position: node.end_position().into(),
-                            buffer: buffer.clone(),
-                            kind_id: node.kind_id(),
-                            children: named_children_without_field_names(node, buffer)?,
-                        })
-                    }
-                }
-                impl CSTNode for TestNode {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for TestNode {
-                    type Child = ChildType;
-                    fn children(&self) -> Vec<Self::Child> {
-                        let children: Vec<_> = self.children.iter().cloned().collect();
-                        children
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            _ => vec![],
-                        }
-                    }
-                }
-            },
-            &node.get_struct_tokens()
-        );
+        snapshot_tokens(&node.get_struct_tokens());
     }
 
     #[test]
@@ -886,47 +497,7 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        let tokens = node.get_trait_implementations();
-
-        assert_tokenstreams_eq!(
-            &quote! {
-                impl CSTNode for TestNode {
-                    fn kind(&self) -> &str {
-                        &self._kind
-                    }
-                    fn start_byte(&self) -> usize {
-                        self.start_byte
-                    }
-                    fn end_byte(&self) -> usize {
-                        self.end_byte
-                    }
-                    fn start_position(&self) -> Point {
-                        self.start_position
-                    }
-                    fn end_position(&self) -> Point {
-                        self.end_position
-                    }
-                    fn buffer(&self) -> &Bytes {
-                        &self.buffer
-                    }
-                    fn kind_id(&self) -> u16 {
-                        self.kind_id
-                    }
-                }
-                impl HasChildren for TestNode {
-                    type Child = Self;
-                    fn children(&self) -> Vec<Self::Child> {
-                        vec![]
-                    }
-                    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                        match field_name {
-                            _ => vec![],
-                        }
-                    }
-                }
-            },
-            &tokens
-        );
+        snapshot_tokens(&node.get_trait_implementations());
     }
 
     #[test]
@@ -947,17 +518,7 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-
-        assert_tokenstreams_eq!(
-            &quote! {
-                fn children(&self) -> Vec<Self::Child> {
-                    let mut children: Vec<_> = vec![];
-                    children.push(self.test_field.as_ref().clone());
-                    children
-                }
-            },
-            &node.get_children_field_impl()
-        );
+        snapshot_tokens(&node.get_children_field_impl());
     }
 
     #[test]
@@ -978,17 +539,6 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-
-        assert_tokenstreams_eq!(
-            &quote! {
-                fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                    match field_name {
-                        "test_field" => vec![self.test_field.as_ref().clone()],
-                        _ => vec![],
-                    }
-                }
-            },
-            &node.get_children_by_field_name_impl()
-        );
+        snapshot_tokens(&node.get_children_by_field_name_impl());
     }
 }

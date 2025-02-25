@@ -13,15 +13,44 @@ pub fn generate_cst_to_file(language: &Language) -> anyhow::Result<()> {
 }
 #[cfg(test)]
 mod test_util {
+    use std::{fmt::Debug, num::NonZeroU16};
+
     use codegen_sdk_common::{language::MockLanguage, parser::Node};
+    use proc_macro2::TokenStream;
+
+    use super::generator::format::format_cst;
+    struct StringDebug {
+        pub string: String,
+    }
+    impl Debug for StringDebug {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.string)
+        }
+    }
     pub fn get_language(nodes: Vec<Node>) -> MockLanguage {
         let mut language = get_language_no_nodes();
+        for (idx, node) in nodes.clone().into_iter().enumerate() {
+            language
+                .expect_kind_id()
+                .withf(move |name: &str, named: &bool| name == &node.type_name && named == &node.named)
+                .return_const(idx as u16);
+        }
         language.expect_nodes().return_const(nodes);
         language
     }
     pub fn get_language_no_nodes() -> MockLanguage {
-        let language = MockLanguage::default();
+        let mut language = MockLanguage::default();
+        language.expect_kind_id().return_const(0 as u16);
+        language.expect_field_id().return_const(Some(NonZeroU16::new(1).unwrap()));
         language
+    }
+    pub fn snapshot_string(string: &str) {
+        let formatted = format_cst(string).unwrap_or_else(|_| string.to_string());
+        insta::assert_debug_snapshot!(StringDebug { string: formatted });
+    }
+    pub fn snapshot_tokens(tokens: &TokenStream) {
+        let string = tokens.to_string();
+        snapshot_string(&string);
     }
 }
 #[cfg(test)]

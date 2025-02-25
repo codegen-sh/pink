@@ -4,7 +4,7 @@ use mockall_double::double;
 use state::State;
 mod constants;
 mod field;
-mod format;
+pub(crate) mod format;
 mod node;
 mod state;
 mod utils;

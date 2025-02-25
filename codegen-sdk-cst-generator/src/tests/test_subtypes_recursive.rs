@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use assert_tokenstreams_eq::assert_tokenstreams_eq;
 use codegen_sdk_common::parser::{Children, Fields, Node, TypeDefinition};
-use quote::quote;
 
 use crate::{generate_cst, test_util::get_language};
 
@@ -91,64 +89,5 @@ fn test_recursive_subtypes() {
 
     let language = get_language(nodes);
     let output = generate_cst(&language).unwrap();
-    let expected = quote! {
-        use bytes::Bytes;
-        use codegen_sdk_common::*;
-        use derive_more::Debug;
-        use rkyv::{Archive, Deserialize, Serialize};
-        use subenum::subenum;
-        use tree_sitter;
-
-        #[derive(Debug, Clone)]
-        #[subenum(Expression(derive(Archive, Deserialize, Serialize)))]
-        pub enum NodeTypes {
-            #[subenum(Expression)]
-            CallExpression(CallExpression),
-        }
-
-        impl std::convert::From<CallExpression> for NodeTypes {
-            fn from(variant: CallExpression) -> Self {
-                Self::CallExpression(variant)
-            }
-        }
-
-        impl std::convert::From<CallExpression> for Expression {
-            fn from(variant: CallExpression) -> Self {
-                Self::CallExpression(variant)
-            }
-        }
-
-        #[derive(Debug, Clone)]
-        pub struct CallExpression {
-            start_byte: usize,
-            end_byte: usize,
-            _kind: String,
-            #[debug("[{},{}]", start_position.row, start_position.column)]
-            start_position: Point,
-            #[debug("[{},{}]", end_position.row, end_position.column)]
-            end_position: Point,
-            #[debug(ignore)]
-            buffer: Arc<Bytes>,
-            #[debug(ignore)]
-            kind_id: u16,
-            callee: Box<Expression>,
-            children: Vec<Expression>,
-        }
-
-        impl HasChildren for CallExpression {
-            type Child = Expression;
-            fn children(&self) -> Vec<Self::Child> {
-                let mut children: Vec<_> = self.children.iter().cloned().collect();
-                children.push(self.callee.as_ref().clone());
-                children
-            }
-            fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
-                match field_name {
-                    "callee" => vec![self.callee.as_ref().clone()],
-                    _ => vec![],
-                }
-            }
-        }
-    };
-    assert_tokenstreams_eq!(&output, &expected);
+    crate::test_util::snapshot_string(&output);
 }
