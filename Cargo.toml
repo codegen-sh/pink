@@ -15,6 +15,16 @@ log = { workspace = true }
 rayon = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
+[features]
+# python = [ "codegen-sdk-cst/python"] # TODO: Add python support
+typescript = [ "codegen-sdk-cst/typescript"]
+tsx = [ "codegen-sdk-cst/tsx"]
+jsx = [ "codegen-sdk-cst/jsx"]
+javascript = [ "codegen-sdk-cst/typescript"]
+json = [ "codegen-sdk-cst/json"]
+java = [ "codegen-sdk-cst/java"]
+ts_query = []
+default = ["json", "ts_query"]
 [dev-dependencies]
 test-log = { workspace = true }
 [workspace]
@@ -45,7 +55,7 @@ test-log = "0.2.17"
 enum_delegate = "0.2.0"
 mockall = "0.13.1"
 codegen-sdk-common = { path = "codegen-sdk-common" }
-codegen-sdk-cst = { path = "codegen-sdk-cst", features = ["typescript"]}
+codegen-sdk-cst = { path = "codegen-sdk-cst"}
 codegen-sdk-ast = { path = "codegen-sdk-ast" }
 
 [profile.dev.package]
