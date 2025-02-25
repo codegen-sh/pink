@@ -1,0 +1,316 @@
+---
+source: codegen-sdk-cst-generator/src/tests/test_subtypes.rs
+expression: "crate::test_util::snapshot_string(&output)"
+---
+use std::sync::Arc;
+use tree_sitter;
+use derive_more::Debug;
+use codegen_sdk_common::*;
+use subenum::subenum;
+use std::backtrace::Backtrace;
+use bytes::Bytes;
+use rkyv::{Archive, Deserialize, Serialize};
+use derive_visitor::Drive;
+#[subenum(
+    BinaryExpressionChildren(derive(Archive, Deserialize, Serialize)),
+    Expression(derive(Archive, Deserialize, Serialize))
+)]
+#[derive(Debug, Clone, Drive)]
+#[enum_delegate::implement(CSTNode)]
+pub enum NodeTypes {
+    #[subenum(Expression, BinaryExpressionChildren)]
+    BinaryExpression(BinaryExpression),
+    #[subenum(Expression, BinaryExpressionChildren)]
+    Literal(Literal),
+}
+impl FromNode for BinaryExpressionChildren {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        match node.kind_id() {
+            0u16 => Ok(Self::Literal(Literal::from_node(node, buffer)?)),
+            _ => {
+                Err(ParseError::UnexpectedNode {
+                    node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
+                })
+            }
+        }
+    }
+}
+impl FromNode for Expression {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        match node.kind_id() {
+            0u16 => Ok(Self::Literal(Literal::from_node(node, buffer)?)),
+            _ => {
+                Err(ParseError::UnexpectedNode {
+                    node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
+                })
+            }
+        }
+    }
+}
+#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
+#[rkyv(
+    serialize_bounds(
+        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
+        __S::Error:rkyv::rancor::Source,
+    )
+)]
+#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
+#[rkyv(
+    bytecheck(
+        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
+    )
+)]
+pub struct BinaryExpression {
+    #[drive(skip)]
+    start_byte: usize,
+    #[drive(skip)]
+    end_byte: usize,
+    #[drive(skip)]
+    _kind: std::string::String,
+    #[debug("[{},{}]", start_position.row, start_position.column)]
+    #[drive(skip)]
+    start_position: Point,
+    #[debug("[{},{}]", end_position.row, end_position.column)]
+    #[drive(skip)]
+    end_position: Point,
+    #[debug(ignore)]
+    #[drive(skip)]
+    buffer: Arc<Bytes>,
+    #[debug(ignore)]
+    #[drive(skip)]
+    kind_id: u16,
+    #[debug(ignore)]
+    #[drive(skip)]
+    is_error: bool,
+    #[debug(ignore)]
+    #[drive(skip)]
+    named: bool,
+    #[debug(ignore)]
+    #[drive(skip)]
+    id: usize,
+    #[rkyv(omit_bounds)]
+    pub left: Box<Expression>,
+    #[rkyv(omit_bounds)]
+    pub right: Box<Expression>,
+}
+impl FromNode for BinaryExpression {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        Ok(Self {
+            start_byte: node.start_byte(),
+            end_byte: node.end_byte(),
+            _kind: node.kind().to_string(),
+            start_position: node.start_position().into(),
+            end_position: node.end_position().into(),
+            buffer: buffer.clone(),
+            kind_id: node.kind_id(),
+            is_error: node.is_error(),
+            named: node.is_named(),
+            id: node.id(),
+            left: Box::new(get_child_by_field_name(&node, "left", buffer)?),
+            right: Box::new(get_child_by_field_name(&node, "right", buffer)?),
+        })
+    }
+}
+impl CSTNode for BinaryExpression {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point {
+        self.start_position
+    }
+    fn end_position(&self) -> Point {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl HasChildren for BinaryExpression {
+    type Child = BinaryExpressionChildren;
+    fn children(&self) -> Vec<Self::Child> {
+        let mut children: Vec<_> = vec![];
+        children
+            .push(
+                Self::Child::try_from(NodeTypes::from(self.left.as_ref().clone()))
+                    .unwrap(),
+            );
+        children
+            .push(
+                Self::Child::try_from(NodeTypes::from(self.right.as_ref().clone()))
+                    .unwrap(),
+            );
+        children
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            "left" => {
+                vec![
+                    Self::Child::try_from(NodeTypes::from(self.left.as_ref().clone()))
+                    .unwrap()
+                ]
+            }
+            "right" => {
+                vec![
+                    Self::Child::try_from(NodeTypes::from(self.right.as_ref().clone()))
+                    .unwrap()
+                ]
+            }
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            1u16 => {
+                vec![
+                    Self::Child::try_from(NodeTypes::from(self.left.as_ref().clone()))
+                    .unwrap()
+                ]
+            }
+            1u16 => {
+                vec![
+                    Self::Child::try_from(NodeTypes::from(self.right.as_ref().clone()))
+                    .unwrap()
+                ]
+            }
+            _ => vec![],
+        }
+    }
+}
+#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
+#[rkyv(
+    serialize_bounds(
+        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
+        __S::Error:rkyv::rancor::Source,
+    )
+)]
+#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
+#[rkyv(
+    bytecheck(
+        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
+    )
+)]
+pub struct Literal {
+    #[drive(skip)]
+    start_byte: usize,
+    #[drive(skip)]
+    end_byte: usize,
+    #[drive(skip)]
+    _kind: std::string::String,
+    #[debug("[{},{}]", start_position.row, start_position.column)]
+    #[drive(skip)]
+    start_position: Point,
+    #[debug("[{},{}]", end_position.row, end_position.column)]
+    #[drive(skip)]
+    end_position: Point,
+    #[debug(ignore)]
+    #[drive(skip)]
+    buffer: Arc<Bytes>,
+    #[debug(ignore)]
+    #[drive(skip)]
+    kind_id: u16,
+    #[debug(ignore)]
+    #[drive(skip)]
+    is_error: bool,
+    #[debug(ignore)]
+    #[drive(skip)]
+    named: bool,
+    #[debug(ignore)]
+    #[drive(skip)]
+    id: usize,
+}
+impl FromNode for Literal {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        Ok(Self {
+            start_byte: node.start_byte(),
+            end_byte: node.end_byte(),
+            _kind: node.kind().to_string(),
+            start_position: node.start_position().into(),
+            end_position: node.end_position().into(),
+            buffer: buffer.clone(),
+            kind_id: node.kind_id(),
+            is_error: node.is_error(),
+            named: node.is_named(),
+            id: node.id(),
+        })
+    }
+}
+impl CSTNode for Literal {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point {
+        self.start_position
+    }
+    fn end_position(&self) -> Point {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl HasChildren for Literal {
+    type Child = Self;
+    fn children(&self) -> Vec<Self::Child> {
+        vec![]
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            _ => vec![],
+        }
+    }
+}

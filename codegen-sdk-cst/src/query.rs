@@ -6,39 +6,34 @@ use derive_more::Debug;
 use crate::{CSTLanguage, ts_query};
 fn captures_for_field_definition(
     node: &ts_query::FieldDefinition,
-) -> impl Iterator<Item = &ts_query::Capture> {
+) -> impl Iterator<Item = ts_query::Capture> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
-            ts_query::ChildrenFieldDefinition::Definition(definition) => {
-                captures.extend(captures_for_node(definition));
+            ts_query::FieldDefinitionChildren::NamedNode(named) => {
+                captures.extend(captures_for_named_node(&named));
+            }
+            ts_query::FieldDefinitionChildren::FieldDefinition(field) => {
+                captures.extend(captures_for_field_definition(&field));
             }
             _ => {}
         }
     }
     captures.into_iter()
 }
-fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = &ts_query::Capture> {
+fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = ts_query::Capture> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
-            ts_query::ChildrenNamedNode::Capture(capture) => captures.push(capture),
-            ts_query::ChildrenNamedNode::Definition(definition) => {
-                captures.extend(captures_for_node(definition));
+            ts_query::NamedNodeChildren::Capture(capture) => captures.push(capture),
+            ts_query::NamedNodeChildren::NamedNode(named) => {
+                captures.extend(captures_for_named_node(&named));
+            }
+            ts_query::NamedNodeChildren::FieldDefinition(field) => {
+                captures.extend(captures_for_field_definition(&field));
             }
             _ => {}
         }
-    }
-    captures.into_iter()
-}
-fn captures_for_node(node: &ts_query::Definition) -> impl Iterator<Item = &ts_query::Capture> {
-    let mut captures = Vec::new();
-    match node {
-        ts_query::Definition::NamedNode(named) => captures.extend(captures_for_named_node(named)),
-        ts_query::Definition::FieldDefinition(field) => {
-            captures.extend(captures_for_field_definition(field))
-        }
-        _ => {}
     }
     captures.into_iter()
 }
@@ -52,15 +47,13 @@ impl Query {
         let parsed = ts_query::Query::parse(source).unwrap();
         let mut queries = HashMap::new();
         for node in parsed.children() {
-            if let ts_query::ChildrenProgram::Definition(definition) = node {
-                match definition {
-                    ts_query::Definition::NamedNode(named) => {
-                        let query = Self::from_named_node(named);
-                        queries.insert(query.name(), query);
-                    }
-                    node => {
-                        println!("Unhandled query: {:#?}", node);
-                    }
+            match node {
+                ts_query::ProgramChildren::NamedNode(named) => {
+                    let query = Self::from_named_node(&named);
+                    queries.insert(query.name(), query);
+                }
+                node => {
+                    println!("Unhandled query: {:#?}", node);
                 }
             }
         }
@@ -86,16 +79,16 @@ impl Query {
     }
     /// Get the kind of the query (the node to be matched)
     pub fn kind(&self) -> String {
-        if let ts_query::NameNamedNode::Identifier(identifier) = &(*self.node.name) {
+        if let ts_query::NamedNodeName::Identifier(identifier) = &(*self.node.name) {
             return identifier.source();
         }
         panic!("No kind found for query. {:#?}", self.node);
     }
     pub fn struct_name(&self) -> String {
-        normalize_type_name(&self.kind())
+        normalize_type_name(&self.kind(), true)
     }
 
-    fn captures(&self) -> Vec<&ts_query::Capture> {
+    fn captures(&self) -> Vec<ts_query::Capture> {
         captures_for_named_node(&self.node).collect()
     }
     /// Get the name of the query (IE @reference.class)
@@ -123,6 +116,20 @@ impl Query {
     pub fn source(&self) -> String {
         self.node.source()
     }
+    // fn execute<T: HasChildren>(&self, node: &T) -> Vec<Box<dyn CSTNode + Send>> {
+    //     let mut result = Vec::new();
+
+    //     for child in node.children() {
+    //         if self
+    //             .captures()
+    //             .iter()
+    //             .any(|capture| capture.source() == child.kind())
+    //         {
+    //             result.push(child);
+    //         }
+    //     }
+    //     result
+    // }
 }
 
 pub trait HasQuery {

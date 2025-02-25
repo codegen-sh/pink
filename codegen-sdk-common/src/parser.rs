@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Node {
     #[serde(rename = "type")]
     pub type_name: String,
@@ -15,13 +15,13 @@ pub struct Node {
     pub children: Option<Children>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Fields {
     #[serde(flatten)]
     pub fields: std::collections::HashMap<String, FieldDefinition>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct FieldDefinition {
     pub multiple: bool,
     pub required: bool,
@@ -29,14 +29,14 @@ pub struct FieldDefinition {
     pub types: Vec<TypeDefinition>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct TypeDefinition {
     #[serde(rename = "type")]
     pub type_name: String,
     pub named: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Children {
     pub multiple: bool,
     pub required: bool,
@@ -52,7 +52,7 @@ pub fn parse_node_types(node_types: &str) -> anyhow::Result<Vec<Node>> {
 mod tests {
     use super::*;
     use crate::language::python::Python;
-    #[test]
+    #[test_log::test]
     fn test_parse_node_types() {
         let cst = parse_node_types(Python.node_types).unwrap();
         assert!(!cst.is_empty());

@@ -1,0 +1,117 @@
+---
+source: codegen-sdk-cst-generator/src/generator/node.rs
+expression: snapshot_tokens(&node.get_struct_tokens())
+---
+#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
+#[rkyv(
+    serialize_bounds(
+        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
+        __S::Error:rkyv::rancor::Source,
+    )
+)]
+#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
+#[rkyv(
+    bytecheck(
+        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
+    )
+)]
+pub struct TestNode {
+    #[drive(skip)]
+    start_byte: usize,
+    #[drive(skip)]
+    end_byte: usize,
+    #[drive(skip)]
+    _kind: std::string::String,
+    #[debug("[{},{}]", start_position.row, start_position.column)]
+    #[drive(skip)]
+    start_position: Point,
+    #[debug("[{},{}]", end_position.row, end_position.column)]
+    #[drive(skip)]
+    end_position: Point,
+    #[debug(ignore)]
+    #[drive(skip)]
+    buffer: Arc<Bytes>,
+    #[debug(ignore)]
+    #[drive(skip)]
+    kind_id: u16,
+    #[debug(ignore)]
+    #[drive(skip)]
+    is_error: bool,
+    #[debug(ignore)]
+    #[drive(skip)]
+    named: bool,
+    #[debug(ignore)]
+    #[drive(skip)]
+    id: usize,
+    #[rkyv(omit_bounds)]
+    pub children: Vec<TestNodeChildren>,
+}
+impl FromNode for TestNode {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        Ok(Self {
+            start_byte: node.start_byte(),
+            end_byte: node.end_byte(),
+            _kind: node.kind().to_string(),
+            start_position: node.start_position().into(),
+            end_position: node.end_position().into(),
+            buffer: buffer.clone(),
+            kind_id: node.kind_id(),
+            is_error: node.is_error(),
+            named: node.is_named(),
+            id: node.id(),
+            children: named_children_without_field_names(node, buffer)?,
+        })
+    }
+}
+impl CSTNode for TestNode {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point {
+        self.start_position
+    }
+    fn end_position(&self) -> Point {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl HasChildren for TestNode {
+    type Child = TestNodeChildren;
+    fn children(&self) -> Vec<Self::Child> {
+        let children: Vec<_> = self.children.iter().cloned().collect();
+        children
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            _ => vec![],
+        }
+    }
+}

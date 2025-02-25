@@ -1,0 +1,49 @@
+---
+source: codegen-sdk-cst-generator/src/generator/state.rs
+expression: snapshot_tokens(&enum_tokens)
+---
+#[subenum(
+    NodeCChildren(derive(Archive, Deserialize, Serialize)),
+    NodeCField(derive(Archive, Deserialize, Serialize))
+)]
+#[derive(Debug, Clone, Drive)]
+#[enum_delegate::implement(CSTNode)]
+pub enum NodeTypes {
+    #[subenum(NodeCChildren, NodeCField)]
+    NodeA(NodeA),
+    #[subenum(NodeCChildren, NodeCField)]
+    NodeB(NodeB),
+    NodeC(NodeC),
+}
+impl FromNode for NodeCChildren {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        match node.kind_id() {
+            0u16 => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
+            _ => {
+                Err(ParseError::UnexpectedNode {
+                    node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
+                })
+            }
+        }
+    }
+}
+impl FromNode for NodeCField {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        match node.kind_id() {
+            0u16 => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
+            _ => {
+                Err(ParseError::UnexpectedNode {
+                    node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
+                })
+            }
+        }
+    }
+}

@@ -2,7 +2,7 @@ use codegen_sdk_common::language::Language;
 pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
     let content = format!(
         "
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct {language_struct_name}File {{
         node: {language_name}::{root_node_name},
         path: PathBuf
@@ -21,7 +21,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
 
     ",
         language_struct_name = language.struct_name,
-        language_name = language.name,
+        language_name = language.name(),
         root_node_name = language.root_node()
     );
     // for (name, query) in language.definitions() {

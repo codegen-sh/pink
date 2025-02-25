@@ -1,6 +1,6 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Archive, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Archive, Deserialize, Serialize)]
 pub struct Point {
     pub row: usize,
     pub column: usize,

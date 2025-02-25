@@ -9,10 +9,14 @@ prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro"] }
 tree-sitter = { workspace = true }
 log = { workspace = true }
-codegen-sdk-common = { path = "../codegen-sdk-common" }
+codegen-sdk-common = { workspace = true }
 anyhow = { workspace = true }
 quote = "1.0.38"
 proc-macro2 = "1.0.93"
 tempfile = "3.8.1"
+mockall_double = "0.3.1"
+
 [dev-dependencies]
-codegen-sdk-common = { path = "../codegen-sdk-common" , features = ["python"] }
+tree-sitter-python = { workspace = true }
+test-log = { workspace = true }
+insta = "1.42.1"

@@ -1,0 +1,44 @@
+---
+source: codegen-sdk-cst-generator/src/generator/state.rs
+expression: snapshot_tokens(&enum_tokens)
+---
+#[subenum(
+    AnonymousClassChildren(derive(Archive, Deserialize, Serialize)),
+    Definition(derive(Archive, Deserialize, Serialize))
+)]
+#[derive(Debug, Clone, Drive)]
+#[enum_delegate::implement(CSTNode)]
+pub enum NodeTypes {
+    AnonymousClass(AnonymousClass),
+    AnonymousFunction(AnonymousFunction),
+}
+impl FromNode for AnonymousClassChildren {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        match node.kind_id() {
+            _ => {
+                Err(ParseError::UnexpectedNode {
+                    node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
+                })
+            }
+        }
+    }
+}
+impl FromNode for Definition {
+    fn from_node(
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        match node.kind_id() {
+            _ => {
+                Err(ParseError::UnexpectedNode {
+                    node_type: node.kind().to_string(),
+                    backtrace: Backtrace::capture(),
+                })
+            }
+        }
+    }
+}

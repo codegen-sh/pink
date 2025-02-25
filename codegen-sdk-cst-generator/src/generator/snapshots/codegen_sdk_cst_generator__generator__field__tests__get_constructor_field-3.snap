@@ -1,0 +1,5 @@
+---
+source: codegen-sdk-cst-generator/src/generator/field.rs
+expression: snapshot_tokens(&multiple_field.get_constructor_field())
+---
+test_field : get_multiple_children_by_field_name (& node , "test_field" , buffer) ?

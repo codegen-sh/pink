@@ -1,0 +1,52 @@
+---
+source: codegen-sdk-cst-generator/src/generator/node.rs
+expression: snapshot_tokens(&node.get_trait_implementations())
+---
+impl CSTNode for TestNode {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point {
+        self.start_position
+    }
+    fn end_position(&self) -> Point {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl HasChildren for TestNode {
+    type Child = Self;
+    fn children(&self) -> Vec<Self::Child> {
+        vec![]
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            _ => vec![],
+        }
+    }
+}
