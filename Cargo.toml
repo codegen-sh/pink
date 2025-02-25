@@ -30,7 +30,7 @@ go = [ "codegen-sdk-cst/go"]
 yaml = [ "codegen-sdk-cst/yaml"]
 toml = [ "codegen-sdk-cst/toml"]
 ts_query = []
-default = ["json", "ts_query", "yaml", "toml"]
+default = ["json", "ts_query", "toml"]
 [dev-dependencies]
 test-log = { workspace = true }
 [workspace]
