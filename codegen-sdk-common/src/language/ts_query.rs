@@ -4,7 +4,7 @@ lazy_static! {
         "ts_query",
         "Query",
         tree_sitter_query::NODE_TYPES,
-        &[],
+        &["scm"],
         tree_sitter_query::LANGUAGE.into(),
         "",
     )

@@ -1,0 +1,53 @@
+---
+source: codegen-sdk-ast-generator/src/visitor.rs
+expression: "codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()"
+---
+#[derive(Visitor, Default, Debug, Clone)]
+#[visitor(
+    typescript::AbstractClassDeclaration(enter),
+    typescript::FunctionSignature(enter),
+    typescript::InterfaceDeclaration(enter),
+    typescript::AbstractMethodSignature(enter),
+    typescript::Module(enter)
+)]
+pub struct QueryExecutor {
+    pub classes: Vec<typescript::AbstractClassDeclaration>,
+    pub functions: Vec<typescript::FunctionSignature>,
+    pub interfaces: Vec<typescript::InterfaceDeclaration>,
+    pub methods: Vec<typescript::AbstractMethodSignature>,
+    pub modules: Vec<typescript::Module>,
+}
+impl QueryExecutor {
+    fn enter_abstract_class_declaration(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::AbstractClassDeclaration,
+    ) {
+        let field = &node.name;
+        self.classes.push(node.clone());
+    }
+    fn enter_abstract_method_signature(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::AbstractMethodSignature,
+    ) {
+        let field = &node.name;
+        self.methods.push(node.clone());
+    }
+    fn enter_function_signature(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::FunctionSignature,
+    ) {
+        let field = &node.name;
+        self.functions.push(node.clone());
+    }
+    fn enter_interface_declaration(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::InterfaceDeclaration,
+    ) {
+        let field = &node.name;
+        self.interfaces.push(node.clone());
+    }
+    fn enter_module(&mut self, node: &codegen_sdk_cst::typescript::Module) {
+        let field = &node.name;
+        self.modules.push(node.clone());
+    }
+}

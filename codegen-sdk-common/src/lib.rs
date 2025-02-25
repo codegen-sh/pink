@@ -16,3 +16,4 @@ pub mod naming;
 pub mod serialize;
 pub mod tree;
 pub use tree::{Point, Range};
+pub mod generator;

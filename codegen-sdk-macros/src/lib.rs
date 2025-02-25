@@ -10,6 +10,23 @@ fn get_language(language: &str) -> &Language {
     panic!("Language not found");
 }
 #[proc_macro]
+pub fn include_language_ast(_item: TokenStream) -> TokenStream {
+    let target_language = _item.to_string();
+    let language = get_language(&target_language);
+
+    format!(
+        "#[cfg(feature = \"{name}\")]
+pub mod {name} {{
+    use codegen_sdk_cst::{name};
+    include!(concat!(env!(\"OUT_DIR\"), \"/{name}.rs\"));
+}}",
+        name = language.name()
+    )
+    .parse()
+    .unwrap()
+}
+
+#[proc_macro]
 pub fn include_language(_item: TokenStream) -> TokenStream {
     let target_language = _item.to_string();
     let language = get_language(&target_language);
@@ -80,6 +97,15 @@ pub fn include_languages(_item: TokenStream) -> TokenStream {
     output.push_str("use codegen_sdk_macros::include_language;");
     for language in LANGUAGES.iter() {
         output.push_str(&format!("include_language!({});", language.name()));
+    }
+    output.parse().unwrap()
+}
+#[proc_macro]
+pub fn include_languages_ast(_item: TokenStream) -> TokenStream {
+    let mut output = String::new();
+    output.push_str("use codegen_sdk_macros::include_language_ast;");
+    for language in LANGUAGES.iter() {
+        output.push_str(&format!("include_language_ast!({});", language.name()));
     }
     output.parse().unwrap()
 }

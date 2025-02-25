@@ -1,6 +1,8 @@
 #![recursion_limit = "512"]
-use codegen_sdk_common::{File, HasNode};
+#![allow(unused)]
+use codegen_sdk_common::File;
 pub use codegen_sdk_cst::*;
+use codegen_sdk_macros::include_languages_ast;
 pub trait Named {
     fn name(&self) -> &str;
 }
@@ -9,5 +11,4 @@ impl<T: File> Named for T {
         self.path().file_name().unwrap().to_str().unwrap()
     }
 }
-use std::path::PathBuf;
-include!(concat!(env!("OUT_DIR"), "/json.rs"));
+include_languages_ast!();

@@ -168,6 +168,7 @@ impl HasChildren for BinaryExpression {
                 Self::Child::try_from(NodeTypes::from(self.right.as_ref().clone()))
                     .unwrap(),
             );
+        children.sort_by_key(|c| c.start_byte());
         children
     }
     fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {

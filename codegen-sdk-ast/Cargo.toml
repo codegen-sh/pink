@@ -4,14 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-codegen-sdk-cst = { workspace = true, features = ["json"]}
+codegen-sdk-cst = { workspace = true}
 codegen-sdk-common = { workspace = true }
-
+derive-visitor = { workspace = true }
+codegen-sdk-macros = { path = "../codegen-sdk-macros"}
+log = { workspace = true }
 [build-dependencies]
 codegen-sdk-common = { workspace = true }
 env_logger = { workspace = true }
 rayon = { workspace = true }
 codegen-sdk-ast-generator = { path = "../codegen-sdk-ast-generator"}
+[dev-dependencies]
+test-log = { workspace = true }
+tempfile = { workspace = true }
 [features]
 python = [ "codegen-sdk-cst/python"]
 typescript = [ "codegen-sdk-cst/typescript"]
@@ -27,4 +32,4 @@ yaml = [ "codegen-sdk-cst/yaml"]
 toml = [ "codegen-sdk-cst/toml"]
 markdown = [ "codegen-sdk-cst/markdown"]
 ts_query = []
-default = ["json", "ts_query"]
+default = ["json", "ts_query", "typescript"]

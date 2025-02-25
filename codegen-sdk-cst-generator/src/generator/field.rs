@@ -173,6 +173,12 @@ impl<'a> Field<'a> {
             }
         }
     }
+    pub fn is_optional(&self) -> bool {
+        !self.raw.required
+    }
+    pub fn is_multiple(&self) -> bool {
+        self.raw.multiple
+    }
 }
 
 #[cfg(test)]

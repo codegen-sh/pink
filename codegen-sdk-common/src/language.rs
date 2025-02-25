@@ -6,6 +6,7 @@ use tree_sitter::Parser;
 
 use crate::{
     errors::ParseError,
+    naming::normalize_type_name,
     parser::{Node, parse_node_types},
 };
 #[derive(Debug)]
@@ -69,6 +70,12 @@ impl Language {
     }
     pub fn name(&self) -> &'static str {
         self.name
+    }
+    pub fn node_for_struct_name(&self, struct_name: &str) -> Option<Node> {
+        self.nodes
+            .iter()
+            .find(|node| normalize_type_name(&node.type_name, node.named) == struct_name)
+            .cloned()
     }
 }
 #[cfg(feature = "go")]

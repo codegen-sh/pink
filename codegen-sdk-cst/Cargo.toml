@@ -8,13 +8,13 @@ tree-sitter = { workspace = true }
 bytes = { workspace = true }
 codegen-sdk-common = { workspace = true }
 codegen-sdk-macros = { path = "../codegen-sdk-macros" }
-derive_more = { version = "2.0.1", features = ["debug", "display"] }
+derive_more = { workspace = true }
 convert_case = { workspace = true }
 rkyv = { workspace = true }
 subenum = "1.1.2"
 log = { workspace = true }
 enum_delegate = { workspace = true }
-derive-visitor = "0.4.0"
+derive-visitor = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
 codegen-sdk-common = { workspace = true }
@@ -22,8 +22,9 @@ rayon = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }
 [dev-dependencies]
-tempfile = "3.16.0"
+tempfile = { workspace = true }
 test-log = { workspace = true }
+
 [features]
 python = [ "codegen-sdk-common/python"]
 typescript = [ "codegen-sdk-common/typescript"]
@@ -38,5 +39,5 @@ ruby = [ "codegen-sdk-common/ruby"]
 yaml = [ "codegen-sdk-common/yaml"]
 toml = [ "codegen-sdk-common/toml"]
 markdown = [ "codegen-sdk-common/markdown"]
-ts_query = []
-default = ["json", "ts_query", "toml", "typescript"]
+ts_query = [ "codegen-sdk-common/ts_query"]
+default = ["json", "ts_query", "toml"]

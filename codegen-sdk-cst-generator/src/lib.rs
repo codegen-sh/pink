@@ -2,7 +2,7 @@
 mod generator;
 #[double]
 use codegen_sdk_common::language::Language;
-pub use generator::generate_cst;
+pub use generator::{Field, Node, State, generate_cst};
 use mockall_double::double;
 pub fn generate_cst_to_file(language: &Language) -> anyhow::Result<()> {
     let cst = generator::generate_cst(language)?;
@@ -18,7 +18,6 @@ mod test_util {
     use codegen_sdk_common::{language::MockLanguage, parser::Node};
     use proc_macro2::TokenStream;
 
-    use super::generator::format::format_cst;
     // Removes quotes from the string when using insta::assert_debug_snapshot!
     pub struct StringDebug {
         pub string: String,
@@ -50,7 +49,8 @@ mod test_util {
         language
     }
     pub fn snapshot_string(string: &str) -> StringDebug {
-        let formatted = format_cst(string).unwrap_or_else(|_| string.to_string());
+        let formatted = codegen_sdk_common::generator::format_code(string)
+            .unwrap_or_else(|_| string.to_string());
         StringDebug { string: formatted }
     }
     pub fn snapshot_tokens(tokens: &TokenStream) -> StringDebug {

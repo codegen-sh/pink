@@ -106,7 +106,7 @@ impl<'a> State<'a> {
             }
         }
     }
-    fn get_variants(&self, subenum: &str) -> Vec<TypeDefinition> {
+    pub fn get_variants(&self, subenum: &str) -> Vec<TypeDefinition> {
         let comment = get_comment_type();
         let mut variants = vec![comment];
         for node in self.nodes.values() {
@@ -182,6 +182,27 @@ impl<'a> State<'a> {
             struct_tokens.extend_one(node.get_struct_tokens());
         }
         struct_tokens
+    }
+    pub fn get_node_for_struct_name(&self, name: &str) -> Option<&Node<'a>> {
+        self.nodes.get(name)
+    }
+    pub fn get_node_for_raw_name(&self, name: &str) -> Option<&Node<'a>> {
+        for node in self.nodes.values() {
+            if node.kind() == name {
+                return Some(node);
+            }
+        }
+        None
+    }
+    pub fn get_subenum_variants(&self, name: &str) -> Vec<&Node<'a>> {
+        let variants = self.get_variants(name);
+        let mut nodes = Vec::new();
+        for variant in variants {
+            if let Some(node) = self.get_node_for_struct_name(&variant.normalize()) {
+                nodes.push(node);
+            }
+        }
+        nodes
     }
 }
 #[cfg(test)]
