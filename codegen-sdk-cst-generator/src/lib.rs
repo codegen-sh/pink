@@ -19,7 +19,8 @@ mod test_util {
     use proc_macro2::TokenStream;
 
     use super::generator::format::format_cst;
-    struct StringDebug {
+    // Removes quotes from the string when using insta::assert_debug_snapshot!
+    pub struct StringDebug {
         pub string: String,
     }
     impl Debug for StringDebug {
@@ -48,13 +49,13 @@ mod test_util {
             .return_const(Some(NonZeroU16::new(1).unwrap()));
         language
     }
-    pub fn snapshot_string(string: &str) {
+    pub fn snapshot_string(string: &str) -> StringDebug {
         let formatted = format_cst(string).unwrap_or_else(|_| string.to_string());
-        insta::assert_debug_snapshot!(StringDebug { string: formatted });
+        StringDebug { string: formatted }
     }
-    pub fn snapshot_tokens(tokens: &TokenStream) {
+    pub fn snapshot_tokens(tokens: &TokenStream) -> StringDebug {
         let string = tokens.to_string();
-        snapshot_string(&string);
+        snapshot_string(&string)
     }
 }
 #[cfg(test)]

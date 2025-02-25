@@ -1,0 +1,9 @@
+---
+source: codegen-sdk-cst-generator/src/generator/state.rs
+expression: snapshot_tokens(&enum_tokens)
+---
+#[derive(Debug, Clone, Drive)]
+#[enum_delegate::implement(CSTNode)]
+pub enum NodeTypes {
+    Test(Test),
+}

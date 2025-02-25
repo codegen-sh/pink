@@ -45,7 +45,7 @@ fn test_basic_subtypes() {
 
     let language = get_language(nodes);
     let output = generate_cst(&language).unwrap();
-    crate::test_util::snapshot_string(&output);
+    insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }
 
 #[test_log::test]
@@ -113,7 +113,7 @@ fn test_subtypes_with_fields() {
 
     let language = get_language(nodes);
     let output = generate_cst(&language).unwrap();
-    crate::test_util::snapshot_string(&output);
+    insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }
 
 #[test_log::test]
@@ -195,5 +195,5 @@ fn test_deeply_nested_subtypes() {
     ];
     let language = get_language(nodes);
     let output = generate_cst(&language).unwrap();
-    crate::test_util::snapshot_string(&output);
+    insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }

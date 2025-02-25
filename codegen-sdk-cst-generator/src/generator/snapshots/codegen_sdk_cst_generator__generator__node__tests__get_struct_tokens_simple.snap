@@ -43,8 +43,6 @@ pub struct TestNode {
     #[debug(ignore)]
     #[drive(skip)]
     id: usize,
-    #[rkyv(omit_bounds)]
-    pub children: Vec<TestNodeChildren>,
 }
 impl FromNode for TestNode {
     fn from_node(
@@ -62,7 +60,6 @@ impl FromNode for TestNode {
             is_error: node.is_error(),
             named: node.is_named(),
             id: node.id(),
-            children: named_children_without_field_names(node, buffer)?,
         })
     }
 }
@@ -99,10 +96,9 @@ impl CSTNode for TestNode {
     }
 }
 impl HasChildren for TestNode {
-    type Child = TestNodeChildren;
+    type Child = Self;
     fn children(&self) -> Vec<Self::Child> {
-        let children: Vec<_> = self.children.iter().cloned().collect();
-        children
+        vec![]
     }
     fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
         match field_name {

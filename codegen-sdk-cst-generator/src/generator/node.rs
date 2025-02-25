@@ -390,11 +390,11 @@ mod tests {
         let mut node = Node::new(&base_node, &language);
 
         let tokens = node.get_enum_tokens();
-        snapshot_tokens(&tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
 
         node.add_subenum("subenum".to_string());
         let tokens = node.get_enum_tokens();
-        snapshot_tokens(&tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
     }
 
     #[test]
@@ -402,7 +402,7 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_struct_tokens());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
     #[test]
@@ -423,7 +423,7 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_struct_tokens());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
     #[test]
@@ -469,7 +469,7 @@ mod tests {
         let nodes = vec![raw_node.clone()];
         let language = get_language(nodes);
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_struct_tokens());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
     #[test_log::test]
@@ -478,7 +478,7 @@ mod tests {
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_struct_tokens());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
     #[test]
@@ -486,7 +486,7 @@ mod tests {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_struct_tokens());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
     #[test]
@@ -494,7 +494,7 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_trait_implementations());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_trait_implementations()));
     }
 
     #[test]
@@ -515,7 +515,7 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_children_field_impl());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_children_field_impl()));
     }
 
     #[test]
@@ -536,6 +536,6 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(&raw_node, &language);
-        snapshot_tokens(&node.get_children_by_field_name_impl());
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_children_by_field_name_impl()));
     }
 }

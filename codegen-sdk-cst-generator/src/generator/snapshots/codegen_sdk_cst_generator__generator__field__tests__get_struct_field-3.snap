@@ -1,0 +1,5 @@
+---
+source: codegen-sdk-cst-generator/src/generator/field.rs
+expression: snapshot_tokens(&multiple_field.get_struct_field())
+---
+# [rkyv (omit_bounds)] pub test_field : Vec < TestType >

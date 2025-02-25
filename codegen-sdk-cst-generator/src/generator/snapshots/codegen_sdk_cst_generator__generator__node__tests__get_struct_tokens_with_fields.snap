@@ -1,6 +1,6 @@
 ---
-source: codegen-sdk-cst-generator/src/lib.rs
-expression: "StringDebug { string: formatted }"
+source: codegen-sdk-cst-generator/src/generator/node.rs
+expression: snapshot_tokens(&node.get_struct_tokens())
 ---
 #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
 #[rkyv(
@@ -44,7 +44,7 @@ pub struct TestNode {
     #[drive(skip)]
     id: usize,
     #[rkyv(omit_bounds)]
-    pub children: Vec<TestNodeChildren>,
+    pub test_field: Box<TestType>,
 }
 impl FromNode for TestNode {
     fn from_node(
@@ -62,7 +62,7 @@ impl FromNode for TestNode {
             is_error: node.is_error(),
             named: node.is_named(),
             id: node.id(),
-            children: named_children_without_field_names(node, buffer)?,
+            test_field: Box::new(get_child_by_field_name(&node, "test_field", buffer)?),
         })
     }
 }
@@ -101,16 +101,33 @@ impl CSTNode for TestNode {
 impl HasChildren for TestNode {
     type Child = TestNodeChildren;
     fn children(&self) -> Vec<Self::Child> {
-        let children: Vec<_> = self.children.iter().cloned().collect();
+        let mut children: Vec<_> = vec![];
+        children
+            .push(
+                Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone()))
+                    .unwrap(),
+            );
         children
     }
     fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
         match field_name {
+            "test_field" => {
+                vec![
+                    Self::Child::try_from(NodeTypes::from(self.test_field.as_ref()
+                    .clone())).unwrap()
+                ]
+            }
             _ => vec![],
         }
     }
     fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
         match field_id {
+            1u16 => {
+                vec![
+                    Self::Child::try_from(NodeTypes::from(self.test_field.as_ref()
+                    .clone())).unwrap()
+                ]
+            }
             _ => vec![],
         }
     }

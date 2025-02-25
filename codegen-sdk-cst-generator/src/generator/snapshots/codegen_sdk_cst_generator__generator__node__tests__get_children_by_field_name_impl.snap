@@ -1,0 +1,15 @@
+---
+source: codegen-sdk-cst-generator/src/generator/node.rs
+expression: snapshot_tokens(&node.get_children_by_field_name_impl())
+---
+fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+    match field_name {
+        "test_field" => {
+            vec![
+                Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone()))
+                .unwrap()
+            ]
+        }
+        _ => vec![],
+    }
+}

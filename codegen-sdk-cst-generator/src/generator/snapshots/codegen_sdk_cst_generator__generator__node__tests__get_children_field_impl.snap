@@ -1,0 +1,13 @@
+---
+source: codegen-sdk-cst-generator/src/generator/node.rs
+expression: snapshot_tokens(&node.get_children_field_impl())
+---
+fn children(&self) -> Vec<Self::Child> {
+    let mut children: Vec<_> = vec![];
+    children
+        .push(
+            Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone()))
+                .unwrap(),
+        );
+    children
+}

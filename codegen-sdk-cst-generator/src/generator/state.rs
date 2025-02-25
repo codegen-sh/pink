@@ -205,7 +205,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        snapshot_tokens(&enum_tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
     fn test_parse_children() {
@@ -250,7 +250,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        snapshot_tokens(&enum_tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
     fn test_parse_children_subtypes() {
@@ -298,7 +298,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        snapshot_tokens(&enum_tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
     fn test_add_field_subenums() {
@@ -346,7 +346,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let enum_tokens = state.get_enum();
-        snapshot_tokens(&enum_tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
     fn test_get_structs() {
@@ -362,7 +362,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language);
         let struct_tokens = state.get_structs();
-        snapshot_tokens(&struct_tokens);
+        insta::assert_debug_snapshot!(snapshot_tokens(&struct_tokens));
     }
     #[test_log::test]
     fn test_get_variants() {

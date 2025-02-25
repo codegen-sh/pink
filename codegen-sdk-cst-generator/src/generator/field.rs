@@ -249,17 +249,17 @@ mod tests {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
         let field = Field::new("test_node", "test_field", &field_definition, &language);
-        snapshot_tokens(&field.get_struct_field());
+        insta::assert_debug_snapshot!(snapshot_tokens(&field.get_struct_field()));
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
         let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
-        snapshot_tokens(&optional_field.get_struct_field());
+        insta::assert_debug_snapshot!(snapshot_tokens(&optional_field.get_struct_field()));
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
         let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
-        snapshot_tokens(&multiple_field.get_struct_field());
+        insta::assert_debug_snapshot!(snapshot_tokens(&multiple_field.get_struct_field()));
     }
 
     #[test]
@@ -267,17 +267,17 @@ mod tests {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
         let field = Field::new("test_node", "test_field", &field_definition, &language);
-        snapshot_tokens(&field.get_constructor_field());
+        insta::assert_debug_snapshot!(snapshot_tokens(&field.get_constructor_field()));
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
         let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
-        snapshot_tokens(&optional_field.get_constructor_field());
+        insta::assert_debug_snapshot!(snapshot_tokens(&optional_field.get_constructor_field()));
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
         let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
-        snapshot_tokens(&multiple_field.get_constructor_field());
+        insta::assert_debug_snapshot!(snapshot_tokens(&multiple_field.get_constructor_field()));
     }
 
     #[test]

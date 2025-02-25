@@ -66,5 +66,5 @@ fn test_subtypes_with_children() {
     ];
     let language = get_language(nodes);
     let output = generate_cst(&language).unwrap();
-    crate::test_util::snapshot_string(&output);
+    insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }
