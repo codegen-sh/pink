@@ -32,7 +32,9 @@ mod test_util {
         for (idx, node) in nodes.clone().into_iter().enumerate() {
             language
                 .expect_kind_id()
-                .withf(move |name: &str, named: &bool| name == &node.type_name && named == &node.named)
+                .withf(move |name: &str, named: &bool| {
+                    name == &node.type_name && named == &node.named
+                })
                 .return_const(idx as u16);
         }
         language.expect_nodes().return_const(nodes);
@@ -41,7 +43,9 @@ mod test_util {
     pub fn get_language_no_nodes() -> MockLanguage {
         let mut language = MockLanguage::default();
         language.expect_kind_id().return_const(0 as u16);
-        language.expect_field_id().return_const(Some(NonZeroU16::new(1).unwrap()));
+        language
+            .expect_field_id()
+            .return_const(Some(NonZeroU16::new(1).unwrap()));
         language
     }
     pub fn snapshot_string(string: &str) {

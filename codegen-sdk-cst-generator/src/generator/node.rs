@@ -324,10 +324,7 @@ impl<'a> Node<'a> {
 }
 #[cfg(test)]
 mod tests {
-    use codegen_sdk_common::{
-        language::typescript::Typescript,
-        parser::{FieldDefinition, Fields, TypeDefinition},
-    };
+    use codegen_sdk_common::parser::{FieldDefinition, Fields, TypeDefinition};
 
     use super::*;
     use crate::test_util::{get_language, get_language_no_nodes, snapshot_tokens};
