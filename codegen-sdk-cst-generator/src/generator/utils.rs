@@ -3,17 +3,7 @@ use std::collections::BTreeMap;
 use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-pub fn get_from_for_enum(variant: &str, enum_name: &str) -> TokenStream {
-    let enum_name = format_ident!("{}", enum_name);
-    let variant = format_ident!("{}", variant);
-    quote! {
-        impl std::convert::From<#variant> for #enum_name {
-            fn from(variant: #variant) -> Self {
-                Self::#variant(variant)
-            }
-        }
-    }
-}
+
 pub fn get_serialize_bounds() -> TokenStream {
     quote! {
        #[rkyv(serialize_bounds(

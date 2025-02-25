@@ -37,17 +37,6 @@ fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = t
     }
     captures.into_iter()
 }
-fn captures_for_node(node: &ts_query::Definition) -> impl Iterator<Item = ts_query::Capture> {
-    let mut captures = Vec::new();
-    match node {
-        ts_query::Definition::NamedNode(named) => captures.extend(captures_for_named_node(named)),
-        ts_query::Definition::FieldDefinition(field) => {
-            captures.extend(captures_for_field_definition(field))
-        }
-        _ => {}
-    }
-    captures.into_iter()
-}
 #[derive(Debug)]
 #[debug("{}", self.source())]
 pub struct Query {
