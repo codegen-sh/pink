@@ -1,10 +1,11 @@
 #[double]
 use codegen_sdk_common::language::Language;
+pub use field::Field;
 use mockall_double::double;
-use state::State;
+pub use node::Node;
+pub use state::State;
 mod constants;
 mod field;
-pub(crate) mod format;
 mod node;
 mod state;
 mod utils;
@@ -34,7 +35,7 @@ pub fn generate_cst(language: &Language) -> anyhow::Result<String> {
     let structs = state.get_structs();
     result.extend_one(enums);
     result.extend_one(structs);
-    let formatted = format::format_cst(&result.to_string());
+    let formatted = codegen_sdk_common::generator::format_code(&result.to_string());
     match formatted {
         Ok(formatted) => return Ok(formatted),
         Err(e) => {

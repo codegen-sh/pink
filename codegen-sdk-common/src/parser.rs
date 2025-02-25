@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::naming::normalize_type_name;
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Node {
     #[serde(rename = "type")]
@@ -35,7 +37,11 @@ pub struct TypeDefinition {
     pub type_name: String,
     pub named: bool,
 }
-
+impl TypeDefinition {
+    pub fn normalize(&self) -> String {
+        normalize_type_name(&self.type_name, true)
+    }
+}
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Children {
     pub multiple: bool,

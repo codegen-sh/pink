@@ -1,3 +1,4 @@
+cargo-features = ["codegen-backend"]
 [package]
 name = "codegen-sdk-core"
 version = "0.1.0"
@@ -6,8 +7,8 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
 codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
-codegen-sdk-cst = { workspace = true }
-codegen-sdk-common = { workspace = true }
+codegen-sdk-cst = { workspace = true , features = ["typescript"]}
+codegen-sdk-common = { workspace = true}
 crossbeam = "0.8.4"
 glob = "0.3.2"
 env_logger = { workspace = true }
@@ -69,7 +70,29 @@ mockall = "0.13.1"
 codegen-sdk-common = { path = "codegen-sdk-common" }
 codegen-sdk-cst = { path = "codegen-sdk-cst"}
 codegen-sdk-ast = { path = "codegen-sdk-ast" }
+codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
+quote = "1.0.38"
+proc-macro2 = "1.0.93"
+derive-visitor = "0.4.0"
+insta = "1.42.1"
+prettyplease = "0.2.29"
+syn = { version = "2.0.98", features = ["proc-macro"] }
+derive_more = { version = "2.0.1", features = ["debug", "display"] }
+
+[profile.dev]
+debug = 0
+codegen-backend = "cranelift"
 
 [profile.dev.package]
 insta.opt-level = 3
 similar.opt-level = 3
+
+[profile.test]
+inherits = "dev"
+opt-level = 0
+debug = 0
+strip = "none"
+lto = false
+codegen-units = 256
+incremental = true
+codegen-backend = "cranelift"

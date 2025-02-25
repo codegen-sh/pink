@@ -253,6 +253,8 @@ dependencies = [
  "codegen-sdk-ast-generator",
  "codegen-sdk-common",
  "codegen-sdk-cst",
+ "codegen-sdk-macros",
+ "derive-visitor",
  "env_logger",
  "rayon",
 ]
@@ -263,6 +265,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_more",
+ "insta",
+ "log",
+ "proc-macro2",
+ "quote",
+ "test-log",
 ]
 
 [[package]]
@@ -278,10 +288,12 @@ dependencies = [
  "lazy_static",
  "mockall",
  "phf",
+ "prettyplease",
  "rkyv",
  "serde",
  "serde_json",
  "sha2",
+ "syn 2.0.98",
  "test-log",
  "thiserror",
  "tree-sitter",

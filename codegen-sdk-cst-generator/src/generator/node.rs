@@ -265,11 +265,6 @@ impl<'a> Node<'a> {
             children_fields.push(field.get_children_field(convert_children));
         }
 
-        let m = if children_fields.is_empty() {
-            quote! {}
-        } else {
-            quote! {mut}
-        };
         let children_init = if self.has_children() {
             quote! {
                 self.children.iter().cloned().collect()
@@ -281,8 +276,9 @@ impl<'a> Node<'a> {
         };
         quote! {
             fn children(&self) -> Vec<Self::Child> {
-                let #m children: Vec<_> = #children_init;
+                let mut children: Vec<_> = #children_init;
                 #(#children_fields;)*
+                children.sort_by_key(|c| c.start_byte());
                 children
             }
         }
@@ -320,6 +316,9 @@ impl<'a> Node<'a> {
                 }
             }
         }
+    }
+    pub fn get_field_for_field_name(&self, field_name: &str) -> Option<&Field<'a>> {
+        self.fields.iter().find(|f| f.name() == field_name)
     }
 }
 #[cfg(test)]

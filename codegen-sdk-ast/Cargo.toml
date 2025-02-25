@@ -6,7 +6,8 @@ edition = "2024"
 [dependencies]
 codegen-sdk-cst = { workspace = true, features = ["json"]}
 codegen-sdk-common = { workspace = true }
-
+derive-visitor = { workspace = true }
+codegen-sdk-macros = { path = "../codegen-sdk-macros"}
 [build-dependencies]
 codegen-sdk-common = { workspace = true }
 env_logger = { workspace = true }
