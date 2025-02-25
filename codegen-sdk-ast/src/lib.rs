@@ -1,4 +1,5 @@
 #![recursion_limit = "512"]
+#![allow(dead_code)]
 use codegen_sdk_common::File;
 pub use codegen_sdk_cst::*;
 use codegen_sdk_macros::include_languages_ast;

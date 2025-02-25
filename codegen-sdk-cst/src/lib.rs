@@ -27,7 +27,7 @@ mod tests {
     fn test_snazzy_items() {
         let content = "
         {
-            \"name\": \"SnazzyItems\",
+            \"name\": \"SnazzyItems\"
         }
         ";
         let module = json::JSON::parse(&content).unwrap();
