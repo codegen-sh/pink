@@ -4,7 +4,7 @@ use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_
 use codegen_sdk_cst::{CSTLanguage, ts_query};
 use codegen_sdk_cst_generator::{Field, State};
 use derive_more::Debug;
-use log::info;
+use log::{debug, info, warn};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 fn captures_for_field_definition(
@@ -100,6 +100,13 @@ impl<'a> Query<'a> {
         normalize_type_name(&self.kind(), true)
     }
     pub fn struct_variants(&self) -> Vec<String> {
+        if self
+            .state
+            .get_node_for_struct_name(&self.struct_name())
+            .is_some()
+        {
+            return vec![self.struct_name()];
+        }
         self.state
             .get_variants(&self.struct_name())
             .iter()
@@ -154,10 +161,16 @@ impl<'a> Query<'a> {
         &self.node
     }
     pub fn executor_id(&self) -> Ident {
-        format_ident!("{}s", self.kind())
+        let raw_name = self.name();
+        let name = raw_name.split(".").last().unwrap();
+        if name.ends_with("s") {
+            format_ident!("{}es", name)
+        } else {
+            format_ident!("{}s", name)
+        }
     }
     fn get_field_for_field_name(&self, field_name: &str, struct_name: &str) -> Option<&Field> {
-        println!(
+        debug!(
             "Getting field for: {:#?} on node: {:#?}",
             field_name, struct_name
         );
@@ -165,7 +178,7 @@ impl<'a> Query<'a> {
         if let Some(node) = node {
             return node.get_field_for_field_name(field_name);
         }
-        println!(
+        warn!(
             "No node found for: {:#?}. In language: {:#?}",
             struct_name,
             self.language.name()
@@ -193,16 +206,24 @@ impl<'a> Query<'a> {
                     );
                     if !field.is_optional() {
                         return quote! {
-                            let #new_identifier = #current_node.#field_name;
+                            let #new_identifier = &#current_node.#field_name;
                             #wrapped
                         };
                     } else {
                         return quote! {
-                            if let Some(field) = #current_node.#field_name {
+                            if let Some(field) = &#current_node.#field_name {
                                 #wrapped
                             }
                         };
                     }
+                } else {
+                    panic!(
+                        "No field found for: {:#?} on node: {:#?}. In language: {:#?}. Field source: {:#?}",
+                        name,
+                        struct_name,
+                        self.language.name(),
+                        field.source()
+                    )
                 }
             }
         }
@@ -233,12 +254,32 @@ impl<'a> Query<'a> {
         current_node: &Ident,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
-        let name = node.children().first().unwrap().source();
-        let normalized_name = normalize_type_name(&name, true);
-        for child in node.children().into_iter().skip(1) {
-            let result =
-                self.get_matcher_for_definition(&normalized_name, child.into(), current_node);
-            matchers.extend_one(result);
+        let first_node = node.children().into_iter().next().unwrap();
+        let name_node = self.state.get_node_for_struct_name(&first_node.source());
+        if let Some(name_node) = name_node {
+            for child in node.children().into_iter().skip(1) {
+                let result = self.get_matcher_for_definition(
+                    &name_node.normalize_name(),
+                    child.into(),
+                    current_node,
+                );
+                matchers.extend_one(result);
+            }
+        } else {
+            let subenum = self.state.get_subenum_variants(&first_node.source());
+            for variant in subenum {
+                if variant.normalize_name() == "Comment" {
+                    continue;
+                }
+                for child in node.children().into_iter().skip(1) {
+                    let result = self.get_matcher_for_definition(
+                        &variant.normalize_name(),
+                        child.into(),
+                        current_node,
+                    );
+                    matchers.extend_one(result);
+                }
+            }
         }
         matchers
     }
@@ -260,6 +301,15 @@ impl<'a> Query<'a> {
                 self.get_matcher_for_named_node(&named, struct_name, current_node)
             }
             ts_query::NodeTypes::Comment(_) => {
+                quote! {}
+            }
+            ts_query::NodeTypes::List(subenum) => {
+                for child in subenum.children() {
+                    let result =
+                        self.get_matcher_for_definition(struct_name, child.into(), current_node);
+                    // Currently just returns the first child
+                    return result; // TODO: properly handle list
+                }
                 quote! {}
             }
             ts_query::NodeTypes::Grouping(grouping) => {
@@ -321,10 +371,10 @@ pub trait HasQuery {
         queries
     }
     fn definitions(&self) -> BTreeMap<String, Query<'_>> {
-        self.queries_with_prefix("@definition")
+        self.queries_with_prefix("definition")
     }
     fn references(&self) -> BTreeMap<String, Query<'_>> {
-        self.queries_with_prefix("@reference")
+        self.queries_with_prefix("reference")
     }
 }
 impl HasQuery for Language {

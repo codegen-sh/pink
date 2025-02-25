@@ -5,11 +5,19 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
     #[derive(Debug, Clone)]
     pub struct {language_struct_name}File {{
         node: {language_name}::{root_node_name},
-        path: PathBuf
+        path: PathBuf,
+        pub visitor: QueryExecutor
     }}
     impl File for {language_struct_name}File {{
         fn path(&self) -> &PathBuf {{
             &self.path
+        }}
+        fn parse(path: &PathBuf) -> Result<Self, ParseError> {{
+            log::debug!(\"Parsing {language_name} file: {{}}\", path.display());
+            let ast = {language_name}::{language_struct_name}::parse_file(path)?;
+            let mut visitor = QueryExecutor::default();
+            ast.drive(&mut visitor);
+            Ok({language_struct_name}File {{ node: ast, path: path.clone(), visitor }})
         }}
     }}
     impl HasNode for {language_struct_name}File {{
@@ -18,11 +26,10 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
             &self.node
         }}
     }}
-
     ",
         language_struct_name = language.struct_name,
         language_name = language.name(),
-        root_node_name = language.root_node()
+        root_node_name = language.root_node(),
     );
     // for (name, query) in language.definitions() {
     //     content.push_str(&format!("

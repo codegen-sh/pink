@@ -13,7 +13,7 @@ codegen-sdk-common = { workspace = true }
 anyhow = { workspace = true }
 quote = { workspace = true }
 proc-macro2 = { workspace = true }
-tempfile = "3.8.1"
+tempfile = { workspace = true }
 mockall_double = "0.3.1"
 
 [dev-dependencies]

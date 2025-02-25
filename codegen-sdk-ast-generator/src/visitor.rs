@@ -2,12 +2,14 @@ use std::collections::BTreeMap;
 
 use codegen_sdk_common::{CSTNode, HasChildren, Language};
 use codegen_sdk_cst::ts_query;
+use convert_case::{Case, Casing};
 use log::info;
 use proc_macro2::TokenStream;
 use quote::{TokenStreamExt, format_ident, quote};
 
 use super::query::Query;
 pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStream {
+    let language_name = format_ident!("{}", language.name());
     let mut names = Vec::new();
     let mut types = Vec::new();
     let mut variants = Vec::new();
@@ -15,18 +17,19 @@ pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStre
     for query in queries {
         names.push(query.executor_id());
         types.push(format_ident!("{}", query.struct_name()));
-        variants.extend(query.struct_variants());
         for variant in query.struct_variants() {
+            variants.push(format_ident!("{}", variant));
             enter_methods
                 .entry(variant)
                 .or_insert(Vec::new())
                 .push(query);
         }
     }
+    log::info!("Enter methods: {:#?}", enter_methods);
     let mut methods = Vec::new();
     for (variant, queries) in enter_methods {
         let mut matchers = TokenStream::new();
-        let enter = format_ident!("enter_{}", variant);
+        let enter = format_ident!("enter_{}", variant.to_case(Case::Snake));
         let struct_name = format_ident!("{}", variant);
         for query in queries {
             matchers.extend_one(query.matcher(&variant));
@@ -44,20 +47,19 @@ pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStre
             }
         }
         methods.push(quote! {
-            fn #enter(&mut self, node: &#struct_name) {
+            fn #enter(&mut self, node: &codegen_sdk_cst::#language_name::#struct_name) {
                 #matchers
             }
         });
     }
-    let language_name = format_ident!("{}", language.name());
     let name = format_ident!("QueryExecutor");
     quote! {
-        #[derive(Visitor, Default)]
+        #[derive(Visitor, Default, Debug, Clone)]
         #[visitor(
-            #(#variants(enter)),*
+            #(#language_name::#variants(enter)),*
         )]
         pub struct #name {
-            #(#names: Vec<#language_name::#types>),*
+            #(pub #names: Vec<#language_name::#types>),*
         }
         impl #name {
             #(#methods)*

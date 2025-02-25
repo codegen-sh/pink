@@ -12,6 +12,7 @@ proc-macro2 = { workspace = true }
 log = { workspace = true }
 derive_more = { workspace = true }
 codegen-sdk-cst-generator = { workspace = true }
+convert_case = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 insta = { workspace = true }

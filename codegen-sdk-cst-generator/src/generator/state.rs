@@ -191,6 +191,16 @@ impl<'a> State<'a> {
         }
         None
     }
+    pub fn get_subenum_variants(&self, name: &str) -> Vec<&Node<'a>> {
+        let variants = self.get_variants(name);
+        let mut nodes = Vec::new();
+        for variant in variants {
+            if let Some(node) = self.get_node_for_struct_name(&variant.normalize()) {
+                nodes.push(node);
+            }
+        }
+        nodes
+    }
 }
 #[cfg(test)]
 mod tests {

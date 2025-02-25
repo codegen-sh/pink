@@ -256,7 +256,10 @@ dependencies = [
  "codegen-sdk-macros",
  "derive-visitor",
  "env_logger",
+ "log",
  "rayon",
+ "tempfile",
+ "test-log",
 ]
 
 [[package]]
@@ -267,6 +270,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "convert_case 0.7.1",
  "derive_more",
  "insta",
  "log",
