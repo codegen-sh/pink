@@ -1,5 +1,4 @@
 use codegen_sdk_common::parser::{Node, TypeDefinition};
-use quote::quote;
 
 use crate::{generate_cst, test_util::get_language};
 

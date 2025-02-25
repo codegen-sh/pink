@@ -189,7 +189,7 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
-    use crate::test_util::{get_language, get_language_no_nodes, snapshot_tokens};
+    use crate::test_util::{get_language, snapshot_tokens};
 
     #[test_log::test]
     fn test_get_enum() {
