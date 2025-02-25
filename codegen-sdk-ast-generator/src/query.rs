@@ -191,7 +191,8 @@ impl<'a> Query<'a> {
         struct_name: &str,
         current_node: &Ident,
     ) -> TokenStream {
-        let other_child: ts_query::NodeTypes = field.children().pop().unwrap().into();
+        let other_child: ts_query::NodeTypes =
+            field.children().into_iter().skip(2).next().unwrap().into();
         for name in &field.name {
             if let ts_query::FieldDefinitionName::Identifier(identifier) = name {
                 let name = identifier.source();
@@ -201,8 +202,15 @@ impl<'a> Query<'a> {
                     let normalized_struct_name = field.type_name();
                     let wrapped = self.get_matcher_for_definition(
                         &normalized_struct_name,
-                        other_child,
+                        other_child.clone(),
                         &new_identifier,
+                    );
+                    assert!(
+                        wrapped.to_string().len() > 0,
+                        "Wrapped is empty, {} {} {}",
+                        normalized_struct_name,
+                        other_child.source(),
+                        other_child.kind()
                     );
                     if !field.is_optional() {
                         return quote! {
@@ -240,7 +248,7 @@ impl<'a> Query<'a> {
         current_node: &Ident,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
-        for group in self.node().children() {
+        for group in node.children() {
             let result = self.get_matcher_for_definition(struct_name, group.into(), current_node);
             matchers.extend_one(result);
         }
@@ -255,9 +263,20 @@ impl<'a> Query<'a> {
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
         let first_node = node.children().into_iter().next().unwrap();
-        let name_node = self.state.get_node_for_struct_name(&first_node.source());
+        let remaining_nodes = node
+            .children()
+            .into_iter()
+            .skip(1)
+            .filter(|child| child.kind() != "capture")
+            .collect::<Vec<_>>();
+        if remaining_nodes.len() == 0 {
+            log::info!("single node, {}", first_node.source());
+            return self.get_matcher_for_definition(struct_name, first_node.into(), current_node);
+        }
+
+        let name_node = self.state.get_node_for_raw_name(&first_node.source());
         if let Some(name_node) = name_node {
-            for child in node.children().into_iter().skip(1) {
+            for child in remaining_nodes {
                 let result = self.get_matcher_for_definition(
                     &name_node.normalize_name(),
                     child.into(),
@@ -267,11 +286,16 @@ impl<'a> Query<'a> {
             }
         } else {
             let subenum = self.state.get_subenum_variants(&first_node.source());
+            log::info!(
+                "subenum {} with {} variants",
+                first_node.source(),
+                subenum.len()
+            );
             for variant in subenum {
                 if variant.normalize_name() == "Comment" {
                     continue;
                 }
-                for child in node.children().into_iter().skip(1) {
+                for child in remaining_nodes.clone() {
                     let result = self.get_matcher_for_definition(
                         &variant.normalize_name(),
                         child.into(),
@@ -283,12 +307,21 @@ impl<'a> Query<'a> {
         }
         matchers
     }
+    fn get_default_matcher(&self) -> TokenStream {
+        let to_append = self.executor_id();
+        quote! {
+            self.#to_append.push(node.clone());
+        }
+    }
     fn get_matcher_for_definition(
         &self,
         struct_name: &str,
         node: ts_query::NodeTypes,
         current_node: &Ident,
     ) -> TokenStream {
+        if !node.is_named() {
+            return self.get_default_matcher();
+        }
         match node {
             ts_query::NodeTypes::FieldDefinition(field) => {
                 self.get_matcher_for_field(&field, struct_name, current_node)
@@ -316,20 +349,30 @@ impl<'a> Query<'a> {
                 self.get_matchers_for_grouping(&grouping, struct_name, current_node)
             }
             ts_query::NodeTypes::Identifier(identifier) => {
-                let to_append = self.executor_id();
+                let to_append = self.get_default_matcher();
                 let language = format_ident!("{}", self.language.name());
-                let children: Ident = format_ident!("{}Children", struct_name);
+                let mut children = format_ident!("{}", struct_name);
+                if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
+                    children = format_ident!("{}Children", struct_name);
+                    // When there is only 1 possible child, we can use the default matcher
+                    if node.children_struct_name() != children.to_string() {
+                        return self.get_default_matcher();
+                    }
+                } else {
+                    // If this is a field, we may be dealing with multiple types and can't operate over all of them
+                    return self.get_default_matcher(); // TODO: Handle this case
+                }
                 let struct_name =
                     format_ident!("{}", normalize_type_name(&identifier.source(), true));
                 quote! {
-                    if #current_node.children().any(|child| {
+                    if #current_node.children().into_iter().any(|child| {
                         if let #language::#children::#struct_name(_) = child {
                             true
                         } else {
                             false
                         }
                     }) {
-                        #to_append.push(node);
+                        #to_append
                     }
                 }
             }
@@ -360,20 +403,23 @@ impl<'a> Query<'a> {
 
 pub trait HasQuery {
     fn queries(&self) -> BTreeMap<String, Query>;
-    fn queries_with_prefix(&self, prefix: &str) -> BTreeMap<String, Query> {
+    fn queries_with_prefix(&self, prefix: &str) -> BTreeMap<String, Vec<Query<'_>>> {
         let mut queries = BTreeMap::new();
         for (name, query) in self.queries().into_iter() {
             if name.starts_with(prefix) {
                 let new_name = name.split(".").last().unwrap();
-                queries.insert(new_name.to_string(), query);
+                queries
+                    .entry(new_name.to_string())
+                    .or_insert(Vec::new())
+                    .push(query);
             }
         }
         queries
     }
-    fn definitions(&self) -> BTreeMap<String, Query<'_>> {
+    fn definitions(&self) -> BTreeMap<String, Vec<Query<'_>>> {
         self.queries_with_prefix("definition")
     }
-    fn references(&self) -> BTreeMap<String, Query<'_>> {
+    fn references(&self) -> BTreeMap<String, Vec<Query<'_>>> {
         self.queries_with_prefix("reference")
     }
 }

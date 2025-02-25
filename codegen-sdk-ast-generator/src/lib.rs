@@ -16,7 +16,12 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     };
     let mut ast = generator::generate_ast(language)?;
     let visitor = visitor::generate_visitor(
-        &language.definitions().values().into_iter().collect(),
+        &language
+            .definitions()
+            .values()
+            .into_iter()
+            .flatten()
+            .collect(),
         language,
     );
     ast = imports.to_string() + &ast + &visitor.to_string();

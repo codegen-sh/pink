@@ -184,8 +184,11 @@ impl<'a> State<'a> {
         struct_tokens
     }
     pub fn get_node_for_struct_name(&self, name: &str) -> Option<&Node<'a>> {
+        self.nodes.get(name)
+    }
+    pub fn get_node_for_raw_name(&self, name: &str) -> Option<&Node<'a>> {
         for node in self.nodes.values() {
-            if node.normalize_name() == name {
+            if node.kind() == name {
                 return Some(node);
             }
         }
