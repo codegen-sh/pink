@@ -9,5 +9,6 @@ fn children(&self) -> Vec<Self::Child> {
             Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone()))
                 .unwrap(),
         );
+    children.sort_by_key(|c| c.start_byte());
     children
 }

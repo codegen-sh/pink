@@ -173,7 +173,8 @@ impl CSTNode for Block {
 impl HasChildren for Block {
     type Child = BlockChildren;
     fn children(&self) -> Vec<Self::Child> {
-        let children: Vec<_> = self.children.iter().cloned().collect();
+        let mut children: Vec<_> = self.children.iter().cloned().collect();
+        children.sort_by_key(|c| c.start_byte());
         children
     }
     fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
@@ -286,7 +287,8 @@ impl CSTNode for IfStatement {
 impl HasChildren for IfStatement {
     type Child = IfStatementChildren;
     fn children(&self) -> Vec<Self::Child> {
-        let children: Vec<_> = self.children.iter().cloned().collect();
+        let mut children: Vec<_> = self.children.iter().cloned().collect();
+        children.sort_by_key(|c| c.start_byte());
         children
     }
     fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
