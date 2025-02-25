@@ -108,7 +108,7 @@ impl<'a> Query<'a> {
         }
         self.state
             .get_variants(&self.struct_name())
-            .iter()
+            .into_iter()
             .map(|v| v.normalize())
             .filter(|v| v != "Comment")
             .collect()

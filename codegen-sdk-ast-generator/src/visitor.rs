@@ -9,6 +9,7 @@ use quote::{format_ident, quote};
 
 use super::query::Query;
 pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStream {
+    log::info!("Generating visitor for language: {}", language.name());
     let language_name = format_ident!("{}", language.name());
     let mut names = Vec::new();
     let mut types = Vec::new();
@@ -25,7 +26,6 @@ pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStre
                 .push(query);
         }
     }
-    log::info!("Enter methods: {:#?}", enter_methods);
     let mut methods = Vec::new();
     for (variant, queries) in enter_methods {
         let mut matchers = TokenStream::new();
@@ -78,6 +78,7 @@ mod tests {
     fn test_generate_visitor() {
         let language = &Typescript;
         let queries = language.definitions();
+        log::info!("Gathered {} queries", queries.len());
         let visitor = generate_visitor(&queries.values().into_iter().flatten().collect(), language);
         insta::assert_snapshot!(
             codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()

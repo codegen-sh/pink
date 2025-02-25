@@ -2,97 +2,52 @@
 source: codegen-sdk-ast-generator/src/visitor.rs
 expression: "codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()"
 ---
-#[derive(Visitor, Default)]
+#[derive(Visitor, Default, Debug, Clone)]
 #[visitor(
-    "AbstractClassDeclaration"(enter),
-    "FunctionSignature"(enter),
-    "InterfaceDeclaration"(enter),
-    "AbstractMethodSignature"(enter),
-    "Module"(enter)
+    typescript::AbstractClassDeclaration(enter),
+    typescript::FunctionSignature(enter),
+    typescript::InterfaceDeclaration(enter),
+    typescript::AbstractMethodSignature(enter),
+    typescript::Module(enter)
 )]
 pub struct QueryExecutor {
-    abstract_class_declarations: Vec<"AbstractClassDeclaration">,
-    function_signatures: Vec<"FunctionSignature">,
-    interface_declarations: Vec<"InterfaceDeclaration">,
-    abstract_method_signatures: Vec<"AbstractMethodSignature">,
-    modules: Vec<"Module">,
+    pub classes: Vec<typescript::AbstractClassDeclaration>,
+    pub functions: Vec<typescript::FunctionSignature>,
+    pub interfaces: Vec<typescript::InterfaceDeclaration>,
+    pub methods: Vec<typescript::AbstractMethodSignature>,
+    pub modules: Vec<typescript::Module>,
 }
 impl QueryExecutor {
-    fn enter_AbstractClassDeclaration(&mut self, node: &AbstractClassDeclaration) {
-        let field = node.name;
-        if field
-            .children()
-            .any(|child| {
-                if let typescript::AbstractClassDeclarationChildren::TypeIdentifier(_) = child {
-                    true
-                } else {
-                    false
-                }
-            })
-        {
-            abstract_class_declarations.push(node);
-        }
+    fn enter_abstract_class_declaration(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::AbstractClassDeclaration,
+    ) {
+        let field = &node.name;
+        self.classes.push(node.clone());
     }
-    fn enter_AbstractMethodSignature(&mut self, node: &AbstractMethodSignature) {
-        let field = node.name;
-        if field
-            .children()
-            .any(|child| {
-                if let typescript::AbstractMethodSignatureChildren::PropertyIdentifier(
-                    _,
-                ) = child {
-                    true
-                } else {
-                    false
-                }
-            })
-        {
-            abstract_method_signatures.push(node);
-        }
+    fn enter_abstract_method_signature(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::AbstractMethodSignature,
+    ) {
+        let field = &node.name;
+        self.methods.push(node.clone());
     }
-    fn enter_FunctionSignature(&mut self, node: &FunctionSignature) {
-        let field = node.name;
-        if field
-            .children()
-            .any(|child| {
-                if let typescript::FunctionSignatureChildren::Identifier(_) = child {
-                    true
-                } else {
-                    false
-                }
-            })
-        {
-            function_signatures.push(node);
-        }
+    fn enter_function_signature(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::FunctionSignature,
+    ) {
+        let field = &node.name;
+        self.functions.push(node.clone());
     }
-    fn enter_InterfaceDeclaration(&mut self, node: &InterfaceDeclaration) {
-        let field = node.name;
-        if field
-            .children()
-            .any(|child| {
-                if let typescript::InterfaceDeclarationChildren::TypeIdentifier(_) = child {
-                    true
-                } else {
-                    false
-                }
-            })
-        {
-            interface_declarations.push(node);
-        }
+    fn enter_interface_declaration(
+        &mut self,
+        node: &codegen_sdk_cst::typescript::InterfaceDeclaration,
+    ) {
+        let field = &node.name;
+        self.interfaces.push(node.clone());
     }
-    fn enter_Module(&mut self, node: &Module) {
-        let field = node.name;
-        if field
-            .children()
-            .any(|child| {
-                if let typescript::ModuleChildren::Identifier(_) = child {
-                    true
-                } else {
-                    false
-                }
-            })
-        {
-            modules.push(node);
-        }
+    fn enter_module(&mut self, node: &codegen_sdk_cst::typescript::Module) {
+        let field = &node.name;
+        self.modules.push(node.clone());
     }
 }
