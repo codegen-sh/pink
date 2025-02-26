@@ -56,33 +56,37 @@ impl<'a> Field<'a> {
         let original_name = &self.name;
         if self.raw.multiple {
             quote! {
-                get_multiple_children_by_field_name(db, &node, #original_name, buffer)?
+                get_multiple_children_by_field_name(db, &node, #original_name, buffer)?,
             }
         } else if !self.raw.required {
             quote! {
-                Box::new(get_optional_child_by_field_name(db, &node, #original_name, buffer)?)
+                Box::new(get_optional_child_by_field_name(db, &node, #original_name, buffer)?),
             }
         } else {
             quote! {
-                Box::new(get_child_by_field_name(db, &node, #original_name, buffer)?)
+                Box::new(get_child_by_field_name(db, &node, #original_name, buffer)?),
             }
         }
     }
     pub fn get_convert_child(&self, convert_children: bool) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
         let types = format_ident!("{}", TYPE_NAME);
+
         if convert_children {
+            let child_type_name = quote! {
+                <Self as HasChildren>::Child
+            };
             if self.raw.multiple {
                 quote! {
-                    Self::Child::try_from(#types::from(child.clone())).unwrap()
+                    #child_type_name::try_from(#types::from(child.clone())).unwrap()
                 }
             } else if !self.raw.required {
                 quote! {
-                    Self::Child::try_from(#types::from(child.clone())).unwrap()
+                    #child_type_name::try_from(#types::from(child.clone())).unwrap()
                 }
             } else {
                 quote! {
-                    Self::Child::try_from(#types::from(self.#field_name_ident(db).as_ref().clone())).unwrap()
+                    #child_type_name::try_from(#types::from(self.#field_name_ident(db).as_ref().clone())).unwrap()
                 }
             }
         } else if self.raw.multiple || !self.raw.required {
@@ -160,16 +164,19 @@ impl<'a> Field<'a> {
         if self.raw.multiple {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Vec<#converted_type_name>
+                #[tracked(return_ref)]
+                pub #field_name_ident: Vec<#converted_type_name<'db>>
             }
         } else if !self.raw.required {
             quote! {
                 #[rkyv(omit_bounds)]
+                #[tracked(return_ref)]
                 pub #field_name_ident: Box<Option<#converted_type_name<'db>>>
             }
         } else {
             quote! {
                 #[rkyv(omit_bounds)]
+                #[tracked(return_ref)]
                 pub #field_name_ident: Box<#converted_type_name<'db>>
             }
         }

@@ -10,7 +10,7 @@ use quote::{format_ident, quote};
 use super::node::Node;
 use crate::generator::{
     constants::TYPE_NAME,
-    utils::{get_comment_type, get_from_node},
+    utils::{get_comment_type, get_from_node, get_from_type},
 };
 #[derive(Debug)]
 pub struct State<'a> {
@@ -146,6 +146,7 @@ impl<'a> State<'a> {
         let mut subenums = Vec::new();
         for node in self.nodes.values() {
             enum_tokens.push(node.get_enum_tokens());
+            from_tokens.extend_one(get_from_type(&node.normalize_name()));
         }
         for subenum in self.subenums.iter() {
             assert!(
@@ -171,7 +172,12 @@ impl<'a> State<'a> {
         let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone, PartialEq)]
+        #[delegate(derive(
+            for<'db1> CSTNode<'db1>
+            where
+                'db1: 'db,
+        ))]
+        #[derive(Debug, Clone, PartialEq, Eq)]
         pub enum #enum_name<'db> {
                 #(#enum_tokens),*
             }

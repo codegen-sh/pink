@@ -4,6 +4,7 @@ use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
+use super::constants::TYPE_NAME;
 pub fn get_serialize_bounds() -> TokenStream {
     quote! {
        #[rkyv(serialize_bounds(
@@ -17,6 +18,17 @@ pub fn get_serialize_bounds() -> TokenStream {
                __C::Error: rkyv::rancor::Source,
            )
        ))]
+    }
+}
+pub fn get_from_type(struct_name: &str) -> TokenStream {
+    let name = format_ident!("{}", struct_name);
+    let target = format_ident!("{}", TYPE_NAME);
+    quote! {
+        impl<'db> From<#name<'db>> for #target<'db> {
+            fn from(node: #name<'db>) -> Self {
+                Self::#name(node)
+            }
+        }
     }
 }
 pub fn get_from_node(

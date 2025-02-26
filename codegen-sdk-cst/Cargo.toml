@@ -11,9 +11,9 @@ codegen-sdk-macros = { path = "../codegen-sdk-macros" }
 derive_more = { workspace = true }
 convert_case = { workspace = true }
 rkyv = { workspace = true }
-subenum = "1.1.2"
+subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
 log = { workspace = true }
-enum_delegate = { workspace = true }
+delegation = { workspace = true }
 derive-visitor = { workspace = true }
 salsa = { workspace = true }
 [build-dependencies]

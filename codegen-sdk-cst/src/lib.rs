@@ -11,14 +11,14 @@ mod language;
 pub use codegen_sdk_common::language::LANGUAGES;
 pub use language::CSTLanguage;
 include_languages!();
-pub fn parse_file<'db>(
-    db: &'db dyn salsa::Database,
-    cache: &'db Cache,
-    file_path: &'db PathBuf,
-) -> Result<Box<dyn CSTNode<'db> + Send>, ParseError> {
-    parse_languages!();
-    Err(ParseError::UnknownLanguage)
-}
+// pub fn parse_file<'db>(
+//     db: &'db dyn salsa::Database,
+//     cache: &'db Cache,
+//     file_path: &'db PathBuf,
+// ) -> Result<Box<dyn CSTNode<'db> + Send>, ParseError> {
+//     // parse_languages!();
+//     Err(ParseError::UnknownLanguage)
+// }
 
 #[cfg(test)]
 mod tests {

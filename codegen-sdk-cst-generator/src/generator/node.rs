@@ -102,7 +102,7 @@ impl<'a> Node<'a> {
             quote! {
                 #[rkyv(omit_bounds)]
                 #[tracked]
-                pub children: Vec<#children_type_name<'db>>,
+                pub _children: Vec<#children_type_name<'db>>,
             }
         } else {
             quote! {}
@@ -173,7 +173,7 @@ impl<'a> Node<'a> {
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
             quote! {
-                named_children_without_field_names(db,node, buffer)?
+                named_children_without_field_names(db,node, buffer)?,
             }
         } else {
             quote! {}
@@ -182,10 +182,10 @@ impl<'a> Node<'a> {
     pub fn get_constructor(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let mut constructor_fields = Vec::new();
+        constructor_fields.push(self.get_children_constructor());
         for field in &self.fields {
             constructor_fields.push(field.get_constructor_field());
         }
-        constructor_fields.push(self.get_children_constructor());
 
         quote! {
             impl<'db> FromNode<'db> for #name<'db> {
@@ -203,7 +203,7 @@ impl<'a> Node<'a> {
                         node.is_error(),
                         node.is_named(),
                         node.id(),
-                        #(#constructor_fields),*
+                        #(#constructor_fields)*
                     ))
                 }
             }
@@ -211,13 +211,21 @@ impl<'a> Node<'a> {
     }
     fn get_children_impl(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
-        let children_type_name = format_ident!("{}", self.children_struct_name());
+
+        let children_type_name = self.children_struct_name();
+        let children_type_ident = format_ident!("{}", children_type_name);
+        let mut children_type_generic = quote! {#children_type_ident};
+        if children_type_name != "Self" {
+            children_type_generic = quote! {#children_type_generic<'db>};
+        }
+
         let children_field = self.get_children_field_impl();
         let children_by_field_name = self.get_children_by_field_name_impl();
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
+            #[salsa::tracked]
             impl<'db> HasChildren<'db> for #name<'db> {
-                type Child = #children_type_name;
+                type Child = #children_type_generic;
                 #children_field
                 #children_by_field_name
                 #children_by_field_id
@@ -280,7 +288,8 @@ impl<'a> Node<'a> {
         let num_children = self.get_children_names().len();
         if num_children == 0 {
             return quote! {
-                fn children(&self, db: &'db dyn salsa::Database) -> Vec<Self::Child> {
+                #[salsa::tracked]
+                fn children(self, db: &'db dyn salsa::Database) -> Vec<Self::Child> {
                     vec![]
                 }
             };
@@ -292,7 +301,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self.children(db).iter().cloned().collect()
+                self._children(db).iter().cloned().collect()
             }
         } else {
             quote! {
@@ -300,10 +309,11 @@ impl<'a> Node<'a> {
             }
         };
         quote! {
-            fn children(&self, db: &'db dyn salsa::Database) -> Vec<Self::Child> {
+            #[salsa::tracked]
+            fn children(self, db: &'db dyn salsa::Database) -> Vec<Self::Child> {
                 let mut children: Vec<_> = #children_init;
                 #(#children_fields;)*
-                children.sort_by_key(|c| c.start_byte());
+                children.sort_by_key(|c| c.clone().start_byte(db));
                 children
             }
         }
@@ -317,7 +327,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_name(&self, db: &'db dyn salsa::Database, field_name: &str) -> Vec<Self::Child> {
+            fn children_by_field_name(self, db: &'db dyn salsa::Database, field_name: &str) -> Vec<Self::Child> {
                 match field_name {
                     #(#field_matches,)*
                     _ => vec![],
@@ -334,7 +344,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_id(&self, db: &'db dyn salsa::Database, field_id: u16) -> Vec<Self::Child> {
+            fn children_by_field_id(self, db: &'db dyn salsa::Database, field_id: u16) -> Vec<Self::Child> {
                 match field_id {
                     #(#field_matches,)*
                     _ => vec![],

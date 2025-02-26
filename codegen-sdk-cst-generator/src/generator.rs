@@ -25,6 +25,7 @@ fn get_imports() -> TokenStream {
     use bytes::Bytes;
     use rkyv::{Archive, Deserialize, Serialize};
     use derive_visitor::Drive;
+    use delegation::delegate;
 
         }
 }
