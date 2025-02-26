@@ -6,6 +6,7 @@ use codegen_sdk_common::{ParseError, serialize::Cache, traits::CSTNode};
 use codegen_sdk_macros::{include_languages, parse_languages};
 use rkyv::{api::high::to_bytes_in, from_bytes};
 mod language;
+pub use codegen_sdk_common::language::LANGUAGES;
 pub use language::CSTLanguage;
 include_languages!();
 pub fn parse_file(

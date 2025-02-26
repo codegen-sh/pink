@@ -7,7 +7,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
 codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
-codegen-sdk-cst = { workspace = true , features = ["typescript"]}
+codegen-sdk-ast = { workspace = true}
 codegen-sdk-common = { workspace = true}
 crossbeam = "0.8.4"
 glob = "0.3.2"
@@ -17,21 +17,21 @@ rayon = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
 [features]
-# python = [ "codegen-sdk-cst/python"] # TODO: Add python support
-typescript = [ "codegen-sdk-cst/typescript"]
-tsx = [ "codegen-sdk-cst/tsx"]
-jsx = [ "codegen-sdk-cst/jsx"]
-javascript = [ "codegen-sdk-cst/typescript"]
-json = [ "codegen-sdk-cst/json"]
-java = [ "codegen-sdk-cst/java"]
-# ruby = [ "codegen-sdk-cst/ruby"]
-# rust = [ "codegen-sdk-cst/rust"]
-go = [ "codegen-sdk-cst/go"]
-# markdown = [ "codegen-sdk-cst/markdown"]
-yaml = [ "codegen-sdk-cst/yaml"]
-toml = [ "codegen-sdk-cst/toml"]
+python = [ "codegen-sdk-ast/python"] # TODO: Add python support
+typescript = [ "codegen-sdk-ast/typescript"]
+tsx = [ "codegen-sdk-ast/tsx"]
+jsx = [ "codegen-sdk-ast/jsx"]
+javascript = [ "codegen-sdk-ast/typescript"]
+json = [ "codegen-sdk-ast/json"]
+java = [ "codegen-sdk-ast/java"]
+ruby = [ "codegen-sdk-ast/ruby"]
+rust = [ "codegen-sdk-ast/rust"]
+go = [ "codegen-sdk-ast/go"]
+markdown = [ "codegen-sdk-ast/markdown"]
+yaml = [ "codegen-sdk-ast/yaml"]
+toml = [ "codegen-sdk-ast/toml"]
 ts_query = []
-default = ["json", "ts_query", "toml"]
+default = ["json", "ts_query", "toml", "typescript"]
 [dev-dependencies]
 test-log = { workspace = true }
 [workspace]

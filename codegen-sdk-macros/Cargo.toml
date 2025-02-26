@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-codegen-sdk-common = { workspace = true }
+codegen-sdk-common = { workspace = true, features = ["all"] }
 [lib]
 proc-macro = true

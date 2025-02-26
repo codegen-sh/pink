@@ -324,8 +324,8 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "codegen-sdk-analyzer",
+ "codegen-sdk-ast",
  "codegen-sdk-common",
- "codegen-sdk-cst",
  "crossbeam",
  "env_logger",
  "glob",
