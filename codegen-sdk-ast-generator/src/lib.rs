@@ -3,7 +3,6 @@
 use codegen_sdk_common::{generator::format_code, language::Language};
 use quote::quote;
 
-use crate::query::HasQuery;
 mod generator;
 mod query;
 mod visitor;
