@@ -1,7 +1,8 @@
-use std::{path, time::Instant};
+use std::{ops::Div, path, time::Instant};
 
 use clap::Parser;
-use codegen_sdk_common::{language::LANGUAGES, serialize::Cache, traits::CSTNode};
+use codegen_sdk_ast::*;
+use codegen_sdk_common::{serialize::Cache, traits::CSTNode};
 use glob::glob;
 use rayon::prelude::*;
 use sysinfo::System;
@@ -32,7 +33,7 @@ fn parse_file(
     if file.is_dir() {
         return None;
     }
-    let result = codegen_sdk_cst::parse_file(cache, file);
+    let result = codegen_sdk_ast::parse_file(cache, file);
 
     return match result {
         Ok(program) => Some(program),
@@ -81,7 +82,7 @@ fn parse_files(dir: String) -> (Vec<Box<dyn CSTNode + Send>>, Vec<String>) {
     log::info!(
         "{} files cached. {}% of total",
         cached,
-        cached * 100 / files_to_parse.len()
+        (cached * 100).div(files_to_parse.len())
     );
     (files, errors)
 }

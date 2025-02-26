@@ -9,7 +9,7 @@ prettyplease = {workspace = true}
 syn = { workspace = true }
 tree-sitter = { workspace = true }
 log = { workspace = true }
-codegen-sdk-common = { workspace = true }
+codegen-sdk-common = { workspace = true, features = ["python"]}
 anyhow = { workspace = true }
 quote = { workspace = true }
 proc-macro2 = { workspace = true }
