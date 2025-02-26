@@ -69,7 +69,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
                 from_bytes::<<{name}::{struct_name} as CSTLanguage>::Program, rkyv::rancor::Error>(&bytes)?;
             return Ok(Box::new(parsed));
         }}
-        let parsed = {name}::{struct_name}::parse_file(file_path)?;
+        let parsed = {name}::{struct_name}::parse_file(db, file_path)?;
         log::debug!(\"Serializing {name}\");
         let writer = cache.get_writer(&serialized_path)?;
         let _ = to_bytes_in::<_, rkyv::rancor::Error>(&parsed, writer)?;

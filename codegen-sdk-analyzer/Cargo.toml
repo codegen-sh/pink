@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-salsa = "0.16.1"
+salsa = { workspace = true }
 codegen-sdk-ast = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }

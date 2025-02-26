@@ -17,10 +17,16 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     let definitions = visitor::generate_visitor(language, "definition");
     let references = visitor::generate_visitor(language, "reference");
     ast = imports.to_string() + &ast + &definitions.to_string() + &references.to_string();
-    ast = format_code(&ast)
-        .unwrap_or_else(|_| panic!("Failed to format ast for {}", language.name()));
     let out_dir = std::env::var("OUT_DIR")?;
     let out_file = format!("{}/{}.rs", out_dir, language.name());
+    std::fs::write(&out_file, ast.clone())?;
+    ast = format_code(&ast).unwrap_or_else(|_| {
+        panic!(
+            "Failed to format ast for {} at {}",
+            language.name(),
+            out_file
+        )
+    });
     std::fs::write(out_file, ast)?;
     Ok(())
 }

@@ -9,6 +9,7 @@ codegen-sdk-common = { workspace = true }
 derive-visitor = { workspace = true }
 codegen-sdk-macros = { path = "../codegen-sdk-macros"}
 log = { workspace = true }
+salsa = { workspace = true }
 [build-dependencies]
 codegen-sdk-common = { workspace = true }
 env_logger = { workspace = true }

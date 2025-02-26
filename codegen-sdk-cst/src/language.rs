@@ -6,22 +6,25 @@ use codegen_sdk_common::{
     language::Language,
     traits::{CSTNode, FromNode},
 };
-pub trait CSTLanguage {
-    type Program: CSTNode + FromNode + Send;
+pub trait CSTLanguage<'db> {
+    type Program: CSTNode<'db> + FromNode<'db> + Send;
     fn language() -> &'static Language;
-    fn parse(content: &str) -> Result<Self::Program, ParseError> {
+    fn parse(db: &'db dyn salsa::Database, content: &str) -> Result<Self::Program, ParseError> {
         let buffer = Bytes::from(content.as_bytes().to_vec());
         let tree = Self::language().parse_tree_sitter(content)?;
         if tree.root_node().has_error() {
             Err(ParseError::SyntaxError)
         } else {
             let buffer = Arc::new(buffer);
-            Self::Program::from_node(tree.root_node(), &buffer)
+            Self::Program::from_node(db, tree.root_node(), &buffer)
         }
     }
-    fn parse_file(file_path: &PathBuf) -> Result<Self::Program, ParseError> {
+    fn parse_file(
+        db: &'db dyn salsa::Database,
+        file_path: &PathBuf,
+    ) -> Result<Self::Program, ParseError> {
         let content = std::fs::read_to_string(file_path)?;
-        let parsed = Self::parse(&content)?;
+        let parsed = Self::parse(db, &content)?;
         Ok(parsed)
     }
 

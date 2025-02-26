@@ -1,4 +1,5 @@
 #![feature(error_generic_member_access)]
+#![feature(trivial_bounds)]
 mod errors;
 pub mod language;
 pub mod traits;

@@ -1,15 +1,15 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Archive, Deserialize, Serialize)]
-pub struct Point {
+#[salsa::tracked]
+#[derive(Archive, Deserialize, Serialize)]
+pub struct Point<'db> {
+    #[tracked]
     pub row: usize,
+    #[tracked]
     pub column: usize,
 }
-impl From<tree_sitter::Point> for Point {
-    fn from(value: tree_sitter::Point) -> Self {
-        Point {
-            row: value.row,
-            column: value.column,
-        }
+impl<'db> Point<'db> {
+    pub fn from(db: &'db dyn salsa::Database, value: tree_sitter::Point) -> Self {
+        Self::new(db, value.row, value.column)
     }
 }

@@ -60,12 +60,12 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
-                #name(#name)
+                #name(#name<'db>)
             }
         } else {
             quote! {
                 #[subenum(#(#subenum_names), *)]
-                #name(#name)
+                #name(#name<'db>)
             }
         }
     }
@@ -101,7 +101,8 @@ impl<'a> Node<'a> {
             let children_type_name = format_ident!("{}", self.children_struct_name());
             quote! {
                 #[rkyv(omit_bounds)]
-                pub children: Vec<#children_type_name>,
+                #[tracked]
+                pub children: Vec<#children_type_name<'db>>,
             }
         } else {
             quote! {}
@@ -121,35 +122,46 @@ impl<'a> Node<'a> {
         let trait_impls = self.get_trait_implementations();
 
         quote! {
-            #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-            #serialize_bounds
-            pub struct #name {
+            #[salsa::tracked]
+            // #[derive(Deserialize, Archive, Serialize, Drive)]
+            // #serialize_bounds
+            pub struct #name<'db> {
                 #[drive(skip)]
+                #[tracked]
                 start_byte: usize,
                 #[drive(skip)]
+                #[tracked]
                 end_byte: usize,
                 #[drive(skip)]
+                #[tracked]
                 _kind: std::string::String,
                 #[debug("[{},{}]", start_position.row, start_position.column)]
                 #[drive(skip)]
-                start_position: Point,
+                #[tracked]
+                start_position: Point<'db>,
                 #[debug("[{},{}]", end_position.row, end_position.column)]
                 #[drive(skip)]
-                end_position: Point,
+                #[tracked]
+                end_position: Point<'db>,
                 #[debug(ignore)]
                 #[drive(skip)]
+                #[tracked]
                 buffer: Arc<Bytes>,
                 #[debug(ignore)]
                 #[drive(skip)]
+                #[tracked]
                 kind_id: u16,
                 #[debug(ignore)]
                 #[drive(skip)]
+                #[tracked]
                 is_error: bool,
                 #[debug(ignore)]
                 #[drive(skip)]
+                #[tracked]
                 named: bool,
                 #[debug(ignore)]
                 #[drive(skip)]
+                #[tracked]
                 id: usize,
                 #children_field
                 #(#struct_fields),*
@@ -161,7 +173,7 @@ impl<'a> Node<'a> {
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
             quote! {
-                children: named_children_without_field_names(node, buffer)?
+                named_children_without_field_names(db,node, buffer)?
             }
         } else {
             quote! {}
@@ -176,21 +188,23 @@ impl<'a> Node<'a> {
         constructor_fields.push(self.get_children_constructor());
 
         quote! {
-            impl FromNode for #name {
-                fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                    Ok(Self {
-                        start_byte: node.start_byte(),
-                        end_byte: node.end_byte(),
-                        _kind: node.kind().to_string(),
-                        start_position: node.start_position().into(),
-                        end_position: node.end_position().into(),
-                        buffer: buffer.clone(),
-                        kind_id: node.kind_id(),
-                        is_error: node.is_error(),
-                        named: node.is_named(),
-                        id: node.id(),
+            impl<'db> FromNode<'db> for #name<'db> {
+                fn from_node(db: &'db dyn salsa::Database, node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                    let start_position = Point::from(db, node.start_position());
+                    let end_position = Point::from(db, node.end_position());
+                    Ok(Self::new(db,
+                        node.start_byte(),
+                        node.end_byte(),
+                        node.kind().to_string(),
+                        start_position,
+                        end_position,
+                        buffer.clone(),
+                        node.kind_id(),
+                        node.is_error(),
+                        node.is_named(),
+                        node.id(),
                         #(#constructor_fields),*
-                    })
+                    ))
                 }
             }
         }
@@ -202,7 +216,7 @@ impl<'a> Node<'a> {
         let children_by_field_name = self.get_children_by_field_name_impl();
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
-            impl HasChildren for #name {
+            impl<'db> HasChildren<'db> for #name<'db> {
                 type Child = #children_type_name;
                 #children_field
                 #children_by_field_name
@@ -215,36 +229,47 @@ impl<'a> Node<'a> {
         let children_impl = self.get_children_impl();
 
         quote! {
-            impl CSTNode for #name {
-                fn kind(&self) -> &str {
-                    &self._kind
+            #[salsa::tracked]
+            impl<'db> CSTNode<'db> for #name<'db> {
+                #[salsa::tracked(return_ref)]
+                fn kind(self, db: &'db dyn salsa::Database) -> std::string::String {
+                    self._kind(db)
                 }
-                fn start_byte(&self) -> usize {
-                    self.start_byte
+                #[salsa::tracked]
+                fn start_byte(self, db: &'db dyn salsa::Database) -> usize {
+                    self.start_byte(db)
                 }
-                fn end_byte(&self) -> usize {
-                    self.end_byte
+                #[salsa::tracked]
+                fn end_byte(self, db: &'db dyn salsa::Database) -> usize {
+                    self.end_byte(db)
                 }
-                fn start_position(&self) -> Point {
-                    self.start_position
+                #[salsa::tracked]
+                fn start_position(self, db: &'db dyn salsa::Database) -> Point<'db> {
+                    self.start_position(db)
                 }
-                fn end_position(&self) -> Point {
-                    self.end_position
+                #[salsa::tracked]
+                fn end_position(self, db: &'db dyn salsa::Database) -> Point<'db> {
+                    self.end_position(db)
                 }
-                fn buffer(&self) -> &Bytes {
-                    &self.buffer
+                #[salsa::tracked(return_ref)]
+                fn buffer(self, db: &'db dyn salsa::Database) -> Bytes {
+                    (*self.buffer(db)).clone()
                 }
-                fn kind_id(&self) -> u16 {
-                    self.kind_id
+                #[salsa::tracked]
+                fn kind_id(self, db: &'db dyn salsa::Database) -> u16 {
+                    self.kind_id(db)
                 }
-                fn is_error(&self) -> bool {
-                    self.is_error
+                #[salsa::tracked]
+                fn is_error(self, db: &'db dyn salsa::Database) -> bool {
+                    self.is_error(db)
                 }
-                fn is_named(&self) -> bool {
-                    self.named
+                #[salsa::tracked]
+                fn is_named(self, db: &'db dyn salsa::Database) -> bool {
+                    self.named(db)
                 }
-                fn id(&self) -> usize {
-                    self.id
+                #[salsa::tracked]
+                fn id(self, db: &'db dyn salsa::Database) -> usize {
+                    self.id(db)
                 }
             }
             #children_impl
@@ -255,7 +280,7 @@ impl<'a> Node<'a> {
         let num_children = self.get_children_names().len();
         if num_children == 0 {
             return quote! {
-                fn children(&self) -> Vec<Self::Child> {
+                fn children(&self, db: &'db dyn salsa::Database) -> Vec<Self::Child> {
                     vec![]
                 }
             };
@@ -267,7 +292,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self.children.iter().cloned().collect()
+                self.children(db).iter().cloned().collect()
             }
         } else {
             quote! {
@@ -275,7 +300,7 @@ impl<'a> Node<'a> {
             }
         };
         quote! {
-            fn children(&self) -> Vec<Self::Child> {
+            fn children(&self, db: &'db dyn salsa::Database) -> Vec<Self::Child> {
                 let mut children: Vec<_> = #children_init;
                 #(#children_fields;)*
                 children.sort_by_key(|c| c.start_byte());
@@ -292,7 +317,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+            fn children_by_field_name(&self, db: &'db dyn salsa::Database, field_name: &str) -> Vec<Self::Child> {
                 match field_name {
                     #(#field_matches,)*
                     _ => vec![],
@@ -309,7 +334,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+            fn children_by_field_id(&self, db: &'db dyn salsa::Database, field_id: u16) -> Vec<Self::Child> {
                 match field_id {
                     #(#field_matches,)*
                     _ => vec![],

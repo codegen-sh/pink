@@ -56,15 +56,15 @@ impl<'a> Field<'a> {
         let original_name = &self.name;
         if self.raw.multiple {
             quote! {
-                #field_name_ident: get_multiple_children_by_field_name(&node, #original_name, buffer)?
+                get_multiple_children_by_field_name(db, &node, #original_name, buffer)?
             }
         } else if !self.raw.required {
             quote! {
-                #field_name_ident: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
+                Box::new(get_optional_child_by_field_name(db, &node, #original_name, buffer)?)
             }
         } else {
             quote! {
-                #field_name_ident: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
+                Box::new(get_child_by_field_name(db, &node, #original_name, buffer)?)
             }
         }
     }
@@ -82,7 +82,7 @@ impl<'a> Field<'a> {
                 }
             } else {
                 quote! {
-                    Self::Child::try_from(#types::from(self.#field_name_ident.as_ref().clone())).unwrap()
+                    Self::Child::try_from(#types::from(self.#field_name_ident(db).as_ref().clone())).unwrap()
                 }
             }
         } else if self.raw.multiple || !self.raw.required {
@@ -101,7 +101,7 @@ impl<'a> Field<'a> {
 
         if self.raw.multiple {
             quote! {
-                children.extend(self.#field_name_ident.iter().map(|child| #convert_child));
+                children.extend(self.#field_name_ident(db).iter().map(|child| #convert_child));
             }
         } else if self.raw.required {
             quote! {
@@ -109,7 +109,7 @@ impl<'a> Field<'a> {
             }
         } else {
             quote! {
-                if let Some(child) = self.#field_name_ident.as_ref() {
+                if let Some(child) = self.#field_name_ident(db).as_ref() {
                     children.push(#convert_child);
                 }
             }
@@ -122,7 +122,7 @@ impl<'a> Field<'a> {
 
         if self.raw.multiple {
             quote! {
-                #field_name => self.#field_name_ident.iter().map(|child| #convert_child).collect()
+                #field_name => self.#field_name_ident(db).iter().map(|child| #convert_child).collect()
             }
         } else if self.raw.required {
             quote! {
@@ -130,7 +130,7 @@ impl<'a> Field<'a> {
             }
         } else {
             quote! {
-                #field_name => self.#field_name_ident.as_ref().iter().map(|child| #convert_child).collect()
+                #field_name => self.#field_name_ident(db).as_ref().iter().map(|child| #convert_child).collect()
             }
         }
     }
@@ -141,7 +141,7 @@ impl<'a> Field<'a> {
 
         if self.raw.multiple {
             quote! {
-                #field_id => self.#field_name_ident.iter().map(|child| #convert_child).collect()
+                #field_id => self.#field_name_ident(db).iter().map(|child| #convert_child).collect()
             }
         } else if self.raw.required {
             quote! {
@@ -149,12 +149,13 @@ impl<'a> Field<'a> {
             }
         } else {
             quote! {
-                #field_id => self.#field_name_ident.as_ref().iter().map(|child| #convert_child).collect()
+                #field_id => self.#field_name_ident(db).as_ref().iter().map(|child| #convert_child).collect()
             }
         }
     }
     pub fn get_struct_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
+        let raw_name = &self.name;
         let converted_type_name = format_ident!("{}", self.type_name());
         if self.raw.multiple {
             quote! {
@@ -164,12 +165,12 @@ impl<'a> Field<'a> {
         } else if !self.raw.required {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Box<Option<#converted_type_name>>
+                pub #field_name_ident: Box<Option<#converted_type_name<'db>>>
             }
         } else {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Box<#converted_type_name>
+                pub #field_name_ident: Box<#converted_type_name<'db>>
             }
         }
     }

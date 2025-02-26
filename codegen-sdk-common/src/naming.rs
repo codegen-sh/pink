@@ -40,10 +40,10 @@ static MAPPINGS: phf::Map<char, &'static str> = phf_map! {
 };
 pub fn normalize_field_name(field_name: &str) -> String {
     if field_name == "type" {
-        return "r#type".to_string();
+        return "raw_type".to_string();
     }
     if field_name == "macro" {
-        return "r#macro".to_string();
+        return "raw_macro".to_string();
     }
     field_name.to_string()
 }

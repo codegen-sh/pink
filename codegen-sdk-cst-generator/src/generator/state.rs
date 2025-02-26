@@ -127,7 +127,7 @@ impl<'a> State<'a> {
                 variant_map.insert(
                     node.kind_id(),
                     quote! {
-                        Ok(Self::#variant_name(#variant_name::from_node(node, buffer)?))
+                        Ok(Self::#variant_name(#variant_name::from_node(db, node, buffer)?))
                     },
                 );
             }
@@ -159,8 +159,11 @@ impl<'a> State<'a> {
         let subenum_tokens = if !subenums.is_empty() {
             subenums.sort();
             subenums.dedup();
+            // quote! {
+            //     #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
+            // }
             quote! {
-                #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
+                #[subenum(#(#subenums),*)]
             }
         } else {
             quote! {}
@@ -168,9 +171,8 @@ impl<'a> State<'a> {
         let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone, Drive)]
-        #[enum_delegate::implement(CSTNode)]
-        pub enum #enum_name {
+        #[derive(Debug, Clone, PartialEq)]
+        pub enum #enum_name<'db> {
                 #(#enum_tokens),*
             }
             #from_tokens

@@ -3,11 +3,10 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
     let content = format!(
         "
     #[derive(Debug, Clone)]
+    #[salsa::tracked]
     pub struct {language_struct_name}File {{
         node: {language_name}::{root_node_name},
         path: PathBuf,
-        pub references: References,
-        pub definitions: Definitions
     }}
     impl File for {language_struct_name}File {{
         fn path(&self) -> &PathBuf {{
@@ -16,11 +15,21 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
         fn parse(path: &PathBuf) -> Result<Self, ParseError> {{
             log::debug!(\"Parsing {language_name} file: {{}}\", path.display());
             let ast = {language_name}::{language_struct_name}::parse_file(path)?;
-            let mut references = References::default();
+            Ok({language_struct_name}File {{ node: ast, path: path.clone() }})
+        }}
+    }}
+    impl {language_struct_name}File {{
+        #[salsa::tracked]
+        pub fn definitions(&self) -> Definitions {{
             let mut definitions = Definitions::default();
-            ast.drive(&mut definitions);
-            ast.drive(&mut references);
-            Ok({language_struct_name}File {{ node: ast, path: path.clone(), references, definitions }})
+            self.node.drive(&mut definitions);
+            definitions
+        }}
+        #[salsa::tracked]
+        pub fn references(&self) -> References {{
+            let mut references = References::default();
+            self.node.drive(&mut references);
+            references
         }}
     }}
     impl HasNode for {language_struct_name}File {{
@@ -29,6 +38,12 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
             &self.node
         }}
     }}
+    #[salsa::jar]
+    pub struct Jar (
+        Definitions,
+        References,
+        {language_struct_name}File,
+    );
     ",
         language_struct_name = language.struct_name,
         language_name = language.name(),

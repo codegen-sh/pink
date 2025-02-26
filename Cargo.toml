@@ -79,10 +79,11 @@ insta = "1.42.1"
 prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
+salsa = "0.18.0"
 
 [profile.dev]
 debug = 0
-codegen-backend = "cranelift"
+# codegen-backend = "cranelift"
 
 [profile.dev.package]
 insta.opt-level = 3
@@ -96,4 +97,4 @@ strip = "none"
 lto = false
 codegen-units = 256
 incremental = true
-codegen-backend = "cranelift"
+# codegen-backend = "cranelift"

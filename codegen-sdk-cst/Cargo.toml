@@ -15,9 +15,10 @@ subenum = "1.1.2"
 log = { workspace = true }
 enum_delegate = { workspace = true }
 derive-visitor = { workspace = true }
+salsa = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = { workspace = true }
+codegen-sdk-common = { workspace = true}
 rayon = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }

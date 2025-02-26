@@ -36,6 +36,7 @@ enum_delegate = { workspace = true }
 mockall = { workspace = true }
 syn = { workspace = true }
 prettyplease = { workspace = true }
+salsa = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 [features]
