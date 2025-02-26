@@ -31,5 +31,5 @@ fn test_typescript_ast_interface() {
     let content = "interface Test { }";
     let file_path = write_to_temp_file(content, &temp_dir);
     let file = TypescriptFile::parse(&file_path).unwrap();
-    assert_eq!(file.visitor.interfaces.len(), 1);
+    assert_eq!(file.definitions.interfaces.len(), 1);
 }
