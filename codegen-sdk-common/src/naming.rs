@@ -42,6 +42,9 @@ pub fn normalize_field_name(field_name: &str) -> String {
     if field_name == "type" {
         return "r#type".to_string();
     }
+    if field_name == "macro" {
+        return "r#macro".to_string();
+    }
     field_name.to_string()
 }
 fn get_char_mapping(c: char) -> String {

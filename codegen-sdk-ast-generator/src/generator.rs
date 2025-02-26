@@ -6,7 +6,8 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
     pub struct {language_struct_name}File {{
         node: {language_name}::{root_node_name},
         path: PathBuf,
-        pub visitor: QueryExecutor
+        pub references: References,
+        pub definitions: Definitions
     }}
     impl File for {language_struct_name}File {{
         fn path(&self) -> &PathBuf {{
@@ -15,9 +16,11 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
         fn parse(path: &PathBuf) -> Result<Self, ParseError> {{
             log::debug!(\"Parsing {language_name} file: {{}}\", path.display());
             let ast = {language_name}::{language_struct_name}::parse_file(path)?;
-            let mut visitor = QueryExecutor::default();
-            ast.drive(&mut visitor);
-            Ok({language_struct_name}File {{ node: ast, path: path.clone(), visitor }})
+            let mut references = References::default();
+            let mut definitions = Definitions::default();
+            ast.drive(&mut definitions);
+            ast.drive(&mut references);
+            Ok({language_struct_name}File {{ node: ast, path: path.clone(), references, definitions }})
         }}
     }}
     impl HasNode for {language_struct_name}File {{

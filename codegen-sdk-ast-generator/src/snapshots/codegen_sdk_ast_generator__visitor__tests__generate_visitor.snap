@@ -10,14 +10,14 @@ expression: "codegen_sdk_common::generator::format_code(&visitor.to_string()).un
     typescript::AbstractMethodSignature(enter),
     typescript::Module(enter)
 )]
-pub struct QueryExecutor {
+pub struct Definitions {
     pub classes: Vec<typescript::AbstractClassDeclaration>,
     pub functions: Vec<typescript::FunctionSignature>,
     pub interfaces: Vec<typescript::InterfaceDeclaration>,
     pub methods: Vec<typescript::AbstractMethodSignature>,
     pub modules: Vec<typescript::Module>,
 }
-impl QueryExecutor {
+impl Definitions {
     fn enter_abstract_class_declaration(
         &mut self,
         node: &codegen_sdk_cst::typescript::AbstractClassDeclaration,
