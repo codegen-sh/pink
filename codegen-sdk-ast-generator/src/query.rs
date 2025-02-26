@@ -412,12 +412,6 @@ pub trait HasQuery {
         }
         queries
     }
-    fn definitions(&self) -> BTreeMap<String, Vec<Query<'_>>> {
-        self.queries_with_prefix("definition")
-    }
-    // fn references(&self) -> BTreeMap<String, Vec<Query<'_>>> {
-    //     self.queries_with_prefix("reference")
-    // }
 }
 impl HasQuery for Language {
     fn queries(&self) -> BTreeMap<String, Query<'_>> {

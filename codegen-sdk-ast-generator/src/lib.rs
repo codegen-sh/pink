@@ -15,16 +15,9 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
         use codegen_sdk_cst::CSTLanguage;
     };
     let mut ast = generator::generate_ast(language)?;
-    let visitor = visitor::generate_visitor(
-        &language
-            .definitions()
-            .values()
-            .into_iter()
-            .flatten()
-            .collect(),
-        language,
-    );
-    ast = imports.to_string() + &ast + &visitor.to_string();
+    let definitions = visitor::generate_visitor(language, "definitions");
+    let references = visitor::generate_visitor(language, "references");
+    ast = imports.to_string() + &ast + &definitions.to_string() + &references.to_string();
     ast = format_code(&ast).unwrap();
     let out_dir = std::env::var("OUT_DIR")?;
     let out_file = format!("{}/{}.rs", out_dir, language.name());

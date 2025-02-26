@@ -8,8 +8,15 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::query::Query;
-pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStream {
-    log::info!("Generating visitor for language: {}", language.name());
+use crate::query::HasQuery;
+pub fn generate_visitor(language: &Language, name: &str) -> TokenStream {
+    log::info!(
+        "Generating visitor for language: {} for {}",
+        language.name(),
+        name
+    );
+    let raw_queries = language.queries_with_prefix(&format!("@{}", name));
+    let queries: Vec<&Query> = raw_queries.values().flatten().collect();
     let language_name = format_ident!("{}", language.name());
     let mut names = Vec::new();
     let mut types = Vec::new();
@@ -52,7 +59,7 @@ pub fn generate_visitor(queries: &Vec<&Query>, language: &Language) -> TokenStre
             }
         });
     }
-    let name = format_ident!("QueryExecutor");
+    let name = format_ident!("{}", name.to_case(Case::Pascal));
     quote! {
         #[derive(Visitor, Default, Debug, Clone)]
         #[visitor(
@@ -77,9 +84,7 @@ mod tests {
     #[test_log::test]
     fn test_generate_visitor() {
         let language = &Typescript;
-        let queries = language.definitions();
-        log::info!("Gathered {} queries", queries.len());
-        let visitor = generate_visitor(&queries.values().into_iter().flatten().collect(), language);
+        let visitor = generate_visitor(language, "definitions");
         insta::assert_snapshot!(
             codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()
         );
