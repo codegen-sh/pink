@@ -15,7 +15,7 @@ pub fn generate_visitor(language: &Language, name: &str) -> TokenStream {
         language.name(),
         name
     );
-    let raw_queries = language.queries_with_prefix(&format!("@{}", name));
+    let raw_queries = language.queries_with_prefix(&format!("{}", name));
     let queries: Vec<&Query> = raw_queries.values().flatten().collect();
     let language_name = format_ident!("{}", language.name());
     let mut names = Vec::new();
@@ -59,7 +59,7 @@ pub fn generate_visitor(language: &Language, name: &str) -> TokenStream {
             }
         });
     }
-    let name = format_ident!("{}", name.to_case(Case::Pascal));
+    let name = format_ident!("{}s", name.to_case(Case::Pascal));
     quote! {
         #[derive(Visitor, Default, Debug, Clone)]
         #[visitor(
@@ -79,12 +79,11 @@ mod tests {
     use codegen_sdk_common::language::typescript::Typescript;
 
     use super::*;
-    use crate::query::HasQuery;
 
     #[test_log::test]
     fn test_generate_visitor() {
         let language = &Typescript;
-        let visitor = generate_visitor(language, "definitions");
+        let visitor = generate_visitor(language, "definition");
         insta::assert_snapshot!(
             codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()
         );

@@ -1,6 +1,9 @@
 use std::{collections::BTreeMap, sync::Arc};
 
-use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_name};
+use codegen_sdk_common::{
+    CSTNode, HasChildren, Language,
+    naming::{normalize_field_name, normalize_type_name},
+};
 use codegen_sdk_cst::{CSTLanguage, ts_query};
 use codegen_sdk_cst_generator::{Field, State};
 use derive_more::Debug;
@@ -191,7 +194,7 @@ impl<'a> Query<'a> {
             field.children().into_iter().skip(2).next().unwrap().into();
         for name in &field.name {
             if let ts_query::FieldDefinitionName::Identifier(identifier) = name {
-                let name = identifier.source();
+                let name = normalize_field_name(&identifier.source());
                 if let Some(field) = self.get_field_for_field_name(&name, struct_name) {
                     let field_name = format_ident!("{}", name);
                     let new_identifier = format_ident!("field");
@@ -372,12 +375,15 @@ impl<'a> Query<'a> {
                     }
                 }
             }
-            unhandled => todo!(
-                "Unhandled definition in language {}: {:#?}, {:#?}",
-                self.language.name(),
-                unhandled.kind(),
-                unhandled.source()
-            ),
+            unhandled => {
+                log::warn!(
+                    "Unhandled definition in language {}: {:#?}, {:#?}",
+                    self.language.name(),
+                    unhandled.kind(),
+                    unhandled.source()
+                );
+                self.get_default_matcher()
+            }
         }
     }
 
