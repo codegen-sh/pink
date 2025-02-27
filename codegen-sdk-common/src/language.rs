@@ -1,4 +1,4 @@
-use std::num::NonZeroU16;
+use std::{hash::Hash, num::NonZeroU16};
 
 use convert_case::{Case, Casing};
 use mockall::automock;
@@ -9,7 +9,7 @@ use crate::{
     naming::normalize_type_name,
     parser::{Node, parse_node_types},
 };
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Language {
     name: &'static str,
     pub struct_name: &'static str,
@@ -19,6 +19,12 @@ pub struct Language {
     pub tag_query: &'static str,
     nodes: Vec<Node>,
 }
+impl Hash for Language {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
 #[automock]
 impl Language {
     pub fn new(

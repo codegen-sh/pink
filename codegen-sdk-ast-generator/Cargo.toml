@@ -13,6 +13,9 @@ log = { workspace = true }
 derive_more = { workspace = true }
 codegen-sdk-cst-generator = { workspace = true }
 convert_case = { workspace = true }
+salsa = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 insta = { workspace = true }
+[features]
+typescript = ["codegen-sdk-cst/typescript"]

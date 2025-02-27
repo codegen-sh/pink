@@ -16,6 +16,7 @@ log = { workspace = true }
 delegation = { workspace = true }
 derive_generic_visitor = { workspace = true }
 salsa = { workspace = true }
+dashmap = "6.1.0"
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
 codegen-sdk-common = { workspace = true}

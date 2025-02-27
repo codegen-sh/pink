@@ -6,31 +6,40 @@ use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::Ident;
 
 use super::node::Node;
-use crate::generator::{
-    constants::TYPE_NAME,
-    utils::{get_comment_type, get_from_node, get_from_type},
+use crate::{
+    Config,
+    generator::{
+        constants::TYPE_NAME,
+        utils::{get_comment_type, get_from_node, get_from_type},
+    },
 };
 #[derive(Debug)]
 pub struct State<'a> {
     pub subenums: BTreeSet<String>,
+    config: Config,
     nodes: BTreeMap<String, Node<'a>>,
 }
 impl<'a> State<'a> {
-    pub fn new(language: &'a Language) -> Self {
+    pub fn new(language: &'a Language, config: Config) -> Self {
         let mut nodes = BTreeMap::new();
         let mut subenums = BTreeSet::new();
         let raw_nodes = language.nodes();
         for raw_node in raw_nodes {
             if raw_node.subtypes.is_empty() {
-                let node = Node::new(raw_node, language);
+                let node = Node::new(raw_node, language, config.clone());
                 nodes.insert(node.normalize_name(), node);
             } else {
                 subenums.insert(raw_node.type_name.clone());
             }
         }
-        let mut ret = Self { nodes, subenums };
+        let mut ret = Self {
+            nodes,
+            subenums,
+            config,
+        };
         let mut subenums = VecDeque::new();
         for raw_node in raw_nodes.iter().filter(|n| !n.subtypes.is_empty()) {
             subenums.push_back(raw_node.clone());
@@ -160,8 +169,14 @@ impl<'a> State<'a> {
         let subenum_tokens = if !subenums.is_empty() {
             subenums.sort();
             subenums.dedup();
-            quote! {
-                #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
+            if self.config.serialize {
+                quote! {
+                    #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
+                }
+            } else {
+                quote! {
+                    #[subenum(#(#subenums),*)]
+                }
             }
         } else {
             quote! {}
@@ -169,8 +184,7 @@ impl<'a> State<'a> {
         let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
-        // #[derive(Debug, Clone, Drive)]
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update)]
         #[delegate(derive(
             CSTNode<'db1>
         ))]
@@ -207,6 +221,18 @@ impl<'a> State<'a> {
             }
         }
         nodes
+    }
+    pub fn get_node_struct_names(&self) -> Vec<Ident> {
+        self.nodes
+            .values()
+            .map(|node| format_ident!("{}", node.normalize_name()))
+            .collect()
+    }
+    pub fn get_subenum_struct_names(&self) -> Vec<Ident> {
+        self.subenums
+            .iter()
+            .map(|s| format_ident!("{}", normalize_type_name(s, true)))
+            .collect()
     }
 }
 #[cfg(test)]

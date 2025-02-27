@@ -6,21 +6,35 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::field::Field;
-use crate::generator::utils::{get_comment_type, get_serialize_bounds};
+use crate::{
+    Config,
+    generator::utils::{get_comment_type, get_serialize_bounds},
+};
 #[derive(Debug)]
 pub struct Node<'a> {
     raw: &'a codegen_sdk_common::parser::Node,
     pub subenums: Vec<String>,
     pub fields: Vec<Field<'a>>,
     language: &'a Language,
+    config: Config,
 }
 impl<'a> Node<'a> {
-    pub fn new(raw: &'a codegen_sdk_common::parser::Node, language: &'a Language) -> Self {
+    pub fn new(
+        raw: &'a codegen_sdk_common::parser::Node,
+        language: &'a Language,
+        config: Config,
+    ) -> Self {
         let mut fields = Vec::new();
         let normalized_name = normalize_type_name(&raw.type_name, raw.named);
         if let Some(raw_fields) = &raw.fields {
             for (name, field) in raw_fields.fields.iter() {
-                fields.push(Field::new(&normalized_name, name, field, language));
+                fields.push(Field::new(
+                    &normalized_name,
+                    name,
+                    field,
+                    language,
+                    config.clone(),
+                ));
             }
         }
         fields.sort_by_key(|f| f.normalized_name().clone());
@@ -29,6 +43,7 @@ impl<'a> Node<'a> {
             subenums: Vec::new(),
             fields,
             language,
+            config: config,
         }
     }
     pub fn kind(&self) -> &str {
@@ -99,8 +114,15 @@ impl<'a> Node<'a> {
     fn get_children_field(&self) -> TokenStream {
         if self.has_children() {
             let children_type_name = format_ident!("{}", self.children_struct_name());
+            let bounds = if self.config.serialize {
+                quote! {
+                    #[rkyv(omit_bounds)]
+                }
+            } else {
+                quote! {}
+            };
             quote! {
-                #[rkyv(omit_bounds)]
+                #bounds
                 pub _children: Vec<#children_type_name<'db>>,
             }
         } else {
@@ -117,13 +139,21 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
         let children_field = self.get_children_field();
         let name = format_ident!("{}", self.normalize_name());
-        let serialize_bounds = get_serialize_bounds();
         let trait_impls = self.get_trait_implementations();
+        let derives = if self.config.serialize {
+            let serialize_bounds = get_serialize_bounds();
+            quote! {
+                #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive, Eq, PartialEq, salsa::Update)]
+                #serialize_bounds
+            }
+        } else {
+            quote! {
+                #[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
 
+            }
+        };
         quote! {
-            // #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
-            #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-            #serialize_bounds
+            #derives
             pub struct #name<'db> {
                 #[drive(skip)]
                 start_byte: usize,
@@ -256,6 +286,11 @@ impl<'a> Node<'a> {
                 }
             }
             #children_impl
+            impl<'db> std::hash::Hash for #name<'db> {
+                fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                    self.id.hash(state);
+                }
+            }
         }
     }
     fn get_children_field_impl(&self) -> TokenStream {

@@ -1,5 +1,6 @@
 #![recursion_limit = "512"]
 #![allow(unused)]
+pub mod input;
 use codegen_sdk_common::File;
 pub use codegen_sdk_common::language::LANGUAGES;
 pub use codegen_sdk_cst::*;

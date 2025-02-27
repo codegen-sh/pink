@@ -298,6 +298,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote",
+ "salsa",
  "test-log",
 ]
 
@@ -368,6 +369,7 @@ dependencies = [
  "codegen-sdk-cst-generator",
  "codegen-sdk-macros",
  "convert_case 0.7.1",
+ "dashmap",
  "delegation",
  "derive_generic_visitor",
  "derive_more",

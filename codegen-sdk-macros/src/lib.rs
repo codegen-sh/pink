@@ -44,6 +44,10 @@ pub mod {name} {{
         fn language() -> &'static Language {{
             &codegen_sdk_common::language::{name}::{struct_name}
         }}
+        fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<Self::Program<'_>> {{
+            let input = crate::Input::new(db, content);
+            return parse_program(db, input).program(db);
+        }}
     }}
 }}",
         name = language.name(),

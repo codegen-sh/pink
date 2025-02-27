@@ -1,11 +1,14 @@
 #![feature(extend_one)]
+mod config;
 mod generator;
 #[double]
 use codegen_sdk_common::language::Language;
 pub use generator::{Field, Node, State, generate_cst};
 use mockall_double::double;
-pub fn generate_cst_to_file(language: &Language) -> anyhow::Result<()> {
-    let cst = generator::generate_cst(language)?;
+
+pub use crate::config::Config;
+pub fn generate_cst_to_file(language: &Language, config: Config) -> anyhow::Result<()> {
+    let cst = generator::generate_cst(language, config)?;
     let out_dir = std::env::var("OUT_DIR")?;
     let out_file = format!("{}/{}.rs", out_dir, language.name());
     std::fs::write(out_file, cst)?;

@@ -9,12 +9,14 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::constants::TYPE_NAME;
+use crate::Config;
 #[derive(Debug)]
 pub struct Field<'a> {
     raw: &'a FieldDefinition,
     name: String,
     node_name: String,
     language: &'a Language,
+    config: Config,
 }
 
 impl<'a> Field<'a> {
@@ -23,12 +25,14 @@ impl<'a> Field<'a> {
         name: &str,
         raw: &'a FieldDefinition,
         language: &'a Language,
+        config: Config,
     ) -> Self {
         Self {
             node_name: node_name.to_string(),
             name: name.to_string(),
             raw,
             language,
+            config,
         }
     }
     fn field_id(&self) -> u16 {
@@ -156,19 +160,26 @@ impl<'a> Field<'a> {
     pub fn get_struct_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
         let converted_type_name = format_ident!("{}", self.type_name());
-        if self.raw.multiple {
+        let bounds = if self.config.serialize {
             quote! {
                 #[rkyv(omit_bounds)]
+            }
+        } else {
+            quote! {}
+        };
+        if self.raw.multiple {
+            quote! {
+                #bounds
                 pub #field_name_ident: Vec<#converted_type_name<'db>>
             }
         } else if !self.raw.required {
             quote! {
-                #[rkyv(omit_bounds)]
+                #bounds
                 pub #field_name_ident: Box<Option<#converted_type_name<'db>>>
             }
         } else {
             quote! {
-                #[rkyv(omit_bounds)]
+                #bounds
                 pub #field_name_ident: Box<#converted_type_name<'db>>
             }
         }

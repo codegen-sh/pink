@@ -5,14 +5,14 @@ use codegen_sdk_common::{
     naming::{normalize_field_name, normalize_type_name},
 };
 use codegen_sdk_cst::{CSTLanguage, ts_query};
-use codegen_sdk_cst_generator::{Field, State};
+use codegen_sdk_cst_generator::{Config, Field, State};
 use derive_more::Debug;
 use log::{debug, info, warn};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-fn captures_for_field_definition(
-    node: &ts_query::FieldDefinition,
-) -> impl Iterator<Item = ts_query::Capture> {
+fn captures_for_field_definition<'a>(
+    node: &ts_query::FieldDefinition<'a>,
+) -> impl Iterator<Item = ts_query::Capture<'a>> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
@@ -27,7 +27,9 @@ fn captures_for_field_definition(
     }
     captures.into_iter()
 }
-fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = ts_query::Capture> {
+fn captures_for_named_node<'a>(
+    node: &ts_query::NamedNode<'a>,
+) -> impl Iterator<Item = ts_query::Capture<'a>> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
@@ -45,14 +47,19 @@ fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = t
 }
 #[derive(Debug)]
 pub struct Query<'a> {
-    node: ts_query::NamedNode,
+    node: ts_query::NamedNode<'a>,
     language: &'a Language,
-    state: Arc<State<'a>>,
+    pub(crate) state: Arc<State<'a>>,
 }
 impl<'a> Query<'a> {
-    pub fn from_queries(source: &str, language: &'a Language) -> BTreeMap<String, Self> {
-        let parsed = ts_query::Query::parse(source).unwrap();
-        let state = Arc::new(State::new(language));
+    pub fn from_queries(
+        db: &'a dyn salsa::Database,
+        source: &str,
+        language: &'a Language,
+    ) -> BTreeMap<String, Self> {
+        let parsed = ts_query::Query::parse(db, source.to_string()).unwrap();
+        let config = Config::default();
+        let state = Arc::new(State::new(language, config));
         let mut queries = BTreeMap::new();
         for node in parsed.children() {
             match node {
@@ -81,7 +88,7 @@ impl<'a> Query<'a> {
         queries
     }
     fn from_named_node(
-        named: &ts_query::NamedNode,
+        named: &ts_query::NamedNode<'a>,
         language: &'a Language,
         state: Arc<State<'a>>,
     ) -> Self {
@@ -404,10 +411,14 @@ impl<'a> Query<'a> {
 }
 
 pub trait HasQuery {
-    fn queries(&self) -> BTreeMap<String, Query>;
-    fn queries_with_prefix(&self, prefix: &str) -> BTreeMap<String, Vec<Query<'_>>> {
+    fn queries<'a, 'db: 'a>(&'a self, db: &'db dyn salsa::Database) -> BTreeMap<String, Query<'a>>;
+    fn queries_with_prefix<'a, 'db: 'a>(
+        &'a self,
+        db: &'db dyn salsa::Database,
+        prefix: &str,
+    ) -> BTreeMap<String, Vec<Query<'a>>> {
         let mut queries = BTreeMap::new();
-        for (name, query) in self.queries().into_iter() {
+        for (name, query) in self.queries(db).into_iter() {
             if name.starts_with(prefix) {
                 let new_name = name.split(".").last().unwrap();
                 queries
@@ -420,7 +431,21 @@ pub trait HasQuery {
     }
 }
 impl HasQuery for Language {
-    fn queries(&self) -> BTreeMap<String, Query<'_>> {
-        Query::from_queries(&self.tag_query, self)
+    fn queries<'a, 'db: 'a>(&'a self, db: &'db dyn salsa::Database) -> BTreeMap<String, Query<'a>> {
+        Query::from_queries(db, &self.tag_query, self)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use codegen_sdk_common::language::ts_query;
+    use codegen_sdk_cst::{CSTDatabase, CSTLanguage};
+
+    use super::*;
+    #[test]
+    fn test_query_basic() {
+        let database = CSTDatabase::default();
+        let language = &ts_query::Query;
+        let queries = Query::from_queries(&database, "(abc) @definition.abc", language);
+        assert!(queries.len() > 0);
     }
 }

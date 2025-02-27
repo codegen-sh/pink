@@ -60,6 +60,7 @@ src/**/*.html
 .ccache/
 uv-*.tar.gz
 .venv
+**.mm_profdata
 graph-sitter-types/out/**
 graph-sitter-types/typings/**
 coverage.json
