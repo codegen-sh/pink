@@ -65,7 +65,7 @@ serde_json = "1.0.138"
 anyhow = { version = "1.0.95", features = ["backtrace"] }
 rkyv = { version = "0.8.10", features = ["bytes-1","pointer_width_64"] }
 test-log = "0.2.17"
-enum_delegate = "0.2.0"
+delegation = "0.4.0"
 mockall = "0.13.1"
 codegen-sdk-common = { path = "codegen-sdk-common" }
 codegen-sdk-cst = { path = "codegen-sdk-cst"}
@@ -74,15 +74,16 @@ codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
 tempfile = "3.16.0"
 quote = "1.0.38"
 proc-macro2 = "1.0.93"
-derive-visitor = "0.4.0"
+derive_generic_visitor = "0.1.1"
 insta = "1.42.1"
 prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
+salsa = "0.18.0"
 
 [profile.dev]
-debug = 0
-codegen-backend = "cranelift"
+# debug = 0
+# codegen-backend = "cranelift"
 
 [profile.dev.package]
 insta.opt-level = 3
@@ -96,4 +97,4 @@ strip = "none"
 lto = false
 codegen-units = 256
 incremental = true
-codegen-backend = "cranelift"
+# codegen-backend = "cranelift"

@@ -65,6 +65,7 @@ pub fn generate_visitor(language: &Language, name: &str) -> TokenStream {
         #[visitor(
             #(#language_name::#variants(enter)),*
         )]
+        #[salsa::tracked]
         pub struct #name {
             #(pub #names: Vec<#language_name::#types>),*
         }

@@ -6,9 +6,10 @@ edition = "2024"
 [dependencies]
 codegen-sdk-cst = { workspace = true}
 codegen-sdk-common = { workspace = true }
-derive-visitor = { workspace = true }
+derive_generic_visitor = { workspace = true }
 codegen-sdk-macros = { path = "../codegen-sdk-macros"}
 log = { workspace = true }
+salsa = { workspace = true }
 [build-dependencies]
 codegen-sdk-common = { workspace = true }
 env_logger = { workspace = true }

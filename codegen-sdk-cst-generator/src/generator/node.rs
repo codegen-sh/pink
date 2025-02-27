@@ -60,12 +60,12 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
-                #name(#name)
+                #name(#name<'db1>)
             }
         } else {
             quote! {
                 #[subenum(#(#subenum_names), *)]
-                #name(#name)
+                #name(#name<'db1>)
             }
         }
     }
@@ -101,7 +101,7 @@ impl<'a> Node<'a> {
             let children_type_name = format_ident!("{}", self.children_struct_name());
             quote! {
                 #[rkyv(omit_bounds)]
-                pub children: Vec<#children_type_name>,
+                pub _children: Vec<#children_type_name<'db>>,
             }
         } else {
             quote! {}
@@ -121,21 +121,20 @@ impl<'a> Node<'a> {
         let trait_impls = self.get_trait_implementations();
 
         quote! {
+            // #[derive(Debug, Clone, Deserialize, Archive, Serialize)]
             #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
             #serialize_bounds
-            pub struct #name {
+            pub struct #name<'db> {
                 #[drive(skip)]
                 start_byte: usize,
                 #[drive(skip)]
                 end_byte: usize,
                 #[drive(skip)]
                 _kind: std::string::String,
-                #[debug("[{},{}]", start_position.row, start_position.column)]
                 #[drive(skip)]
-                start_position: Point,
-                #[debug("[{},{}]", end_position.row, end_position.column)]
+                start_position: Point<'db>,
                 #[drive(skip)]
-                end_position: Point,
+                end_position: Point<'db>,
                 #[debug(ignore)]
                 #[drive(skip)]
                 buffer: Arc<Bytes>,
@@ -161,7 +160,7 @@ impl<'a> Node<'a> {
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
             quote! {
-                children: named_children_without_field_names(node, buffer)?
+                _children: named_children_without_field_names(db, node, buffer)?
             }
         } else {
             quote! {}
@@ -176,34 +175,43 @@ impl<'a> Node<'a> {
         constructor_fields.push(self.get_children_constructor());
 
         quote! {
-            impl FromNode for #name {
-                fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+            impl<'db> FromNode<'db> for #name<'db> {
+                fn from_node(db: &'db dyn salsa::Database, node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                    let start_position = Point::from(db, node.start_position());
+                    let end_position = Point::from(db, node.end_position());
                     Ok(Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
                         _kind: node.kind().to_string(),
-                        start_position: node.start_position().into(),
-                        end_position: node.end_position().into(),
+                        start_position: start_position,
+                        end_position: end_position,
                         buffer: buffer.clone(),
                         kind_id: node.kind_id(),
                         is_error: node.is_error(),
                         named: node.is_named(),
                         id: node.id(),
                         #(#constructor_fields),*
-                    })
+                })
                 }
             }
         }
     }
     fn get_children_impl(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
-        let children_type_name = format_ident!("{}", self.children_struct_name());
+
+        let children_type_name = self.children_struct_name();
+        let children_type_ident = format_ident!("{}", children_type_name);
+        let mut children_type_generic = quote! {#children_type_ident};
+        if children_type_name != "Self" {
+            children_type_generic = quote! {#children_type_generic<'db1>};
+        }
+
         let children_field = self.get_children_field_impl();
         let children_by_field_name = self.get_children_by_field_name_impl();
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
-            impl HasChildren for #name {
-                type Child = #children_type_name;
+            impl<'db1> HasChildren<'db1> for #name<'db1> {
+                type Child = #children_type_generic;
                 #children_field
                 #children_by_field_name
                 #children_by_field_id
@@ -215,7 +223,7 @@ impl<'a> Node<'a> {
         let children_impl = self.get_children_impl();
 
         quote! {
-            impl CSTNode for #name {
+            impl<'db> CSTNode<'db> for #name<'db> {
                 fn kind(&self) -> &str {
                     &self._kind
                 }
@@ -225,10 +233,10 @@ impl<'a> Node<'a> {
                 fn end_byte(&self) -> usize {
                     self.end_byte
                 }
-                fn start_position(&self) -> Point {
+                fn start_position(&self) -> Point<'db> {
                     self.start_position
                 }
-                fn end_position(&self) -> Point {
+                fn end_position(&self) -> Point<'db> {
                     self.end_position
                 }
                 fn buffer(&self) -> &Bytes {
@@ -267,7 +275,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self.children.iter().cloned().collect()
+                self._children.iter().cloned().collect()
             }
         } else {
             quote! {
@@ -278,7 +286,7 @@ impl<'a> Node<'a> {
             fn children(&self) -> Vec<Self::Child> {
                 let mut children: Vec<_> = #children_init;
                 #(#children_fields;)*
-                children.sort_by_key(|c| c.start_byte());
+                // children.sort_by_key(|c| c.clone().start_byte(db));
                 children
             }
         }

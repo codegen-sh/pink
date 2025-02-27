@@ -56,15 +56,15 @@ impl<'a> Field<'a> {
         let original_name = &self.name;
         if self.raw.multiple {
             quote! {
-                #field_name_ident: get_multiple_children_by_field_name(&node, #original_name, buffer)?
+                #field_name_ident: get_multiple_children_by_field_name(db, &node, #original_name, buffer)?
             }
         } else if !self.raw.required {
             quote! {
-                #field_name_ident: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
+                #field_name_ident: Box::new(get_optional_child_by_field_name(db, &node, #original_name, buffer)?)
             }
         } else {
             quote! {
-                #field_name_ident: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
+                #field_name_ident: Box::new(get_child_by_field_name(db,&node, #original_name, buffer)?)
             }
         }
     }
@@ -159,17 +159,17 @@ impl<'a> Field<'a> {
         if self.raw.multiple {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Vec<#converted_type_name>
+                pub #field_name_ident: Vec<#converted_type_name<'db>>
             }
         } else if !self.raw.required {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Box<Option<#converted_type_name>>
+                pub #field_name_ident: Box<Option<#converted_type_name<'db>>>
             }
         } else {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Box<#converted_type_name>
+                pub #field_name_ident: Box<#converted_type_name<'db>>
             }
         }
     }

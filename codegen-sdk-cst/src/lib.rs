@@ -1,18 +1,20 @@
 #![recursion_limit = "512"]
 #![feature(trivial_bounds, extend_one)]
-use std::path::PathBuf;
+#![allow(unused)]
 
-use codegen_sdk_common::{ParseError, serialize::Cache, traits::CSTNode};
+use std::{any::Any, path::PathBuf};
+
+use codegen_sdk_common::{ParseError, traits::CSTNode};
 use codegen_sdk_macros::{include_languages, parse_languages};
-use rkyv::{api::high::to_bytes_in, from_bytes};
 mod language;
 pub use codegen_sdk_common::language::LANGUAGES;
 pub use language::CSTLanguage;
 include_languages!();
-pub fn parse_file(
-    cache: &Cache,
-    file_path: &PathBuf,
-) -> Result<Box<dyn CSTNode + Send>, ParseError> {
+pub fn parse_file<'db>(
+    db: &'db dyn salsa::Database,
+    #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
+    file_path: &'db PathBuf,
+) -> Result<Box<dyn Any + Send + 'db>, ParseError> {
     parse_languages!();
     Err(ParseError::UnknownLanguage)
 }

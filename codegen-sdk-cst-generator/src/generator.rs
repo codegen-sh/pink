@@ -24,7 +24,8 @@ fn get_imports() -> TokenStream {
     use std::backtrace::Backtrace;
     use bytes::Bytes;
     use rkyv::{Archive, Deserialize, Serialize};
-    use derive_visitor::Drive;
+    use derive_generic_visitor::Drive;
+    use delegation::delegate;
 
         }
 }
