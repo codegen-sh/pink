@@ -440,7 +440,7 @@ impl HasQuery for Language {
 #[cfg(test)]
 mod tests {
     use codegen_sdk_common::language::ts_query;
-    use codegen_sdk_cst::{CSTDatabase, CSTLanguage};
+    use codegen_sdk_cst::CSTDatabase;
 
     use super::*;
     #[test]
