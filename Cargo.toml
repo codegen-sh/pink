@@ -19,6 +19,7 @@ log = { workspace = true }
 rayon = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
+indicatif = { workspace = true }
 [features]
 python = [ "codegen-sdk-analyzer/python"] # TODO: Add python support
 typescript = [ "codegen-sdk-analyzer/typescript"]
@@ -116,6 +117,9 @@ syn = { version = "2.0.98", features = ["proc-macro"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
 salsa = "0.18.0"
 subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
+indicatif-log-bridge = "0.2.3"
+indicatif = { version = "0.17.11", features = ["rayon"] }
+
 [profile.dev]
 codegen-backend = "cranelift"
 split-debuginfo = "unpacked"

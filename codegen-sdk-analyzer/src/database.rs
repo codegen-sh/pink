@@ -8,6 +8,8 @@ use anyhow::Context;
 use codegen_sdk_ast::input::File;
 use codegen_sdk_cst::Input;
 use dashmap::{DashMap, mapref::entry::Entry};
+use indicatif::MultiProgress;
+use indicatif_log_bridge::LogWrapper;
 use notify_debouncer_mini::{
     DebounceEventResult, Debouncer, new_debouncer,
     notify::{RecommendedWatcher, RecursiveMode},
@@ -15,6 +17,7 @@ use notify_debouncer_mini::{
 #[salsa::db]
 pub trait Db: salsa::Database + Send {
     fn input(&self, path: PathBuf) -> anyhow::Result<File>;
+    fn multi_progress(&self) -> &MultiProgress;
 }
 #[salsa::db]
 #[derive(Clone)]
@@ -22,17 +25,24 @@ pub trait Db: salsa::Database + Send {
 pub struct CodegenDatabase {
     storage: salsa::Storage<Self>,
     files: DashMap<PathBuf, File>,
-    logs: Arc<Mutex<Vec<String>>>,
+    multi_progress: MultiProgress,
     file_watcher: Arc<Mutex<Debouncer<RecommendedWatcher>>>,
 }
 impl CodegenDatabase {
     pub fn new(tx: Sender<DebounceEventResult>) -> Self {
+        let logger =
+            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+                .build();
+        let level = logger.filter();
+        let multi_progress = MultiProgress::new();
+        log::set_max_level(level);
+        LogWrapper::new(multi_progress.clone(), logger);
         Self {
             file_watcher: Arc::new(Mutex::new(
                 new_debouncer(Duration::from_secs(1), tx).unwrap(),
             )),
             storage: salsa::Storage::default(),
-            logs: Default::default(),
+            multi_progress,
             files: DashMap::new(),
         }
     }
@@ -43,7 +53,7 @@ impl salsa::Database for CodegenDatabase {
         // don't log boring events
         let event = event();
         if let salsa::EventKind::WillExecute { .. } = event.kind {
-            self.logs.lock().unwrap().push(format!("{:?}", event));
+            log::debug!("{:?}", event);
         }
     }
 }
@@ -72,5 +82,8 @@ impl Db for CodegenDatabase {
                 *entry.insert(File::new(self, path, input))
             }
         })
+    }
+    fn multi_progress(&self) -> &MultiProgress {
+        &self.multi_progress
     }
 }

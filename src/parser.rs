@@ -3,6 +3,7 @@ use std::path;
 use codegen_sdk_analyzer::{CodegenDatabase, Db, Parsed};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
+use indicatif::ProgressBar;
 
 use crate::discovery::{FilesToParse, collect_files, log_languages};
 fn parse_file<'db>(
@@ -25,15 +26,26 @@ fn parse_file<'db>(
 }
 #[salsa::tracked]
 fn parse_files_par(db: &dyn Db, files: FilesToParse) {
-    let _: Vec<()> = salsa::par_map(db, files.files(db), |db, file| {
+    let multi = db.multi_progress();
+    let pg = multi.add(ProgressBar::new(files.files(db).len() as u64));
+    let inputs = files
+        .files(db)
+        .into_iter()
+        .map(|file| (&pg, file))
+        .collect::<Vec<_>>();
+    let _: Vec<()> = salsa::par_map(db, inputs, |db, input| {
+        let (pg, file) = input;
         parse_file(
             db,
             #[cfg(feature = "serialization")]
             &cache,
             &file,
         );
+        pg.inc(1);
         ()
     });
+    pg.finish();
+    multi.remove(&pg);
 }
 pub fn parse_files<'db>(
     db: &'db CodegenDatabase,
