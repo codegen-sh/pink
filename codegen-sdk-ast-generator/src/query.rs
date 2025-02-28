@@ -58,7 +58,9 @@ impl<'a> Query<'a> {
         source: &str,
         language: &'a Language,
     ) -> BTreeMap<String, Self> {
-        let parsed = ts_query::Query::parse(db, source.to_string()).unwrap();
+        let parsed = ts_query::Query::parse(db, source.to_string())
+            .as_ref()
+            .unwrap();
         let config = Config::default();
         let state = Arc::new(State::new(language, config));
         let mut queries = BTreeMap::new();

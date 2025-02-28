@@ -70,6 +70,7 @@ pub fn generate_visitor<'db>(
         nodes.extend(state.get_subenum_struct_names());
         nodes = nodes.difference(&variants).cloned().collect();
         quote! {
+            #(#[visit(drive(&crate::cst::#nodes<'db>))])*
             #(#[visit(drive(crate::cst::#nodes<'db>))])*
             #[visit(drive(for<T> Box<T>))]
             #[visit(drive(for<T> Vec<T>))]

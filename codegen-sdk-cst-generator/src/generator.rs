@@ -47,33 +47,37 @@ fn get_parser(language: &Language) -> TokenStream {
         #[salsa::tracked]
         pub struct Parsed<'db> {
             #[tracked]
+            #[return_ref]
             pub program: Option<#program_id<'db>>,
         }
-        #[salsa::tracked]
-        pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
+        pub fn parse_program_raw(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Option<#program_id<'_>> {
             let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
             let tree = codegen_sdk_common::language::#language_name::#language_struct_name.parse_tree_sitter(&input.content(db));
             match tree {
                 Ok(tree) => {
                     if tree.root_node().has_error() {
                         ParseError::SyntaxError.report(db);
-                        Parsed::new(db, None)
+                        None
                     } else {
                         let buffer = Arc::new(buffer);
                         #program_id::from_node(db, tree.root_node(), &buffer)
                         .map_or_else(|e| {
                             e.report(db);
-                            Parsed::new(db, None)
+                            None
                         }, |program| {
-                            Parsed::new(db, Some(program))
+                            Some(program)
                         })
                     }
                 }
                 Err(e) => {
                     e.report(db);
-                    Parsed::new(db, None)
+                    None
                 }
             }
+        }
+        #[salsa::tracked]
+        pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
+            Parsed::new(db, parse_program_raw(db, input))
         }
         pub struct #language_struct_name;
         impl CSTLanguage for #language_struct_name {
@@ -81,7 +85,7 @@ fn get_parser(language: &Language) -> TokenStream {
             fn language() -> &'static Language {
                 &codegen_sdk_common::language::#language_name::#language_struct_name
             }
-            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<Self::Program<'db>> {
+            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> &'db Option<Self::Program<'db>> {
                 let input = codegen_sdk_cst::Input::new(db, content);
                 return parse_program(db, input).program(db);
             }

@@ -10,12 +10,13 @@ use codegen_sdk_common::{
 pub trait CSTLanguage {
     type Program<'db1>: CSTNode<'db1> + FromNode<'db1> + Send;
     fn language() -> &'static Language;
-    fn parse<'db>(db: &'db dyn salsa::Database, content: String) -> Option<Self::Program<'db>>;
+    fn parse<'db>(db: &'db dyn salsa::Database, content: String)
+    -> &'db Option<Self::Program<'db>>;
     fn parse_file_from_cache<'db>(
         db: &'db dyn salsa::Database,
         file_path: &PathBuf,
         #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
-    ) -> Result<Option<Self::Program<'db>>, ParseError> {
+    ) -> Result<&'db Option<Self::Program<'db>>, ParseError> {
         #[cfg(feature = "serialization")]
         {
             let serialized_path = cache.get_path(file_path);
@@ -24,13 +25,13 @@ pub trait CSTLanguage {
                 return Ok(Some(parsed));
             }
         }
-        Ok(None)
+        Ok(&None)
     }
     fn parse_file<'db>(
         db: &'db dyn salsa::Database,
         file_path: &PathBuf,
         #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
-    ) -> Result<Self::Program<'db>, ParseError> {
+    ) -> Result<&'db Self::Program<'db>, ParseError> {
         if let Some(parsed) = Self::parse_file_from_cache(
             db,
             file_path,

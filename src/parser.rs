@@ -3,7 +3,7 @@ use std::path;
 use codegen_sdk_analyzer::{CodegenDatabase, Db, Parsed};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::discovery::{FilesToParse, collect_files, log_languages};
 fn parse_file<'db>(
@@ -27,7 +27,15 @@ fn parse_file<'db>(
 #[salsa::tracked]
 fn parse_files_par(db: &dyn Db, files: FilesToParse) {
     let multi = db.multi_progress();
-    let pg = multi.add(ProgressBar::new(files.files(db).len() as u64));
+    let style = ProgressStyle::with_template(
+        "[{elapsed_precise}] {wide_bar} {msg} [{per_sec}] [estimated time remaining: {eta}]",
+    )
+    .unwrap();
+    let pg = multi.add(
+        ProgressBar::new(files.files(db).len() as u64)
+            .with_style(style)
+            .with_message("Parsing Files"),
+    );
     let inputs = files
         .files(db)
         .into_iter()

@@ -1,12 +1,10 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::Point;
-#[salsa::tracked]
+#[salsa::interned]
 #[derive(Archive, Deserialize, Serialize)]
 pub struct Range<'db> {
-    #[tracked]
     start: Point<'db>,
-    #[tracked]
     end: Point<'db>,
 }
 impl<'db> Range<'db> {

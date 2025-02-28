@@ -1,11 +1,9 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[salsa::tracked]
+#[salsa::interned]
 #[derive(Archive, Deserialize, Serialize)]
 pub struct Point<'db> {
-    #[tracked]
     pub row: usize,
-    #[tracked]
     pub column: usize,
 }
 impl<'db> Point<'db> {
