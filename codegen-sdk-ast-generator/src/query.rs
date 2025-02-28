@@ -4,8 +4,9 @@ use codegen_sdk_common::{
     CSTNode, HasChildren, Language,
     naming::{normalize_field_name, normalize_type_name},
 };
-use codegen_sdk_cst::{CSTLanguage, ts_query};
+use codegen_sdk_cst::CSTLanguage;
 use codegen_sdk_cst_generator::{Config, Field, State};
+use codegen_sdk_ts_query::cst as ts_query;
 use derive_more::Debug;
 use log::{debug, info, warn};
 use proc_macro2::{Ident, TokenStream};
@@ -356,7 +357,6 @@ impl<'a> Query<'a> {
             }
             ts_query::NodeTypes::Identifier(identifier) => {
                 let to_append = self.get_default_matcher();
-                let language = format_ident!("{}", self.language.name());
                 let children;
                 if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
                     children = format_ident!("{}Children", struct_name);
@@ -372,7 +372,7 @@ impl<'a> Query<'a> {
                     format_ident!("{}", normalize_type_name(&identifier.source(), true));
                 quote! {
                     if #current_node.children().into_iter().any(|child| {
-                        if let #language::#children::#struct_name(_) = child {
+                        if let crate::cst::#children::#struct_name(_) = child {
                             true
                         } else {
                             false

@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-convert_case = { workspace = true }
-prettyplease = {workspace = true}
 syn = { workspace = true }
 tree-sitter = { workspace = true }
 log = { workspace = true }

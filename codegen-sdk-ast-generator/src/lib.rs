@@ -2,14 +2,14 @@
 
 use codegen_sdk_common::{generator::format_code, language::Language};
 use codegen_sdk_cst::CSTDatabase;
-use quote::quote;
+use quote::{ToTokens, quote};
 mod generator;
 mod query;
 mod visitor;
 use syn::parse_quote;
 pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     let db = CSTDatabase::default();
-    let mut imports = quote! {
+    let imports = quote! {
         use derive_generic_visitor::{Visitor, Drive, Visit};
         use codegen_sdk_common::*;
         use std::path::PathBuf;
@@ -25,8 +25,8 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
         #reference_visitor
     };
     let out_dir = std::env::var("OUT_DIR")?;
-    let out_file = format!("{}/{}.rs", out_dir, language.name());
-    std::fs::write(&out_file, ast.to_string())?;
+    let out_file = format!("{}/{}-ast.rs", out_dir, language.name());
+    std::fs::write(&out_file, ast.to_token_stream().to_string())?;
     let ast = format_code(&ast).unwrap_or_else(|_| {
         panic!(
             "Failed to format ast for {} at {}",

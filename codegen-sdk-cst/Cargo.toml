@@ -7,40 +7,14 @@ edition = "2024"
 tree-sitter = { workspace = true }
 bytes = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
-codegen-sdk-macros = { path = "../codegen-sdk-macros" }
-derive_more = { workspace = true }
 convert_case = { workspace = true }
 rkyv = { workspace = true }
-subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
 log = { workspace = true }
-delegation = { workspace = true }
-derive_generic_visitor = { workspace = true }
 salsa = { workspace = true }
 dashmap = "6.1.0"
-[build-dependencies]
-codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = {path = "../codegen-sdk-common"}
-rayon = { workspace = true }
-env_logger = { workspace = true }
-log = { workspace = true }
 [dev-dependencies]
 tempfile = { workspace = true }
 test-log = { workspace = true }
 
 [features]
-serialization = []
-python = [ "codegen-sdk-common/python"]
-typescript = [ "codegen-sdk-common/typescript"]
-tsx = [ "codegen-sdk-common/typescript"]
-jsx = [ "codegen-sdk-common/typescript"]
-javascript = [ "codegen-sdk-common/typescript"]
-json = [ "codegen-sdk-common/json"]
-java = [ "codegen-sdk-common/java"]
-rust = [ "codegen-sdk-common/rust"]
-go = [ "codegen-sdk-common/go"]
-ruby = [ "codegen-sdk-common/ruby"]
-yaml = [ "codegen-sdk-common/yaml"]
-toml = [ "codegen-sdk-common/toml"]
-markdown = [ "codegen-sdk-common/markdown"]
-ts_query = [ "codegen-sdk-common/ts_query"]
-default = ["json", "ts_query", "toml"]
+serialization = ["codegen-sdk-common/serialization"]

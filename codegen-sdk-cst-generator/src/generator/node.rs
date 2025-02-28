@@ -170,19 +170,14 @@ impl<'a> Node<'a> {
                 start_position: Point<'db>,
                 #[drive(skip)]
                 end_position: Point<'db>,
-                #[debug(ignore)]
                 #[drive(skip)]
                 buffer: Arc<Bytes>,
-                #[debug(ignore)]
                 #[drive(skip)]
                 kind_id: u16,
-                #[debug(ignore)]
                 #[drive(skip)]
                 is_error: bool,
-                #[debug(ignore)]
                 #[drive(skip)]
                 named: bool,
-                #[debug(ignore)]
                 #[drive(skip)]
                 id: usize,
                 #children_field

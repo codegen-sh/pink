@@ -1,7 +1,7 @@
 use std::{fmt::Debug, sync::Arc};
 
+use ambassador::delegatable_trait;
 use bytes::Bytes;
-use delegation::delegate;
 use tree_sitter::{self};
 
 use crate::{Point, errors::ParseError, tree::Range};
@@ -12,7 +12,7 @@ pub trait FromNode<'db>: Sized {
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError>;
 }
-#[delegate]
+#[delegatable_trait]
 pub trait CSTNode<'db> {
     /// Returns the byte offset where the node starts
     fn start_byte(&self) -> usize;

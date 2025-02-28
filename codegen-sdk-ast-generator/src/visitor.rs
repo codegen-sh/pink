@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use codegen_sdk_common::{CSTNode, HasChildren, Language};
-use codegen_sdk_cst::ts_query;
+use codegen_sdk_ts_query::cst as ts_query;
 use convert_case::{Case, Casing};
 use log::info;
 use proc_macro2::TokenStream;
@@ -21,7 +21,6 @@ pub fn generate_visitor<'db>(
     );
     let raw_queries = language.queries_with_prefix(db, &format!("{}", name));
     let queries: Vec<&Query> = raw_queries.values().flatten().collect();
-    let language_name = format_ident!("{}", language.name());
     let mut names = Vec::new();
     let mut types = Vec::new();
     let mut variants = BTreeSet::new();
@@ -58,7 +57,7 @@ pub fn generate_visitor<'db>(
             }
         }
         methods.push(quote! {
-            fn #enter(&mut self, node: &codegen_sdk_cst::#language_name::#struct_name<'db>) {
+            fn #enter(&mut self, node: &crate::cst::#struct_name<'db>) {
                 #matchers
             }
         });
@@ -71,11 +70,11 @@ pub fn generate_visitor<'db>(
         nodes.extend(state.get_subenum_struct_names());
         nodes = nodes.difference(&variants).cloned().collect();
         quote! {
-            #(#[visit(drive(codegen_sdk_cst::#language_name::#nodes<'db>))])*
-            #(#[visit(drive(Box<codegen_sdk_cst::#language_name::#nodes<'db>>))])*
-            #(#[visit(drive(Vec<codegen_sdk_cst::#language_name::#nodes<'db>>))])*
+            #(#[visit(drive(crate::cst::#nodes<'db>))])*
+            #[visit(drive(for<T> Box<T>))]
+            #[visit(drive(for<T> Vec<T>))]
             #[visit(
-                #(enter(#variants:#language_name::#variants<'db>)),*
+                #(enter(#variants:crate::cst::#variants<'db>)),*
             )]
         }
     } else {
@@ -86,7 +85,7 @@ pub fn generate_visitor<'db>(
         #[derive(Visitor, Visit, Debug, Clone, Eq, PartialEq, salsa::Update, Hash, Default)]
         #visitor
         pub struct #name<'db> {
-            #(pub #names: Vec<#language_name::#types<'db>>,)*
+            #(pub #names: Vec<crate::cst::#types<'db>>,)*
             phantom: std::marker::PhantomData<&'db ()>,
         }
         impl<'db> #name<'db> {
@@ -95,7 +94,7 @@ pub fn generate_visitor<'db>(
     }
 }
 
-#[cfg(all(test, feature = "typescript"))]
+#[cfg(all(test))]
 mod tests {
     use codegen_sdk_common::language::typescript::Typescript;
 

@@ -21,13 +21,15 @@ fn get_imports(config: &Config) -> TokenStream {
 
     use std::sync::Arc;
     use tree_sitter;
-    use derive_more::Debug;
     use codegen_sdk_common::*;
     use subenum::subenum;
     use std::backtrace::Backtrace;
         use bytes::Bytes;
         use derive_generic_visitor::Drive;
-        use delegation::delegate;
+        use ambassador::Delegate;
+        use codegen_sdk_cst::CSTLanguage;
+        use codegen_sdk_common::language::Language;
+
     };
     if config.serialize {
         imports.extend_one(quote! {
@@ -40,6 +42,7 @@ fn get_parser(language: &Language) -> TokenStream {
     let program_id = format_ident!("{}", language.root_node());
     let language_name = format_ident!("{}", language.name());
     let language_struct_name = format_ident!("{}", language.struct_name());
+    let root_node = format_ident!("{}", language.root_node());
     quote! {
         #[salsa::tracked]
         pub struct Parsed<'db> {
@@ -47,7 +50,7 @@ fn get_parser(language: &Language) -> TokenStream {
             pub program: Option<#program_id<'db>>,
         }
         #[salsa::tracked]
-        pub fn parse_program(db: &dyn salsa::Database, input: crate::Input) -> Parsed<'_> {
+        pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
             let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
             let tree = codegen_sdk_common::language::#language_name::#language_struct_name.parse_tree_sitter(&input.content(db));
             match tree {
@@ -70,6 +73,17 @@ fn get_parser(language: &Language) -> TokenStream {
                     e.report(db);
                     Parsed::new(db, None)
                 }
+            }
+        }
+        pub struct #language_struct_name;
+        impl CSTLanguage for #language_struct_name {
+            type Program<'db> = #root_node<'db>;
+            fn language() -> &'static Language {
+                &codegen_sdk_common::language::#language_name::#language_struct_name
+            }
+            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<Self::Program<'db>> {
+                let input = codegen_sdk_cst::Input::new(db, content);
+                return parse_program(db, input).program(db);
             }
         }
     }

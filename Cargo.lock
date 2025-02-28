@@ -45,6 +45,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
+name = "ambassador"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b27ba24e4d8a188489d5a03c7fabc167a60809a383cdb4d15feb37479cd2a48"
+dependencies = [
+ "itertools 0.10.5",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "anstream"
 version = "0.6.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -271,14 +283,8 @@ dependencies = [
 name = "codegen-sdk-ast"
 version = "0.1.0"
 dependencies = [
- "codegen-sdk-ast-generator",
  "codegen-sdk-common",
  "codegen-sdk-cst",
- "codegen-sdk-macros",
- "derive_generic_visitor",
- "env_logger",
- "log",
- "rayon",
  "salsa",
  "tempfile",
  "test-log",
@@ -292,6 +298,8 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-ts_query",
+ "codegen-sdk-typescript",
  "convert_case 0.7.1",
  "derive_more",
  "insta",
@@ -299,6 +307,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "salsa",
+ "syn 2.0.98",
  "test-log",
 ]
 
@@ -306,12 +315,12 @@ dependencies = [
 name = "codegen-sdk-common"
 version = "0.1.0"
 dependencies = [
+ "ambassador",
  "anyhow",
  "base64",
  "buildid",
  "bytes",
  "convert_case 0.7.1",
- "delegation",
  "lazy_static",
  "mockall",
  "phf",
@@ -329,7 +338,6 @@ dependencies = [
  "tree-sitter-java",
  "tree-sitter-javascript",
  "tree-sitter-json",
- "tree-sitter-language",
  "tree-sitter-md",
  "tree-sitter-python",
  "tree-sitter-query",
@@ -350,6 +358,19 @@ dependencies = [
  "codegen-sdk-analyzer",
  "codegen-sdk-ast",
  "codegen-sdk-common",
+ "codegen-sdk-go",
+ "codegen-sdk-java",
+ "codegen-sdk-javascript",
+ "codegen-sdk-json",
+ "codegen-sdk-jsx",
+ "codegen-sdk-markdown",
+ "codegen-sdk-python",
+ "codegen-sdk-ruby",
+ "codegen-sdk-rust",
+ "codegen-sdk-toml",
+ "codegen-sdk-tsx",
+ "codegen-sdk-typescript",
+ "codegen-sdk-yaml",
  "crossbeam",
  "env_logger",
  "glob",
@@ -366,19 +387,11 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "codegen-sdk-common",
- "codegen-sdk-cst-generator",
- "codegen-sdk-macros",
  "convert_case 0.7.1",
  "dashmap",
- "delegation",
- "derive_generic_visitor",
- "derive_more",
- "env_logger",
  "log",
- "rayon",
  "rkyv",
  "salsa",
- "subenum",
  "tempfile",
  "test-log",
  "tree-sitter",
@@ -390,11 +403,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "codegen-sdk-common",
- "convert_case 0.7.1",
  "insta",
  "log",
  "mockall_double",
- "prettyplease",
  "proc-macro2",
  "quote",
  "syn 2.0.98",
@@ -405,10 +416,286 @@ dependencies = [
 ]
 
 [[package]]
+name = "codegen-sdk-go"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-java"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-javascript"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-json"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-jsx"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
 name = "codegen-sdk-macros"
 version = "0.1.0"
 dependencies = [
  "codegen-sdk-common",
+]
+
+[[package]]
+name = "codegen-sdk-markdown"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-python"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-ruby"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-rust"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-toml"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-ts_query"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-tsx"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-typescript"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-yaml"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "codegen-sdk-cst-generator",
+ "derive_generic_visitor",
+ "derive_more",
+ "env_logger",
+ "log",
+ "salsa",
+ "subenum",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -575,28 +862,6 @@ dependencies = [
  "lock_api",
  "once_cell",
  "parking_lot_core",
-]
-
-[[package]]
-name = "delegation"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4939ad3d861412ba98c47af86dbb9ec521bd46666cd1e8616492ca130029e1d9"
-dependencies = [
- "delegation-codegen",
-]
-
-[[package]]
-name = "delegation-codegen"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f90753a92b9b5cc9f2463849371867e6721c21559656d1251d9720e5821cb2ff"
-dependencies = [
- "itertools 0.14.0",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 2.0.98",
 ]
 
 [[package]]
@@ -855,18 +1120,18 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "itertools"
-version = "0.13.0"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
 ]
 
 [[package]]
 name = "itertools"
-version = "0.14.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -1192,15 +1457,6 @@ checksum = "6924ced06e1f7dfe3fa48d57b9f74f55d8915f5036121bef647ef4b204895fac"
 dependencies = [
  "proc-macro2",
  "syn 2.0.98",
-]
-
-[[package]]
-name = "proc-macro-crate"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ecf48c7ca261d60b74ab1a7b20da18bede46776b2e55535cb958eb595c5fa7b"
-dependencies = [
- "toml_edit",
 ]
 
 [[package]]
@@ -1708,23 +1964,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
-name = "toml_datetime"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
-
-[[package]]
-name = "toml_edit"
-version = "0.22.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
-dependencies = [
- "indexmap",
- "toml_datetime",
- "winnow",
-]
-
-[[package]]
 name = "tracing"
 version = "0.1.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2192,15 +2431,6 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
-
-[[package]]
-name = "winnow"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e7f4ea97f6f78012141bcdb6a216b2609f0979ada50b20ca5b52dde2eac2bb1"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "wit-bindgen-rt"

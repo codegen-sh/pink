@@ -188,10 +188,10 @@ impl<'a> State<'a> {
         let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update)]
-        #[delegate(derive(
+        #[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+        #[delegate(
             CSTNode<'db1>
-        ))]
+        )]
         pub enum #enum_name<'db1> {
                 #(#enum_tokens),*
             }
