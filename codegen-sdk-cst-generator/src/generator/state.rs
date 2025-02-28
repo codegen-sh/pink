@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 
 #[double]
 use codegen_sdk_common::language::Language;
@@ -153,8 +153,12 @@ impl<'a> State<'a> {
         let mut enum_tokens = Vec::new();
         let mut from_tokens = TokenStream::new();
         let mut subenums = Vec::new();
+        let mut subenum_name_map = HashMap::new();
+        for name in self.subenums.iter() {
+            subenum_name_map.insert(name.clone(), normalize_type_name(name, true));
+        }
         for node in self.nodes.values() {
-            enum_tokens.push(node.get_enum_tokens());
+            enum_tokens.push(node.get_enum_tokens(&subenum_name_map));
             from_tokens.extend_one(get_from_type(&node.normalize_name()));
         }
         for subenum in self.subenums.iter() {
@@ -254,7 +258,7 @@ mod tests {
         };
         let nodes = vec![node];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -299,7 +303,7 @@ mod tests {
         };
         let nodes = vec![child, child_two, node];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -347,7 +351,7 @@ mod tests {
         };
         let nodes = vec![definition, class, function];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -395,7 +399,7 @@ mod tests {
         };
         let nodes = vec![node_a, node_b, node_c];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -411,7 +415,7 @@ mod tests {
         };
         let nodes = vec![node];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let struct_tokens = state.get_structs();
         insta::assert_debug_snapshot!(snapshot_tokens(&struct_tokens));
     }
@@ -452,7 +456,7 @@ mod tests {
         };
         let nodes = vec![node_a, node_b, parent];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
 
         let variants = state.get_variants("parent");
         assert_eq!(
@@ -485,7 +489,7 @@ mod tests {
         };
         let nodes = vec![node_a];
         let language = get_language(nodes);
-        let mut state = State::new(&language);
+        let mut state = State::new(&language, Config::default());
 
         state.add_subenum(
             "TestEnum",

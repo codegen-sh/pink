@@ -1,6 +1,6 @@
 use codegen_sdk_common::parser::{Children, Node, TypeDefinition};
 
-use crate::{generate_cst, test_util::get_language};
+use crate::{Config, generate_cst, test_util::get_language};
 
 #[test_log::test]
 fn test_subtypes_with_children() {
@@ -65,6 +65,6 @@ fn test_subtypes_with_children() {
         },
     ];
     let language = get_language(nodes);
-    let output = generate_cst(&language).unwrap();
+    let output = generate_cst(&language, Config::default()).unwrap();
     insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }

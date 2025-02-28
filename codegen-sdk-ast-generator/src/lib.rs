@@ -6,6 +6,7 @@ use quote::quote;
 mod generator;
 mod query;
 mod visitor;
+use syn::parse_quote;
 pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     let db = CSTDatabase::default();
     let mut imports = quote! {
@@ -14,14 +15,19 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
         use std::path::PathBuf;
         use codegen_sdk_cst::CSTLanguage;
     };
-    imports.extend_one(generator::generate_ast(language)?);
-    imports.extend_one(visitor::generate_visitor(&db, language, "definition"));
-    imports.extend_one(visitor::generate_visitor(&db, language, "reference"));
-    let mut ast = imports.to_string();
+    let ast = generator::generate_ast(language)?;
+    let definition_visitor = visitor::generate_visitor(&db, language, "definition");
+    let reference_visitor = visitor::generate_visitor(&db, language, "reference");
+    let ast: syn::File = parse_quote! {
+        #imports
+        #ast
+        #definition_visitor
+        #reference_visitor
+    };
     let out_dir = std::env::var("OUT_DIR")?;
     let out_file = format!("{}/{}.rs", out_dir, language.name());
-    std::fs::write(&out_file, ast.clone())?;
-    ast = format_code(&ast).unwrap_or_else(|_| {
+    std::fs::write(&out_file, ast.to_string())?;
+    let ast = format_code(&ast).unwrap_or_else(|_| {
         panic!(
             "Failed to format ast for {} at {}",
             language.name(),

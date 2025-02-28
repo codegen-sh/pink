@@ -80,21 +80,29 @@ prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
 salsa = "0.18.0"
-
 [profile.dev]
 debug = 0
 codegen-backend = "cranelift"
-
+overflow-checks = false
+opt-level = 0
+incremental = false
 [profile.dev.package]
 insta.opt-level = 3
 similar.opt-level = 3
+syn.opt-level = 3
+convert_case.opt-level = 3
+codegen-sdk-cst-generator.opt-level = 3
+codegen-sdk-common.opt-level = 3
+[profile.dev.build-override]
+opt-level = 3
 
-[profile.test]
+[profile.test.package."codegen-sdk-cst"]
 inherits = "dev"
 opt-level = 0
 debug = 0
 strip = "none"
-lto = false
 codegen-units = 256
 incremental = true
 codegen-backend = "cranelift"
+[profile.test]
+lto = false

@@ -49,10 +49,13 @@ mod test_util {
         language
             .expect_field_id()
             .return_const(Some(NonZeroU16::new(1).unwrap()));
+        language.expect_root_node().return_const("Program");
+        language.expect_struct_name().return_const("Language");
+        language.expect_name().return_const("language");
         language
     }
     pub fn snapshot_string(string: &str) -> StringDebug {
-        let formatted = codegen_sdk_common::generator::format_code(string)
+        let formatted = codegen_sdk_common::generator::format_code_string(string)
             .unwrap_or_else(|_| string.to_string());
         StringDebug { string: formatted }
     }

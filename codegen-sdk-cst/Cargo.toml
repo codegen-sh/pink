@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 tree-sitter = { workspace = true }
 bytes = { workspace = true }
-codegen-sdk-common = { workspace = true }
+codegen-sdk-common = { path = "../codegen-sdk-common" }
 codegen-sdk-macros = { path = "../codegen-sdk-macros" }
 derive_more = { workspace = true }
 convert_case = { workspace = true }
@@ -19,7 +19,7 @@ salsa = { workspace = true }
 dashmap = "6.1.0"
 [build-dependencies]
 codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = { workspace = true}
+codegen-sdk-common = {path = "../codegen-sdk-common"}
 rayon = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }

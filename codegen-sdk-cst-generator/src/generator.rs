@@ -12,7 +12,8 @@ mod utils;
 use std::io::Write;
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::{ToTokens, format_ident, quote};
+use syn::parse_quote;
 
 use crate::Config;
 fn get_imports(config: &Config) -> TokenStream {
@@ -35,17 +36,11 @@ fn get_imports(config: &Config) -> TokenStream {
     }
     imports
 }
-pub fn generate_cst(language: &Language, config: Config) -> anyhow::Result<String> {
-    let mut result = get_imports(&config);
-    let state = State::new(language, config);
-    let enums = state.get_enum();
-    let structs = state.get_structs();
-    result.extend_one(enums);
-    result.extend_one(structs);
+fn get_parser(language: &Language) -> TokenStream {
     let program_id = format_ident!("{}", language.root_node());
     let language_name = format_ident!("{}", language.name());
-    let language_struct_name = format_ident!("{}", language.struct_name);
-    result.extend_one(quote! {
+    let language_struct_name = format_ident!("{}", language.struct_name());
+    quote! {
         #[salsa::tracked]
         pub struct Parsed<'db> {
             #[tracked]
@@ -77,8 +72,21 @@ pub fn generate_cst(language: &Language, config: Config) -> anyhow::Result<Strin
                 }
             }
         }
-    });
-    let formatted = codegen_sdk_common::generator::format_code(&result.to_string());
+    }
+}
+pub fn generate_cst(language: &Language, config: Config) -> anyhow::Result<String> {
+    let imports: TokenStream = get_imports(&config);
+    let state = State::new(language, config);
+    let enums = state.get_enum();
+    let structs = state.get_structs();
+    let parser = get_parser(language);
+    let result: syn::File = parse_quote! {
+        #imports
+        #enums
+        #structs
+        #parser
+    };
+    let formatted = codegen_sdk_common::generator::format_code(&result);
     match formatted {
         Ok(formatted) => return Ok(formatted),
         Err(e) => {
@@ -87,7 +95,7 @@ pub fn generate_cst(language: &Language, config: Config) -> anyhow::Result<Strin
                 "Failed to format CST, writing to temp file at {}",
                 out_file.path().display()
             );
-            out_file.write_all(result.to_string().as_bytes())?;
+            out_file.write_all(result.into_token_stream().to_string().as_bytes())?;
             out_file.keep()?;
             return Err(e);
         }

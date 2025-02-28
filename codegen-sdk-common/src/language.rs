@@ -77,6 +77,9 @@ impl Language {
     pub fn name(&self) -> &'static str {
         self.name
     }
+    pub fn struct_name(&self) -> &'static str {
+        self.struct_name
+    }
     pub fn node_for_struct_name(&self, struct_name: &str) -> Option<Node> {
         self.nodes
             .iter()
