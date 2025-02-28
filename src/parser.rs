@@ -10,17 +10,18 @@ fn parse_file<'db>(
     db: &'db dyn Db,
     #[cfg(feature = "serialization")] cache: &Cache,
     file: &path::PathBuf,
-) -> Parsed<'db> {
+) {
     if file.is_dir() {
         log::warn!("Skipping directory: {}", file.display());
-        return Parsed::new(db, None);
+        return;
     }
     let result = db.input(file.into());
     return match result {
-        Ok(program) => codegen_sdk_analyzer::parse_file(db, program),
+        Ok(program) => {
+            codegen_sdk_analyzer::parse_file(db, program);
+        }
         Err(e) => {
             log::error!("Error parsing file {}: {}", file.display(), e);
-            Parsed::new(db, None)
         }
     };
 }

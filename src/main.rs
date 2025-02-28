@@ -1,7 +1,7 @@
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
 use clap::Parser;
-use codegen_sdk_analyzer::CodegenDatabase;
+use codegen_sdk_analyzer::{CodegenDatabase, Db};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::{parser::parse_files, system::get_memory};
@@ -15,8 +15,9 @@ fn main() {
     let args = Args::parse();
     let dir = args.input;
     let start = Instant::now();
-    let (tx, rx) = std::sync::mpsc::channel();
-    let db = CodegenDatabase::new(tx);
+    let (tx, rx) = crossbeam_channel::unbounded();
+    let mut db = CodegenDatabase::new(tx);
+    db.watch_dir(PathBuf::from(&dir)).unwrap();
     let (files_to_parse, errors) = parse_files(
         &db,
         #[cfg(feature = "serialization")]

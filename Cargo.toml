@@ -20,6 +20,7 @@ rayon = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
 indicatif = { workspace = true }
+crossbeam-channel = { workspace = true }
 [features]
 python = [ "codegen-sdk-analyzer/python"] # TODO: Add python support
 typescript = [ "codegen-sdk-analyzer/typescript"]
@@ -119,7 +120,7 @@ salsa = "0.18.0"
 subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
-
+crossbeam-channel = "0.5.11"
 [profile.dev]
 codegen-backend = "cranelift"
 split-debuginfo = "unpacked"

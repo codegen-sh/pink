@@ -22,12 +22,13 @@ codegen-sdk-markdown = { workspace = true, optional = true}
 codegen-sdk-yaml = { workspace = true, optional = true}
 codegen-sdk-toml = { workspace = true, optional = true}
 dashmap = "6.1.0"
-notify-debouncer-mini = "0.6.0"
+notify-debouncer-mini = { version = "0.6.0", features = ["macos_fsevent", "crossbeam-channel"] }
 anyhow = {workspace = true}
 env_logger = { workspace = true }
 log = { workspace = true }
 indicatif-log-bridge = {workspace = true}
 indicatif = {workspace = true}
+crossbeam-channel = { workspace = true }
 [features]
 python = [ "codegen-sdk-python"] # TODO: Add python support
 typescript = [ "codegen-sdk-typescript"]

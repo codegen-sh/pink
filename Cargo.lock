@@ -303,6 +303,7 @@ dependencies = [
  "codegen-sdk-tsx",
  "codegen-sdk-typescript",
  "codegen-sdk-yaml",
+ "crossbeam-channel",
  "dashmap",
  "env_logger",
  "indicatif",
@@ -393,6 +394,7 @@ dependencies = [
  "codegen-sdk-ast",
  "codegen-sdk-common",
  "crossbeam",
+ "crossbeam-channel",
  "env_logger",
  "glob",
  "indicatif",
@@ -1435,6 +1437,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fee8403b3d66ac7b26aee6e40a897d85dc5ce26f44da36b8b73e987cc52e943"
 dependencies = [
  "bitflags 2.8.0",
+ "crossbeam-channel",
  "filetime",
  "fsevent-sys",
  "inotify",
@@ -1453,6 +1456,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a689eb4262184d9a1727f9087cd03883ea716682ab03ed24efec57d7716dccb8"
 dependencies = [
+ "crossbeam-channel",
  "log",
  "notify",
  "notify-types",
