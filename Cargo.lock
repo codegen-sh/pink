@@ -295,6 +295,7 @@ dependencies = [
  "codegen-sdk-javascript",
  "codegen-sdk-json",
  "codegen-sdk-jsx",
+ "codegen-sdk-macros",
  "codegen-sdk-markdown",
  "codegen-sdk-python",
  "codegen-sdk-ruby",
@@ -506,6 +507,8 @@ version = "0.1.0"
 dependencies = [
  "ambassador",
  "bytes",
+ "codegen-sdk-ast",
+ "codegen-sdk-ast-generator",
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
@@ -543,6 +546,8 @@ name = "codegen-sdk-macros"
 version = "0.1.0"
 dependencies = [
  "codegen-sdk-common",
+ "proc-macro2",
+ "quote",
 ]
 
 [[package]]

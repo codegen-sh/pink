@@ -2,3 +2,6 @@
 pub mod cst {
     include!(concat!(env!("OUT_DIR"), "/json.rs"));
 }
+pub mod ast {
+    include!(concat!(env!("OUT_DIR"), "/json-ast.rs"));
+}

@@ -21,6 +21,7 @@ codegen-sdk-go = { workspace = true, optional = true}
 codegen-sdk-markdown = { workspace = true, optional = true}
 codegen-sdk-yaml = { workspace = true, optional = true}
 codegen-sdk-toml = { workspace = true, optional = true}
+codegen-sdk-macros = { path = "../codegen-sdk-macros"}
 dashmap = "6.1.0"
 notify-debouncer-mini = { version = "0.6.0", features = ["macos_fsevent", "crossbeam-channel"] }
 anyhow = {workspace = true}
@@ -43,9 +44,8 @@ go = [ "codegen-sdk-go"]
 markdown = [ "codegen-sdk-markdown"]
 yaml = [ "codegen-sdk-yaml"]
 toml = [ "codegen-sdk-toml"]
-ts_query = []
 serialization = ["codegen-sdk-common/serialization"]
-default = ["json", "ts_query", "toml", "typescript"]
+default = ["json", "toml", "typescript"]
 
 [dev-dependencies]
 test-log = { workspace = true }
