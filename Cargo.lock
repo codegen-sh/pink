@@ -321,6 +321,7 @@ version = "0.1.0"
 dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
+ "codegen-sdk-typescript",
  "salsa",
  "tempfile",
  "test-log",
@@ -518,6 +519,7 @@ dependencies = [
  "log",
  "salsa",
  "subenum",
+ "test-log",
  "tree-sitter",
 ]
 

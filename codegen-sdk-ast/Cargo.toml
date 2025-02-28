@@ -10,3 +10,4 @@ salsa = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 tempfile = { workspace = true }
+codegen-sdk-typescript = { workspace = true }

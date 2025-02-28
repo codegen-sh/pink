@@ -21,5 +21,7 @@ codegen-sdk-ast-generator = { workspace = true }
 codegen-sdk-common = { workspace = true, features = ["json"] }
 env_logger = { workspace = true }
 log = { workspace = true }
+[dev-dependencies]
+test-log = { workspace = true }
 [features]
 serialization = ["codegen-sdk-common/serialization"]

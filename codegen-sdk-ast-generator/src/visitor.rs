@@ -105,9 +105,10 @@ mod tests {
     #[test_log::test]
     fn test_generate_visitor() {
         let language = &Typescript;
-        let visitor = generate_visitor(language, "definition");
+        let db = codegen_sdk_cst::CSTDatabase::default();
+        let visitor = generate_visitor(&db, language, "definition");
         insta::assert_snapshot!(
-            codegen_sdk_common::generator::format_code(&visitor.to_string()).unwrap()
+            codegen_sdk_common::generator::format_code_string(&visitor.to_string()).unwrap()
         );
     }
 }

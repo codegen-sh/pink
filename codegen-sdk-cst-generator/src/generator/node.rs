@@ -430,12 +430,15 @@ mod tests {
         let base_node = create_test_node("test");
         let language = get_language_no_nodes();
         let mut node = Node::new(&base_node, &language, Config::default());
-
-        let tokens = node.get_enum_tokens();
+        let mut subenum_name_map = HashMap::new();
+        for subenum in &node.subenums {
+            subenum_name_map.insert(subenum.clone(), normalize_type_name(subenum, true));
+        }
+        let tokens = node.get_enum_tokens(&subenum_name_map);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
 
         node.add_subenum("subenum".to_string());
-        let tokens = node.get_enum_tokens();
+        let tokens = node.get_enum_tokens(&subenum_name_map);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
     }
 

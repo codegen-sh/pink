@@ -1,8 +1,8 @@
 #![recursion_limit = "512"]
 use std::path::PathBuf;
 
-use codegen_sdk_ast::typescript::TypescriptFile;
-use codegen_sdk_common::File;
+use codegen_sdk_common::{File, language::typescript};
+use codegen_sdk_typescript::ast::TypescriptFile;
 fn write_to_temp_file(content: &str, temp_dir: &tempfile::TempDir) -> PathBuf {
     let file_path = temp_dir.path().join("test.ts");
     std::fs::write(&file_path, content).unwrap();
@@ -30,6 +30,8 @@ fn test_typescript_ast_interface() {
     let temp_dir = tempfile::tempdir().unwrap();
     let content = "interface Test { }";
     let file_path = write_to_temp_file(content, &temp_dir);
-    let file = TypescriptFile::parse(&file_path).unwrap();
-    assert_eq!(file.definitions.interfaces.len(), 1);
+    let db = codegen_sdk_cst::CSTDatabase::default();
+    let input = codegen_sdk_ast::input::File::new(file_path, content.to_string());
+    let file = codegen_sdk_typescript::ast::parse(&db, input);
+    assert_eq!(file.definitions(&db).interfaces.len(), 1);
 }
