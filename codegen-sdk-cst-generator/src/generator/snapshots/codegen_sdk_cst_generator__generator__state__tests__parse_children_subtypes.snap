@@ -2,18 +2,26 @@
 source: codegen-sdk-cst-generator/src/generator/state.rs
 expression: snapshot_tokens(&enum_tokens)
 ---
-#[subenum(
-    AnonymousClassChildren(derive(Archive, Deserialize, Serialize)),
-    Definition(derive(Archive, Deserialize, Serialize))
-)]
-#[derive(Debug, Clone, Drive)]
-#[enum_delegate::implement(CSTNode)]
-pub enum NodeTypes {
-    AnonymousClass(AnonymousClass),
-    AnonymousFunction(AnonymousFunction),
+#[subenum(AnonymousClassChildren, Definition)]
+#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[delegate(CSTNode<'db1>)]
+pub enum NodeTypes<'db1> {
+    AnonymousClass(AnonymousClass<'db1>),
+    AnonymousFunction(AnonymousFunction<'db1>),
 }
-impl FromNode for AnonymousClassChildren {
+impl<'db3> From<AnonymousClass<'db3>> for NodeTypes<'db3> {
+    fn from(node: AnonymousClass<'db3>) -> Self {
+        Self::AnonymousClass(node)
+    }
+}
+impl<'db3> From<AnonymousFunction<'db3>> for NodeTypes<'db3> {
+    fn from(node: AnonymousFunction<'db3>) -> Self {
+        Self::AnonymousFunction(node)
+    }
+}
+impl<'db4> FromNode<'db4> for AnonymousClassChildren<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
@@ -27,8 +35,9 @@ impl FromNode for AnonymousClassChildren {
         }
     }
 }
-impl FromNode for Definition {
+impl<'db4> FromNode<'db4> for Definition<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {

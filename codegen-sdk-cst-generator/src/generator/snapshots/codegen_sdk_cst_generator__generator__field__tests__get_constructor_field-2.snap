@@ -2,4 +2,4 @@
 source: codegen-sdk-cst-generator/src/generator/field.rs
 expression: snapshot_tokens(&optional_field.get_constructor_field())
 ---
-test_field : Box :: new (get_optional_child_by_field_name (& node , "test_field" , buffer) ?)
+test_field : Box :: new (get_optional_child_by_field_name (db , & node , "test_field" , buffer) ?)

@@ -2,85 +2,67 @@
 source: codegen-sdk-cst-generator/src/generator/node.rs
 expression: snapshot_tokens(&node.get_struct_tokens())
 ---
-#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-#[rkyv(
-    serialize_bounds(
-        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
-        __S::Error:rkyv::rancor::Source,
-    )
-)]
-#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
-#[rkyv(
-    bytecheck(
-        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
-    )
-)]
-pub struct TestNode {
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct TestNode<'db> {
     #[drive(skip)]
     start_byte: usize,
     #[drive(skip)]
     end_byte: usize,
     #[drive(skip)]
     _kind: std::string::String,
-    #[debug("[{},{}]", start_position.row, start_position.column)]
     #[drive(skip)]
-    start_position: Point,
-    #[debug("[{},{}]", end_position.row, end_position.column)]
+    start_position: Point<'db>,
     #[drive(skip)]
-    end_position: Point,
-    #[debug(ignore)]
+    end_position: Point<'db>,
     #[drive(skip)]
     buffer: Arc<Bytes>,
-    #[debug(ignore)]
     #[drive(skip)]
     kind_id: u16,
-    #[debug(ignore)]
     #[drive(skip)]
     is_error: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     named: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     id: usize,
-    #[rkyv(omit_bounds)]
-    pub multiple_field: Vec<TestType>,
-    #[rkyv(omit_bounds)]
-    pub optional_field: Box<Option<TestType>>,
-    #[rkyv(omit_bounds)]
-    pub required_field: Box<TestType>,
+    pub multiple_field: Vec<TestType<'db>>,
+    pub optional_field: Box<Option<TestType<'db>>>,
+    pub required_field: Box<TestType<'db>>,
 }
-impl FromNode for TestNode {
+impl<'db> FromNode<'db> for TestNode<'db> {
     fn from_node(
+        db: &'db dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
         Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
             _kind: node.kind().to_string(),
-            start_position: node.start_position().into(),
-            end_position: node.end_position().into(),
+            start_position: start_position,
+            end_position: end_position,
             buffer: buffer.clone(),
             kind_id: node.kind_id(),
             is_error: node.is_error(),
             named: node.is_named(),
             id: node.id(),
             multiple_field: get_multiple_children_by_field_name(
+                db,
                 &node,
                 "multiple_field",
                 buffer,
             )?,
             optional_field: Box::new(
-                get_optional_child_by_field_name(&node, "optional_field", buffer)?,
+                get_optional_child_by_field_name(db, &node, "optional_field", buffer)?,
             ),
             required_field: Box::new(
-                get_child_by_field_name(&node, "required_field", buffer)?,
+                get_child_by_field_name(db, &node, "required_field", buffer)?,
             ),
         })
     }
 }
-impl CSTNode for TestNode {
+impl<'db> CSTNode<'db> for TestNode<'db> {
     fn kind(&self) -> &str {
         &self._kind
     }
@@ -90,10 +72,10 @@ impl CSTNode for TestNode {
     fn end_byte(&self) -> usize {
         self.end_byte
     }
-    fn start_position(&self) -> Point {
+    fn start_position(&self) -> Point<'db> {
         self.start_position
     }
-    fn end_position(&self) -> Point {
+    fn end_position(&self) -> Point<'db> {
         self.end_position
     }
     fn buffer(&self) -> &Bytes {
@@ -112,8 +94,8 @@ impl CSTNode for TestNode {
         self.id
     }
 }
-impl HasChildren for TestNode {
-    type Child = TestNodeChildren;
+impl<'db1> HasChildren<'db1> for TestNode<'db1> {
+    type Child = TestNodeChildren<'db1>;
     fn children(&self) -> Vec<Self::Child> {
         let mut children: Vec<_> = vec![];
         children
@@ -194,5 +176,10 @@ impl HasChildren for TestNode {
             }
             _ => vec![],
         }
+    }
+}
+impl<'db> std::hash::Hash for TestNode<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
     }
 }

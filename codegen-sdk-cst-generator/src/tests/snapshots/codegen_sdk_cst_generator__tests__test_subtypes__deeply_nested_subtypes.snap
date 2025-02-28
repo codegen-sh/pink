@@ -4,36 +4,53 @@ expression: "crate::test_util::snapshot_string(&output)"
 ---
 use std::sync::Arc;
 use tree_sitter;
-use derive_more::Debug;
 use codegen_sdk_common::*;
 use subenum::subenum;
 use std::backtrace::Backtrace;
 use bytes::Bytes;
-use rkyv::{Archive, Deserialize, Serialize};
-use derive_visitor::Drive;
-#[subenum(
-    Declaration(derive(Archive, Deserialize, Serialize)),
-    FunctionDeclaration(derive(Archive, Deserialize, Serialize)),
-    Statement(derive(Archive, Deserialize, Serialize))
-)]
-#[derive(Debug, Clone, Drive)]
-#[enum_delegate::implement(CSTNode)]
-pub enum NodeTypes {
+use derive_generic_visitor::Drive;
+use ambassador::Delegate;
+use codegen_sdk_cst::CSTLanguage;
+use codegen_sdk_common::language::Language;
+#[subenum(Declaration, FunctionDeclaration, Statement)]
+#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[delegate(CSTNode<'db1>)]
+pub enum NodeTypes<'db1> {
     #[subenum(Declaration, Statement)]
-    ClassDeclaration(ClassDeclaration),
+    ClassDeclaration(ClassDeclaration<'db1>),
     #[subenum(Statement)]
-    ExpressionStatement(ExpressionStatement),
+    ExpressionStatement(ExpressionStatement<'db1>),
     #[subenum(FunctionDeclaration, Declaration, Statement)]
-    MethodDeclaration(MethodDeclaration),
+    MethodDeclaration(MethodDeclaration<'db1>),
 }
-impl FromNode for Declaration {
+impl<'db3> From<ClassDeclaration<'db3>> for NodeTypes<'db3> {
+    fn from(node: ClassDeclaration<'db3>) -> Self {
+        Self::ClassDeclaration(node)
+    }
+}
+impl<'db3> From<ExpressionStatement<'db3>> for NodeTypes<'db3> {
+    fn from(node: ExpressionStatement<'db3>) -> Self {
+        Self::ExpressionStatement(node)
+    }
+}
+impl<'db3> From<MethodDeclaration<'db3>> for NodeTypes<'db3> {
+    fn from(node: MethodDeclaration<'db3>) -> Self {
+        Self::MethodDeclaration(node)
+    }
+}
+impl<'db4> FromNode<'db4> for Declaration<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
         match node.kind_id() {
             0u16 => {
-                Ok(Self::MethodDeclaration(MethodDeclaration::from_node(node, buffer)?))
+                Ok(
+                    Self::MethodDeclaration(
+                        MethodDeclaration::from_node(db, node, buffer)?,
+                    ),
+                )
             }
             _ => {
                 Err(ParseError::UnexpectedNode {
@@ -44,14 +61,19 @@ impl FromNode for Declaration {
         }
     }
 }
-impl FromNode for FunctionDeclaration {
+impl<'db4> FromNode<'db4> for FunctionDeclaration<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
         match node.kind_id() {
             0u16 => {
-                Ok(Self::MethodDeclaration(MethodDeclaration::from_node(node, buffer)?))
+                Ok(
+                    Self::MethodDeclaration(
+                        MethodDeclaration::from_node(db, node, buffer)?,
+                    ),
+                )
             }
             _ => {
                 Err(ParseError::UnexpectedNode {
@@ -62,14 +84,19 @@ impl FromNode for FunctionDeclaration {
         }
     }
 }
-impl FromNode for Statement {
+impl<'db4> FromNode<'db4> for Statement<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
         match node.kind_id() {
             0u16 => {
-                Ok(Self::MethodDeclaration(MethodDeclaration::from_node(node, buffer)?))
+                Ok(
+                    Self::MethodDeclaration(
+                        MethodDeclaration::from_node(db, node, buffer)?,
+                    ),
+                )
             }
             _ => {
                 Err(ParseError::UnexpectedNode {
@@ -80,59 +107,43 @@ impl FromNode for Statement {
         }
     }
 }
-#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-#[rkyv(
-    serialize_bounds(
-        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
-        __S::Error:rkyv::rancor::Source,
-    )
-)]
-#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
-#[rkyv(
-    bytecheck(
-        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
-    )
-)]
-pub struct ClassDeclaration {
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct ClassDeclaration<'db> {
     #[drive(skip)]
     start_byte: usize,
     #[drive(skip)]
     end_byte: usize,
     #[drive(skip)]
     _kind: std::string::String,
-    #[debug("[{},{}]", start_position.row, start_position.column)]
     #[drive(skip)]
-    start_position: Point,
-    #[debug("[{},{}]", end_position.row, end_position.column)]
+    start_position: Point<'db>,
     #[drive(skip)]
-    end_position: Point,
-    #[debug(ignore)]
+    end_position: Point<'db>,
     #[drive(skip)]
     buffer: Arc<Bytes>,
-    #[debug(ignore)]
     #[drive(skip)]
     kind_id: u16,
-    #[debug(ignore)]
     #[drive(skip)]
     is_error: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     named: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     id: usize,
 }
-impl FromNode for ClassDeclaration {
+impl<'db> FromNode<'db> for ClassDeclaration<'db> {
     fn from_node(
+        db: &'db dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
         Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
             _kind: node.kind().to_string(),
-            start_position: node.start_position().into(),
-            end_position: node.end_position().into(),
+            start_position: start_position,
+            end_position: end_position,
             buffer: buffer.clone(),
             kind_id: node.kind_id(),
             is_error: node.is_error(),
@@ -141,7 +152,7 @@ impl FromNode for ClassDeclaration {
         })
     }
 }
-impl CSTNode for ClassDeclaration {
+impl<'db> CSTNode<'db> for ClassDeclaration<'db> {
     fn kind(&self) -> &str {
         &self._kind
     }
@@ -151,10 +162,10 @@ impl CSTNode for ClassDeclaration {
     fn end_byte(&self) -> usize {
         self.end_byte
     }
-    fn start_position(&self) -> Point {
+    fn start_position(&self) -> Point<'db> {
         self.start_position
     }
-    fn end_position(&self) -> Point {
+    fn end_position(&self) -> Point<'db> {
         self.end_position
     }
     fn buffer(&self) -> &Bytes {
@@ -173,7 +184,7 @@ impl CSTNode for ClassDeclaration {
         self.id
     }
 }
-impl HasChildren for ClassDeclaration {
+impl<'db1> HasChildren<'db1> for ClassDeclaration<'db1> {
     type Child = Self;
     fn children(&self) -> Vec<Self::Child> {
         vec![]
@@ -189,59 +200,48 @@ impl HasChildren for ClassDeclaration {
         }
     }
 }
-#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-#[rkyv(
-    serialize_bounds(
-        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
-        __S::Error:rkyv::rancor::Source,
-    )
-)]
-#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
-#[rkyv(
-    bytecheck(
-        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
-    )
-)]
-pub struct ExpressionStatement {
+impl<'db> std::hash::Hash for ClassDeclaration<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct ExpressionStatement<'db> {
     #[drive(skip)]
     start_byte: usize,
     #[drive(skip)]
     end_byte: usize,
     #[drive(skip)]
     _kind: std::string::String,
-    #[debug("[{},{}]", start_position.row, start_position.column)]
     #[drive(skip)]
-    start_position: Point,
-    #[debug("[{},{}]", end_position.row, end_position.column)]
+    start_position: Point<'db>,
     #[drive(skip)]
-    end_position: Point,
-    #[debug(ignore)]
+    end_position: Point<'db>,
     #[drive(skip)]
     buffer: Arc<Bytes>,
-    #[debug(ignore)]
     #[drive(skip)]
     kind_id: u16,
-    #[debug(ignore)]
     #[drive(skip)]
     is_error: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     named: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     id: usize,
 }
-impl FromNode for ExpressionStatement {
+impl<'db> FromNode<'db> for ExpressionStatement<'db> {
     fn from_node(
+        db: &'db dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
         Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
             _kind: node.kind().to_string(),
-            start_position: node.start_position().into(),
-            end_position: node.end_position().into(),
+            start_position: start_position,
+            end_position: end_position,
             buffer: buffer.clone(),
             kind_id: node.kind_id(),
             is_error: node.is_error(),
@@ -250,7 +250,7 @@ impl FromNode for ExpressionStatement {
         })
     }
 }
-impl CSTNode for ExpressionStatement {
+impl<'db> CSTNode<'db> for ExpressionStatement<'db> {
     fn kind(&self) -> &str {
         &self._kind
     }
@@ -260,10 +260,10 @@ impl CSTNode for ExpressionStatement {
     fn end_byte(&self) -> usize {
         self.end_byte
     }
-    fn start_position(&self) -> Point {
+    fn start_position(&self) -> Point<'db> {
         self.start_position
     }
-    fn end_position(&self) -> Point {
+    fn end_position(&self) -> Point<'db> {
         self.end_position
     }
     fn buffer(&self) -> &Bytes {
@@ -282,7 +282,7 @@ impl CSTNode for ExpressionStatement {
         self.id
     }
 }
-impl HasChildren for ExpressionStatement {
+impl<'db1> HasChildren<'db1> for ExpressionStatement<'db1> {
     type Child = Self;
     fn children(&self) -> Vec<Self::Child> {
         vec![]
@@ -298,59 +298,48 @@ impl HasChildren for ExpressionStatement {
         }
     }
 }
-#[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-#[rkyv(
-    serialize_bounds(
-        __S:rkyv::ser::Writer+rkyv::ser::Allocator,
-        __S::Error:rkyv::rancor::Source,
-    )
-)]
-#[rkyv(deserialize_bounds(__D::Error:rkyv::rancor::Source))]
-#[rkyv(
-    bytecheck(
-        bounds(__C:rkyv::validation::ArchiveContext, __C::Error:rkyv::rancor::Source)
-    )
-)]
-pub struct MethodDeclaration {
+impl<'db> std::hash::Hash for ExpressionStatement<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct MethodDeclaration<'db> {
     #[drive(skip)]
     start_byte: usize,
     #[drive(skip)]
     end_byte: usize,
     #[drive(skip)]
     _kind: std::string::String,
-    #[debug("[{},{}]", start_position.row, start_position.column)]
     #[drive(skip)]
-    start_position: Point,
-    #[debug("[{},{}]", end_position.row, end_position.column)]
+    start_position: Point<'db>,
     #[drive(skip)]
-    end_position: Point,
-    #[debug(ignore)]
+    end_position: Point<'db>,
     #[drive(skip)]
     buffer: Arc<Bytes>,
-    #[debug(ignore)]
     #[drive(skip)]
     kind_id: u16,
-    #[debug(ignore)]
     #[drive(skip)]
     is_error: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     named: bool,
-    #[debug(ignore)]
     #[drive(skip)]
     id: usize,
 }
-impl FromNode for MethodDeclaration {
+impl<'db> FromNode<'db> for MethodDeclaration<'db> {
     fn from_node(
+        db: &'db dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
         Ok(Self {
             start_byte: node.start_byte(),
             end_byte: node.end_byte(),
             _kind: node.kind().to_string(),
-            start_position: node.start_position().into(),
-            end_position: node.end_position().into(),
+            start_position: start_position,
+            end_position: end_position,
             buffer: buffer.clone(),
             kind_id: node.kind_id(),
             is_error: node.is_error(),
@@ -359,7 +348,7 @@ impl FromNode for MethodDeclaration {
         })
     }
 }
-impl CSTNode for MethodDeclaration {
+impl<'db> CSTNode<'db> for MethodDeclaration<'db> {
     fn kind(&self) -> &str {
         &self._kind
     }
@@ -369,10 +358,10 @@ impl CSTNode for MethodDeclaration {
     fn end_byte(&self) -> usize {
         self.end_byte
     }
-    fn start_position(&self) -> Point {
+    fn start_position(&self) -> Point<'db> {
         self.start_position
     }
-    fn end_position(&self) -> Point {
+    fn end_position(&self) -> Point<'db> {
         self.end_position
     }
     fn buffer(&self) -> &Bytes {
@@ -391,7 +380,7 @@ impl CSTNode for MethodDeclaration {
         self.id
     }
 }
-impl HasChildren for MethodDeclaration {
+impl<'db1> HasChildren<'db1> for MethodDeclaration<'db1> {
     type Child = Self;
     fn children(&self) -> Vec<Self::Child> {
         vec![]
@@ -405,5 +394,67 @@ impl HasChildren for MethodDeclaration {
         match field_id {
             _ => vec![],
         }
+    }
+}
+impl<'db> std::hash::Hash for MethodDeclaration<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+#[salsa::tracked]
+pub struct Parsed<'db> {
+    #[tracked]
+    #[return_ref]
+    pub program: Option<Program<'db>>,
+}
+pub fn parse_program_raw(
+    db: &dyn salsa::Database,
+    input: codegen_sdk_cst::Input,
+) -> Option<Program<'_>> {
+    let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
+    let tree = codegen_sdk_common::language::language::Language
+        .parse_tree_sitter(&input.content(db));
+    match tree {
+        Ok(tree) => {
+            if tree.root_node().has_error() {
+                ParseError::SyntaxError.report(db);
+                None
+            } else {
+                let buffer = Arc::new(buffer);
+                Program::from_node(db, tree.root_node(), &buffer)
+                    .map_or_else(
+                        |e| {
+                            e.report(db);
+                            None
+                        },
+                        |program| { Some(program) },
+                    )
+            }
+        }
+        Err(e) => {
+            e.report(db);
+            None
+        }
+    }
+}
+#[salsa::tracked]
+pub fn parse_program(
+    db: &dyn salsa::Database,
+    input: codegen_sdk_cst::Input,
+) -> Parsed<'_> {
+    Parsed::new(db, parse_program_raw(db, input))
+}
+pub struct Language;
+impl CSTLanguage for Language {
+    type Program<'db> = Program<'db>;
+    fn language() -> &'static Language {
+        &codegen_sdk_common::language::language::Language
+    }
+    fn parse<'db>(
+        db: &'db dyn salsa::Database,
+        content: std::string::String,
+    ) -> &'db Option<Self::Program<'db>> {
+        let input = codegen_sdk_cst::Input::new(db, content);
+        return parse_program(db, input).program(db);
     }
 }

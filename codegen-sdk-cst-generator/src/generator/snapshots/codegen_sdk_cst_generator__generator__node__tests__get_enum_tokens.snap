@@ -2,4 +2,4 @@
 source: codegen-sdk-cst-generator/src/generator/node.rs
 expression: snapshot_tokens(&tokens)
 ---
-Test (Test)
+Test (Test < 'db1 >)

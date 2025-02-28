@@ -2,16 +2,32 @@
 source: codegen-sdk-cst-generator/src/generator/state.rs
 expression: snapshot_tokens(&enum_tokens)
 ---
-#[subenum(AnonymousTestChildren(derive(Archive, Deserialize, Serialize)))]
-#[derive(Debug, Clone, Drive)]
-#[enum_delegate::implement(CSTNode)]
-pub enum NodeTypes {
-    AnonymousChild(AnonymousChild),
-    AnonymousChildTwo(AnonymousChildTwo),
-    AnonymousTest(AnonymousTest),
+#[subenum(AnonymousTestChildren)]
+#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[delegate(CSTNode<'db1>)]
+pub enum NodeTypes<'db1> {
+    AnonymousChild(AnonymousChild<'db1>),
+    AnonymousChildTwo(AnonymousChildTwo<'db1>),
+    AnonymousTest(AnonymousTest<'db1>),
 }
-impl FromNode for AnonymousTestChildren {
+impl<'db3> From<AnonymousChild<'db3>> for NodeTypes<'db3> {
+    fn from(node: AnonymousChild<'db3>) -> Self {
+        Self::AnonymousChild(node)
+    }
+}
+impl<'db3> From<AnonymousChildTwo<'db3>> for NodeTypes<'db3> {
+    fn from(node: AnonymousChildTwo<'db3>) -> Self {
+        Self::AnonymousChildTwo(node)
+    }
+}
+impl<'db3> From<AnonymousTest<'db3>> for NodeTypes<'db3> {
+    fn from(node: AnonymousTest<'db3>) -> Self {
+        Self::AnonymousTest(node)
+    }
+}
+impl<'db4> FromNode<'db4> for AnonymousTestChildren<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {

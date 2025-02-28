@@ -2,4 +2,4 @@
 source: codegen-sdk-cst-generator/src/generator/node.rs
 expression: snapshot_tokens(&tokens)
 ---
-# [subenum (Subenum)] Test (Test)
+# [subenum (subenum)] Test (Test < 'db1 >)
