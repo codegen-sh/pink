@@ -10,7 +10,7 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
         pub fn definitions(self, db: &'db dyn salsa::Database) -> Definitions<'db> {
             let mut definitions = Definitions::default();
             if let Some(program) = self.node(db).program(db) {
-                definitions = definitions.visit_by_val_infallible(program);
+                definitions = definitions.visit_by_val_infallible(&program);
             }
             definitions
         }
@@ -25,7 +25,7 @@ fn get_references_impl(language: &Language) -> TokenStream {
         pub fn references(self, db: &'db dyn salsa::Database) -> References<'db> {
             let mut references = References::default();
             if let Some(program) = self.node(db).program(db) {
-                references = references.visit_by_val_infallible(program);
+                references = references.visit_by_val_infallible(&program);
             }
             references
         }
@@ -50,7 +50,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     //     }}
     // }}
     #[salsa::tracked]
-    fn parse(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
+    pub fn parse(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
         log::debug!("Parsing {} file: {}", input.path(db).display(), #language_name_str);
         let ast = crate::cst::parse_program(db, input.contents(db));
         #language_struct_name::new(db, ast, input.path(db).clone())

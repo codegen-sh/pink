@@ -73,6 +73,7 @@ pub fn generate_visitor<'db>(
             #(#[visit(drive(crate::cst::#nodes<'db>))])*
             #[visit(drive(for<T> Box<T>))]
             #[visit(drive(for<T> Vec<T>))]
+            #[visit(drive(for<T> Option<T>))]
             #[visit(
                 #(enter(#variants:crate::cst::#variants<'db>)),*
             )]

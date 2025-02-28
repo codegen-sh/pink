@@ -1,34 +1,58 @@
 use std::{
-    any::Any,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, mpsc::Sender},
+    time::Duration,
 };
 
+use anyhow::Context;
+use codegen_sdk_ast::input::File;
+use codegen_sdk_cst::Input;
 use dashmap::{DashMap, mapref::entry::Entry};
-
-use crate::{File, Input};
+use notify_debouncer_mini::{
+    DebounceEventResult, Debouncer, new_debouncer,
+    notify::{RecommendedWatcher, RecursiveMode},
+};
 #[salsa::db]
-trait Db: salsa::Database {
-    fn input(&self, path: Input) -> anyhow::Result<File>;
+pub trait Db: salsa::Database + Send {
+    fn input(&self, path: PathBuf) -> anyhow::Result<File>;
 }
 #[salsa::db]
-#[derive(Default, Clone)]
+#[derive(Clone)]
 // Basic Database implementation for Query generation. This is not used for anything else.
-pub struct CSTDatabase {
+pub struct CodegenDatabase {
     storage: salsa::Storage<Self>,
     files: DashMap<PathBuf, File>,
+    logs: Arc<Mutex<Vec<String>>>,
     file_watcher: Arc<Mutex<Debouncer<RecommendedWatcher>>>,
 }
-#[salsa::db]
-impl salsa::Database for CSTDatabase {
-    fn salsa_event(&self, event: &dyn Fn() -> salsa::Event) {}
+impl CodegenDatabase {
+    pub fn new(tx: Sender<DebounceEventResult>) -> Self {
+        Self {
+            file_watcher: Arc::new(Mutex::new(
+                new_debouncer(Duration::from_secs(1), tx).unwrap(),
+            )),
+            storage: salsa::Storage::default(),
+            logs: Default::default(),
+            files: DashMap::new(),
+        }
+    }
 }
 #[salsa::db]
-impl Db for CSTDatabase {
+impl salsa::Database for CodegenDatabase {
+    fn salsa_event(&self, event: &dyn Fn() -> salsa::Event) {
+        // don't log boring events
+        let event = event();
+        if let salsa::EventKind::WillExecute { .. } = event.kind {
+            self.logs.lock().unwrap().push(format!("{:?}", event));
+        }
+    }
+}
+#[salsa::db]
+impl Db for CodegenDatabase {
     fn input(&self, path: PathBuf) -> anyhow::Result<File> {
         let path = path
             .canonicalize()
-            .map_err(|_| format!("Failed to read {}", path.display()))?;
+            .with_context(|| format!("Failed to read {}", path.display()))?;
         Ok(match self.files.entry(path.clone()) {
             // If the file already exists in our cache then just return it.
             Entry::Occupied(entry) => *entry.get(),
@@ -43,8 +67,9 @@ impl Db for CSTDatabase {
                     .watch(&path, RecursiveMode::NonRecursive)
                     .unwrap();
                 let contents = std::fs::read_to_string(&path)
-                    .map_err(|_| format!("Failed to read {}", path.display()))?;
-                *entry.insert(File::new(self, path, contents))
+                    .with_context(|| format!("Failed to read {}", path.display()))?;
+                let input = Input::new(self, contents);
+                *entry.insert(File::new(self, path, input))
             }
         })
     }

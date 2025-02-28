@@ -5,6 +5,42 @@ edition = "2024"
 
 [dependencies]
 salsa = { workspace = true }
+codegen-sdk-common = { workspace = true }
 codegen-sdk-ast = { workspace = true }
+codegen-sdk-cst = { workspace = true }
+codegen-sdk-python = { workspace = true, optional = true}
+codegen-sdk-typescript = { workspace = true, optional = true}
+codegen-sdk-tsx = { workspace = true, optional = true}
+codegen-sdk-jsx = { workspace = true, optional = true}
+codegen-sdk-javascript = { workspace = true, optional = true}
+codegen-sdk-json = { workspace = true, optional = true}
+codegen-sdk-java = { workspace = true, optional = true}
+codegen-sdk-ruby = { workspace = true, optional = true}
+codegen-sdk-rust = { workspace = true, optional = true}
+codegen-sdk-go = { workspace = true, optional = true}
+codegen-sdk-markdown = { workspace = true, optional = true}
+codegen-sdk-yaml = { workspace = true, optional = true}
+codegen-sdk-toml = { workspace = true, optional = true}
+dashmap = "6.1.0"
+notify-debouncer-mini = "0.6.0"
+anyhow = {workspace = true}
+[features]
+python = [ "codegen-sdk-python"] # TODO: Add python support
+typescript = [ "codegen-sdk-typescript"]
+tsx = [ "codegen-sdk-tsx"]
+jsx = [ "codegen-sdk-jsx"]
+javascript = [ "codegen-sdk-javascript"]
+json = [ "codegen-sdk-json"]
+java = [ "codegen-sdk-java"]
+ruby = [ "codegen-sdk-ruby"]
+rust = [ "codegen-sdk-rust"]
+go = [ "codegen-sdk-go"]
+markdown = [ "codegen-sdk-markdown"]
+yaml = [ "codegen-sdk-yaml"]
+toml = [ "codegen-sdk-toml"]
+ts_query = []
+serialization = ["codegen-sdk-common/serialization"]
+default = ["json", "ts_query", "toml", "typescript"]
+
 [dev-dependencies]
 test-log = { workspace = true }

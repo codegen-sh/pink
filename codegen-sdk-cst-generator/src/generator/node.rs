@@ -321,7 +321,7 @@ impl<'a> Node<'a> {
             fn children(&self) -> Vec<Self::Child> {
                 let mut children: Vec<_> = #children_init;
                 #(#children_fields;)*
-                // children.sort_by_key(|c| c.clone().start_byte(db));
+                children.sort_by_key(|c| c.start_byte());
                 children
             }
         }

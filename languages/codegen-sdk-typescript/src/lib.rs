@@ -1,6 +1,7 @@
 #![recursion_limit = "2048"]
+#![allow(non_snake_case)]
 #![allow(unused)]
-mod cst {
+pub mod cst {
     include!(concat!(env!("OUT_DIR"), "/typescript.rs"));
 }
 pub mod ast {
