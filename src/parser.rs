@@ -1,6 +1,6 @@
 use std::path;
 
-use codegen_sdk_analyzer::{CodegenDatabase, Db, Parsed};
+use codegen_sdk_analyzer::{CodegenDatabase, Db};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use indicatif::{ProgressBar, ProgressStyle};

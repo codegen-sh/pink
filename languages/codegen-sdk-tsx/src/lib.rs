@@ -1,6 +1,8 @@
 #![recursion_limit = "2048"]
 #![allow(unused)]
-mod cst {
+#![allow(non_snake_case)]
+
+pub mod cst {
     include!(concat!(env!("OUT_DIR"), "/tsx.rs"));
 }
 pub mod ast {

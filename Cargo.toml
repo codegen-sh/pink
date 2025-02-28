@@ -36,6 +36,7 @@ markdown = [ "codegen-sdk-analyzer/markdown"]
 yaml = [ "codegen-sdk-analyzer/yaml"]
 toml = [ "codegen-sdk-analyzer/toml"]
 serialization = ["codegen-sdk-common/serialization", "codegen-sdk-analyzer/serialization"]
+stable = ["json", "toml", "typescript", "tsx", "jsx", "go",  "yaml"]
 default = ["json", "toml", "typescript"]
 [dev-dependencies]
 test-log = { workspace = true }
