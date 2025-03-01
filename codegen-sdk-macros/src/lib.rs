@@ -76,11 +76,10 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
         let variant: proc_macro2::TokenStream = quote! {
             #[cfg(feature = #name)]
             if #package_name::cst::#struct_name::should_parse(&file.path(db)).unwrap_or(false) {
+                let parsed = #package_name::ast::parse(db, file);
                 return Parsed::new(
                     db,
-                    Some(ParsedFile::#struct_name(#package_name::ast::parse(
-                        db, file,
-                    ))),
+                    Some(ParsedFile::#struct_name(parsed)),
                 );
             }
         };

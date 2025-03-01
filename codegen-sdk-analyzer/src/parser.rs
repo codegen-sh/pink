@@ -5,7 +5,7 @@ languages_ast!();
 #[salsa::tracked]
 pub struct Parsed<'db> {
     #[return_ref]
-    file: Option<ParsedFile<'db>>,
+    pub file: Option<ParsedFile<'db>>,
 }
 #[salsa::tracked]
 pub fn parse_file(db: &dyn salsa::Database, file: codegen_sdk_ast::input::File) -> Parsed<'_> {

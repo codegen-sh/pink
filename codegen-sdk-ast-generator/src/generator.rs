@@ -3,7 +3,10 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 fn get_definitions_impl(language: &Language) -> TokenStream {
     if !language.tag_query.contains("@definition") {
-        return quote! {};
+        return quote! {
+            pub fn definitions(self, _db: &'db dyn salsa::Database) -> (){
+            }
+        };
     }
     quote! {
         #[salsa::tracked]
@@ -18,7 +21,10 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
 }
 fn get_references_impl(language: &Language) -> TokenStream {
     if !language.tag_query.contains("@reference") {
-        return quote! {};
+        return quote! {
+            pub fn references(self, _db: &'db dyn salsa::Database) -> (){
+            }
+        };
     }
     quote! {
         #[salsa::tracked]
