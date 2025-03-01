@@ -28,8 +28,6 @@ fn get_imports(config: &Config) -> TokenStream {
         use derive_generic_visitor::Drive;
         use ambassador::Delegate;
         use codegen_sdk_cst::CSTLanguage;
-        use codegen_sdk_common::language::Language;
-
     };
     if config.serialize {
         imports.extend_one(quote! {
@@ -82,7 +80,7 @@ fn get_parser(language: &Language) -> TokenStream {
         pub struct #language_struct_name;
         impl CSTLanguage for #language_struct_name {
             type Program<'db> = #root_node<'db>;
-            fn language() -> &'static Language {
+            fn language() -> &'static codegen_sdk_common::language::Language {
                 &codegen_sdk_common::language::#language_name::#language_struct_name
             }
             fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> &'db Option<Self::Program<'db>> {
