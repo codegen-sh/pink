@@ -391,10 +391,12 @@ dependencies = [
 name = "codegen-sdk-core"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "codegen-sdk-analyzer",
  "codegen-sdk-ast",
  "codegen-sdk-common",
+ "codegen-sdk-typescript",
  "crossbeam",
  "crossbeam-channel",
  "env_logger",

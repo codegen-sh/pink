@@ -1,5 +1,3 @@
-use std::path;
-
 use codegen_sdk_analyzer::{CodegenDatabase, Db};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
@@ -9,21 +7,13 @@ use crate::discovery::{FilesToParse, collect_files, log_languages};
 fn parse_file<'db>(
     db: &'db dyn Db,
     #[cfg(feature = "serialization")] cache: &Cache,
-    file: &path::PathBuf,
+    file: codegen_sdk_ast::input::File,
 ) {
-    if file.is_dir() {
-        log::warn!("Skipping directory: {}", file.display());
+    if file.path(db).is_dir() {
+        log::warn!("Skipping directory: {}", file.path(db).display());
         return;
     }
-    let result = db.input(file.into());
-    return match result {
-        Ok(program) => {
-            codegen_sdk_analyzer::parse_file(db, program);
-        }
-        Err(e) => {
-            log::error!("Error parsing file {}: {}", file.display(), e);
-        }
-    };
+    codegen_sdk_analyzer::parse_file(db, file);
 }
 #[salsa::tracked]
 fn parse_files_par(db: &dyn Db, files: FilesToParse) {
@@ -48,7 +38,7 @@ fn parse_files_par(db: &dyn Db, files: FilesToParse) {
             db,
             #[cfg(feature = "serialization")]
             &cache,
-            &file,
+            file,
         );
         pg.inc(1);
         ()

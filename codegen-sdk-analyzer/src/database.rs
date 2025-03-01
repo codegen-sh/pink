@@ -26,7 +26,7 @@ pub trait Db: salsa::Database + Send {
 // Basic Database implementation for Query generation. This is not used for anything else.
 pub struct CodegenDatabase {
     storage: salsa::Storage<Self>,
-    files: DashMap<PathBuf, File>,
+    pub files: DashMap<PathBuf, File>,
     dirs: Vec<PathBuf>,
     multi_progress: MultiProgress,
     file_watcher: Arc<Mutex<Debouncer<RecommendedWatcher>>>,

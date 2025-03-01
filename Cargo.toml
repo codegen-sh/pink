@@ -10,8 +10,9 @@ clap = { version = "4.5.28", features = ["derive"] }
 codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
 codegen-sdk-ast = { workspace = true}
 codegen-sdk-common = { workspace = true}
-
+anyhow = { workspace = true}
 salsa = { workspace = true}
+codegen-sdk-typescript = { workspace = true}
 crossbeam = "0.8.4"
 glob = "0.3.2"
 env_logger = { workspace = true }
