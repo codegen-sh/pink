@@ -11,7 +11,6 @@ use bytes::Bytes;
 use derive_generic_visitor::Drive;
 use ambassador::Delegate;
 use codegen_sdk_cst::CSTLanguage;
-use codegen_sdk_common::language::Language;
 #[subenum(BlockChildren, IfStatementChildren, Statement)]
 #[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
 #[delegate(CSTNode<'db1>)]
@@ -441,7 +440,7 @@ pub fn parse_program(
 pub struct Language;
 impl CSTLanguage for Language {
     type Program<'db> = Program<'db>;
-    fn language() -> &'static Language {
+    fn language() -> &'static codegen_sdk_common::language::Language {
         &codegen_sdk_common::language::language::Language
     }
     fn parse<'db>(
