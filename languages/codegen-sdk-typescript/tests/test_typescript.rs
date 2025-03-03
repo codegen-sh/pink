@@ -1,6 +1,7 @@
 #![recursion_limit = "512"]
 use std::path::PathBuf;
 
+use codegen_sdk_ast::Definitions;
 fn write_to_temp_file(content: &str, temp_dir: &tempfile::TempDir) -> PathBuf {
     let file_path = temp_dir.path().join("test.ts");
     std::fs::write(&file_path, content).unwrap();
