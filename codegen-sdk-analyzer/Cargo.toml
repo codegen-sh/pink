@@ -30,6 +30,9 @@ log = { workspace = true }
 indicatif-log-bridge = {workspace = true}
 indicatif = {workspace = true}
 crossbeam-channel = { workspace = true }
+glob = "0.3.2"
+rayon = { workspace = true }
+ambassador = { workspace = true }
 [features]
 python = [ "codegen-sdk-python"] # TODO: Add python support
 typescript = [ "codegen-sdk-typescript"]
@@ -45,7 +48,7 @@ markdown = [ "codegen-sdk-markdown"]
 yaml = [ "codegen-sdk-yaml"]
 toml = [ "codegen-sdk-toml"]
 serialization = ["codegen-sdk-common/serialization"]
-default = ["json", "toml", "typescript"]
+default = ["json"]
 
 [dev-dependencies]
 test-log = { workspace = true }

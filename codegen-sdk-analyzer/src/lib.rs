@@ -2,5 +2,6 @@
 mod database;
 mod parser;
 mod progress;
-pub use database::{CodegenDatabase, Db};
-pub use parser::{Parsed, ParsedFile, parse_file};
+pub use parser::{Parsed, ParsedFile};
+mod codebase;
+pub use codebase::Codebase;

@@ -2,38 +2,55 @@ use codegen_sdk_common::language::Language;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 fn get_definitions_impl(language: &Language) -> TokenStream {
+    let language_struct_name = format_ident!("{}File", language.struct_name);
     if !language.tag_query.contains("@definition") {
         return quote! {
-            pub fn definitions(self, _db: &'db dyn salsa::Database) -> (){
+
+        impl<'db> codegen_sdk_ast::Definitions<'db> for #language_struct_name<'db> {
+            type Definitions = ();
+            fn definitions(self, _db: &'db dyn salsa::Database) -> Self::Definitions{
+                ()
             }
+        }
         };
     }
     quote! {
         #[salsa::tracked]
-        pub fn definitions(self, db: &'db dyn salsa::Database) -> Definitions<'db> {
-            let mut definitions = Definitions::default();
-            if let Some(program) = self.node(db) {
-                definitions = definitions.visit_by_val_infallible(&program);
+        impl<'db> codegen_sdk_ast::Definitions<'db> for #language_struct_name<'db> {
+            type Definitions = Definitions<'db>;
+            fn definitions(self, db: &'db dyn salsa::Database) -> Self::Definitions {
+                let mut definitions = Definitions::default();
+                if let Some(program) = self.node(db) {
+                    definitions = definitions.visit_by_val_infallible(&program);
+                }
+                definitions
             }
-            definitions
         }
     }
 }
 fn get_references_impl(language: &Language) -> TokenStream {
+    let language_struct_name = format_ident!("{}File", language.struct_name);
     if !language.tag_query.contains("@reference") {
         return quote! {
-            pub fn references(self, _db: &'db dyn salsa::Database) -> (){
+            impl<'db> codegen_sdk_ast::References<'db> for #language_struct_name<'db> {
+                type References = ();
+                fn references(self, _db: &'db dyn salsa::Database) -> Self::References {
+                    ()
+                }
             }
         };
     }
     quote! {
         #[salsa::tracked]
-        pub fn references(self, db: &'db dyn salsa::Database) -> References<'db> {
-            let mut references = References::default();
+        impl<'db> codegen_sdk_ast::References<'db> for #language_struct_name<'db> {
+            type References = References<'db>;
+            fn references(self, db: &'db dyn salsa::Database) -> Self::References {
+                let mut references = References::default();
             if let Some(program) = self.node(db) {
                 references = references.visit_by_val_infallible(&program);
             }
-            references
+                references
+            }
         }
     }
 }
@@ -67,11 +84,8 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     }
 
 
-    #[salsa::tracked]
-    impl<'db> #language_struct_name<'db> {
-        #definitions_impl
-        #references_impl
-    }
+    #definitions_impl
+    #references_impl
     // impl<'db> HasNode for {language_struct_name}File<'db> {
     //     type Node = {language_name}::{root_node_name}<'db>;
     //     fn node(&self) -> &Self::Node {
