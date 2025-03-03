@@ -242,4 +242,19 @@ pub trait HasChildren<'db> {
     fn child_count(&self) -> usize {
         self.children().len()
     }
+    fn children_by_field_types(&self, field_types: &[&str]) -> Vec<Self::Child> {
+        self.children()
+            .into_iter()
+            .filter(|child| field_types.contains(&child.kind()))
+            .collect()
+    }
+    fn children_by_field_type(&self, field_type: &str) -> Vec<Self::Child> {
+        self.children_by_field_types(&[field_type])
+    }
+    fn child_by_field_type(&self, field_type: &str) -> Option<Self::Child> {
+        self.children_by_field_type(field_type).into_iter().next()
+    }
+    fn child_by_field_types(&self, field_types: &[&str]) -> Option<Self::Child> {
+        self.children_by_field_types(field_types).into_iter().next()
+    }
 }

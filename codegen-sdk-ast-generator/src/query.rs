@@ -263,6 +263,87 @@ impl<'a> Query<'a> {
         }
         matchers
     }
+    fn _get_matcher_for_named_node(
+        &self,
+        node: &ts_query::NamedNode,
+        struct_name: &str,
+        target_name: &str,
+        target_kind: &str,
+        current_node: &Ident,
+        remaining_nodes: Vec<ts_query::NamedNodeChildren<'_>>,
+    ) -> TokenStream {
+        let mut matchers = TokenStream::new();
+        let mut field_matchers = TokenStream::new();
+        let mut comment_variant = None;
+        let variants = self.state.get_variants(&format!("{}Children", target_kind));
+        if variants.len() == 2 {
+            if variants.iter().any(|v| v.normalize() == "Comment") {
+                for variant in variants {
+                    if variant.normalize() == "Comment" {
+                        continue;
+                    }
+                    comment_variant = Some(variant.normalize());
+                }
+            }
+        }
+
+        for child in remaining_nodes {
+            if child.kind() == "field_definition" {
+                field_matchers.extend_one(self.get_matcher_for_definition(
+                    &target_name,
+                    child.into(),
+                    current_node,
+                ));
+            } else {
+                let result = self.get_matcher_for_definition(
+                    &target_name,
+                    child.into(),
+                    &format_ident!("child"),
+                );
+
+                if let Some(ref variant) = comment_variant {
+                    let children = format_ident!("{}Children", target_name);
+                    let variant = format_ident!("{}", variant);
+                    matchers.extend_one(quote! {
+
+                        if let crate::cst::#children::#variant(#current_node) = #current_node {
+                            #result
+                        }
+                    });
+                } else {
+                    matchers.extend_one(quote! {
+                        #result
+                    });
+                }
+            }
+        }
+        let matchers = quote! {
+            for child in #current_node.children().into_iter() {
+                #matchers
+                break;
+            }
+        };
+        let query_source = format!("Code for query: {}", &self.node().source());
+        let base_matcher = quote! {
+            #[doc = #query_source]
+            #matchers
+            #field_matchers
+        };
+        if struct_name == target_name {
+            return base_matcher;
+        } else {
+            let mut children = format_ident!("{}", struct_name);
+            if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
+                children = format_ident!("{}", node.children_struct_name());
+            }
+            let variant = format_ident!("{}", target_name);
+            return quote! {
+                if let crate::cst::#children::#variant(#current_node) = #current_node {
+                    #base_matcher
+                }
+            };
+        }
+    }
 
     fn get_matcher_for_named_node(
         &self,
@@ -285,14 +366,16 @@ impl<'a> Query<'a> {
 
         let name_node = self.state.get_node_for_raw_name(&first_node.source());
         if let Some(name_node) = name_node {
-            for child in remaining_nodes {
-                let result = self.get_matcher_for_definition(
-                    &name_node.normalize_name(),
-                    child.into(),
-                    current_node,
-                );
-                matchers.extend_one(result);
-            }
+            let target_name = name_node.normalize_name();
+            let matcher = self._get_matcher_for_named_node(
+                node,
+                struct_name,
+                &target_name,
+                name_node.kind(),
+                current_node,
+                remaining_nodes,
+            );
+            matchers.extend_one(matcher);
         } else {
             let subenum = self.state.get_subenum_variants(&first_node.source());
             log::info!(
@@ -304,17 +387,20 @@ impl<'a> Query<'a> {
                 if variant.normalize_name() == "Comment" {
                     continue;
                 }
-                for child in remaining_nodes.clone() {
-                    let result = self.get_matcher_for_definition(
-                        &variant.normalize_name(),
-                        child.into(),
-                        current_node,
-                    );
-                    matchers.extend_one(result);
-                }
+                let matcher = self._get_matcher_for_named_node(
+                    node,
+                    struct_name,
+                    &variant.normalize_name(),
+                    variant.kind(),
+                    current_node,
+                    remaining_nodes.clone(),
+                );
+                matchers.extend_one(matcher);
             }
         }
-        matchers
+        quote! {
+            #matchers
+        }
     }
     fn get_default_matcher(&self) -> TokenStream {
         let to_append = self.executor_id();
@@ -373,14 +459,11 @@ impl<'a> Query<'a> {
                 let struct_name =
                     format_ident!("{}", normalize_type_name(&identifier.source(), true));
                 quote! {
-                    if #current_node.children().into_iter().any(|child| {
-                        if let crate::cst::#children::#struct_name(_) = child {
-                            true
-                        } else {
-                            false
+                    for child in #current_node.children().into_iter() {
+                       if let crate::cst::#children::#struct_name(child) = child {
+                            #to_append
+                            break;
                         }
-                    }) {
-                        #to_append
                     }
                 }
             }
@@ -402,13 +485,20 @@ impl<'a> Query<'a> {
             self.node().source(),
             self.node().children()
         );
-        let mut matchers = TokenStream::new();
-        for child in self.node().children().into_iter().skip(1) {
-            let result =
-                self.get_matcher_for_definition(struct_name, child.into(), &format_ident!("node"));
-            matchers.extend_one(result);
-        }
-        matchers
+        let node = self.state.get_node_for_struct_name(struct_name);
+        let kind = if let Some(node) = node {
+            node.kind()
+        } else {
+            struct_name
+        };
+        return self._get_matcher_for_named_node(
+            self.node(),
+            struct_name,
+            &struct_name,
+            kind,
+            &format_ident!("node"),
+            self.node().children().into_iter().skip(1).collect(),
+        );
     }
 }
 
