@@ -53,7 +53,7 @@ fn parse_files_par(db: &dyn Db, files: FilesToParse) {
 }
 #[salsa::tracked]
 fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
-    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file| {
+    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Definitions", |db, file| {
         let file = parse_file(db, file);
         if let Some(parsed) = file.file(db) {
             #[cfg(feature = "typescript")]

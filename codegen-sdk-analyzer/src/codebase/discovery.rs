@@ -38,7 +38,7 @@ pub fn collect_files(db: &CodegenDatabase, dir: &PathBuf) -> FilesToParse {
     let files = files
         .into_iter()
         .filter_map(|file| file.ok())
-        .filter(|file| !file.is_dir())
+        .filter(|file| !file.is_dir() && !file.is_symlink())
         .map(|file| db.input(file).unwrap())
         .collect();
     FilesToParse::new(db, files)
