@@ -86,6 +86,13 @@ pub fn parse_files<'db>(
         &cache,
         files_to_parse,
     );
+    log::info!("Parsing definitions");
+    parse_files_definitions_par(
+        db,
+        #[cfg(feature = "serialization")]
+        &cache,
+        files_to_parse,
+    );
     #[cfg(feature = "serialization")]
     report_cached_count(cached, &files_to_parse.files(db));
 }
