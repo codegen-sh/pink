@@ -14,6 +14,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
         use codegen_sdk_common::*;
         use std::path::PathBuf;
         use codegen_sdk_cst::CSTLanguage;
+        use std::collections::BTreeMap;
     };
     let ast = generator::generate_ast(language)?;
     let definition_visitor = visitor::generate_visitor(&db, language, "definition");
