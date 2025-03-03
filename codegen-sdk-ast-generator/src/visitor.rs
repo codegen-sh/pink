@@ -88,7 +88,7 @@ pub fn generate_visitor<'db>(
         #[derive(Visitor, Visit, Debug, Clone, Eq, PartialEq, salsa::Update, Hash, Default)]
         #visitor
         pub struct #name<'db> {
-            #(pub #names: BTreeMap<String, crate::cst::#types<'db>>,)*
+            #(pub #names: BTreeMap<String, Vec<crate::cst::#types<'db>>>,)*
             phantom: std::marker::PhantomData<&'db ()>,
         }
         impl<'db> #name<'db> {

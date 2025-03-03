@@ -487,7 +487,9 @@ impl<'a> Query<'a> {
             .ok_or(format!("No name value found for: {}", self.node().source()))
             .unwrap();
         quote! {
-            self.#to_append.insert(#name_value,node.clone());
+            self.#to_append.entry(#name_value).or_insert(Vec::new()).push(
+                node.clone()
+            );
         }
     }
     fn get_matcher_for_identifier(

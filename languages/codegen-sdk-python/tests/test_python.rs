@@ -64,4 +64,5 @@ test()";
     let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
     let file = codegen_sdk_python::ast::parse_query(&db, input);
     assert_eq!(file.references(&db).calls.len(), 1);
+    assert_eq!(file.get_calls(&db, "test".to_string()).len(), 1);
 }
