@@ -207,12 +207,11 @@ impl<'a> Query<'a> {
                 let name = normalize_field_name(&identifier.source());
                 if let Some(field) = self.get_field_for_field_name(&name, struct_name) {
                     let field_name = format_ident!("{}", name);
-                    let new_identifier = format_ident!("field");
                     let normalized_struct_name = field.type_name();
                     let wrapped = self.get_matcher_for_definition(
                         &normalized_struct_name,
                         other_child.clone(),
-                        &new_identifier,
+                        &field_name,
                     );
                     assert!(
                         wrapped.to_string().len() > 0,
@@ -223,12 +222,12 @@ impl<'a> Query<'a> {
                     );
                     if !field.is_optional() {
                         return quote! {
-                            let #new_identifier = &#current_node.#field_name;
+                            let #field_name = &*#current_node.#field_name;
                             #wrapped
                         };
                     } else {
                         return quote! {
-                            if let Some(field) = &#current_node.#field_name {
+                            if let Some(#field_name) = &*#current_node.#field_name {
                                 #wrapped
                             }
                         };
@@ -444,27 +443,32 @@ impl<'a> Query<'a> {
                 self.get_matchers_for_grouping(&grouping, struct_name, current_node)
             }
             ts_query::NodeTypes::Identifier(identifier) => {
+                // We have 2 nodes, the parent node and the identifier node
                 let to_append = self.get_default_matcher();
                 let children;
+                // Case 1: The identifier is the same as the struct name (IE: we know this is the corrent node)
+                if normalize_type_name(&identifier.source(), true) == struct_name {
+                    return to_append;
+                }
+                // Case 2: We have a node for the parent struct
                 if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
                     children = format_ident!("{}Children", struct_name);
                     // When there is only 1 possible child, we can use the default matcher
                     if node.children_struct_name() != children.to_string() {
-                        return self.get_default_matcher();
+                        return to_append;
                     }
                 } else {
+                    // Case 3: This is a subenum
                     // If this is a field, we may be dealing with multiple types and can't operate over all of them
                     return self.get_default_matcher(); // TODO: Handle this case
                 }
                 let struct_name =
                     format_ident!("{}", normalize_type_name(&identifier.source(), true));
                 quote! {
-                    for child in #current_node.children().into_iter() {
-                       if let crate::cst::#children::#struct_name(child) = child {
-                            #to_append
-                            break;
-                        }
+                    if let crate::cst::#children::#struct_name(child) = #current_node {
+                        #to_append
                     }
+
                 }
             }
             unhandled => {
