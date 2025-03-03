@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 #[double]
 use codegen_sdk_common::language::Language;
@@ -14,7 +14,7 @@ use crate::{
 };
 #[derive(Debug)]
 pub struct Node<'a> {
-    raw: &'a codegen_sdk_common::parser::Node,
+    raw: Arc<codegen_sdk_common::parser::Node>,
     pub subenums: Vec<String>,
     pub fields: Vec<Field<'a>>,
     language: &'a Language,
@@ -23,7 +23,7 @@ pub struct Node<'a> {
 }
 impl<'a> Node<'a> {
     pub fn new(
-        raw: &'a codegen_sdk_common::parser::Node,
+        raw: Arc<codegen_sdk_common::parser::Node>,
         language: &'a Language,
         config: Config,
     ) -> Self {
@@ -34,7 +34,7 @@ impl<'a> Node<'a> {
                 fields.push(Field::new(
                     &normalized_name,
                     name,
-                    field,
+                    field.clone(),
                     language,
                     config.clone(),
                 ));
@@ -429,7 +429,7 @@ mod tests {
     fn test_get_enum_tokens() {
         let base_node = create_test_node("test");
         let language = get_language_no_nodes();
-        let mut node = Node::new(&base_node, &language, Config::default());
+        let mut node = Node::new(Arc::new(base_node), &language, Config::default());
         let mut subenum_name_map = HashMap::new();
         for subenum in &node.subenums {
             subenum_name_map.insert(subenum.clone(), normalize_type_name(subenum, true));
@@ -446,7 +446,7 @@ mod tests {
     fn test_get_struct_tokens_simple() {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -467,7 +467,7 @@ mod tests {
             )],
         );
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -513,7 +513,7 @@ mod tests {
         );
         let nodes = vec![raw_node.clone()];
         let language = get_language(nodes);
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -522,7 +522,7 @@ mod tests {
         let raw_node =
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -530,7 +530,7 @@ mod tests {
     fn test_get_struct_tokens_with_single_child_type() {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -538,7 +538,7 @@ mod tests {
     fn test_get_trait_implementations() {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_trait_implementations()));
     }
 
@@ -559,7 +559,7 @@ mod tests {
             )],
         );
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_children_field_impl()));
     }
 
@@ -580,7 +580,7 @@ mod tests {
             )],
         );
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language, Config::default());
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_children_by_field_name_impl()));
     }
 }

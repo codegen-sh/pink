@@ -16,7 +16,7 @@ pub fn generate_cst_to_file(language: &Language, config: Config) -> anyhow::Resu
 }
 #[cfg(test)]
 mod test_util {
-    use std::{fmt::Debug, num::NonZeroU16};
+    use std::{fmt::Debug, num::NonZeroU16, sync::Arc};
 
     use codegen_sdk_common::{language::MockLanguage, parser::Node};
     use proc_macro2::TokenStream;
@@ -40,7 +40,9 @@ mod test_util {
                 })
                 .return_const(idx as u16);
         }
-        language.expect_nodes().return_const(nodes);
+        language
+            .expect_nodes()
+            .return_const(nodes.into_iter().map(|n| Arc::new(n)).collect());
         language
     }
     pub fn get_language_no_nodes() -> MockLanguage {

@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap, VecDeque},
+    sync::Arc,
+};
 
 #[double]
 use codegen_sdk_common::language::Language;
@@ -29,7 +32,7 @@ impl<'a> State<'a> {
         let raw_nodes = language.nodes();
         for raw_node in raw_nodes {
             if raw_node.subtypes.is_empty() {
-                let node = Node::new(raw_node, language, config.clone());
+                let node = Node::new(raw_node.clone(), language, config.clone());
                 nodes.insert(node.normalize_name(), node);
             } else {
                 subenums.insert(raw_node.type_name.clone());
@@ -56,11 +59,44 @@ impl<'a> State<'a> {
                 ret.add_subenum(&raw_node.type_name, &raw_node.subtypes.iter().collect());
             }
         }
+
         log::info!("Adding child subenums");
         ret.add_child_subenums();
+        log::info!("Adding missing fields");
+        ret.add_missing_fields(language);
         log::info!("Adding field subenums");
         ret.add_field_subenums();
         ret
+    }
+    fn add_missing_fields(&mut self, language: &'a Language) {
+        let mut to_insert = Vec::new();
+        for node in self.nodes.values() {
+            for field in &node.fields {
+                for type_def in field.types() {
+                    let name = type_def.normalize();
+                    if !self.nodes.contains_key(&name)
+                        && !self.subenums.contains(&type_def.type_name)
+                    {
+                        let node = codegen_sdk_common::parser::Node {
+                            type_name: type_def.type_name.clone(),
+                            subtypes: vec![],
+                            named: type_def.named,
+                            root: false,
+                            fields: None,
+                            children: None,
+                        };
+                        to_insert.push((name, node));
+                    }
+                }
+            }
+        }
+        to_insert.dedup_by_key(|(name, _)| name.clone());
+        for (name, node) in to_insert {
+            self.nodes.insert(
+                name,
+                Node::new(Arc::new(node), language, self.config.clone()),
+            );
+        }
     }
     fn add_child_subenums(&mut self) {
         let keys = self.nodes.keys().cloned().collect::<Vec<_>>();
@@ -402,6 +438,48 @@ mod tests {
         let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
+    }
+    #[test_log::test]
+    fn test_add_field_subenums_missing_node() {
+        let node_a = codegen_sdk_common::parser::Node {
+            type_name: "node_a".to_string(),
+            subtypes: vec![],
+            named: false,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let field = codegen_sdk_common::parser::FieldDefinition {
+            types: vec![
+                TypeDefinition {
+                    type_name: "node_a".to_string(),
+                    named: false,
+                },
+                TypeDefinition {
+                    type_name: "node_b".to_string(),
+                    named: true,
+                },
+            ],
+            multiple: true,
+            required: false,
+        };
+        let node_c = codegen_sdk_common::parser::Node {
+            type_name: "node_c".to_string(),
+            subtypes: vec![],
+            named: true,
+            root: false,
+            fields: Some(codegen_sdk_common::parser::Fields {
+                fields: HashMap::from([("field".to_string(), field)]),
+            }),
+            children: None,
+        };
+        let nodes = vec![node_a, node_c];
+        let language = get_language(nodes);
+        let state = State::new(&language, Config::default());
+        let enum_tokens = state.get_enum();
+        let struct_tokens = state.get_structs();
+        insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
+        insta::assert_debug_snapshot!(snapshot_tokens(&struct_tokens));
     }
     #[test_log::test]
     fn test_get_structs() {

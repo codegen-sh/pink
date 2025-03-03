@@ -1,0 +1,327 @@
+---
+source: codegen-sdk-cst-generator/src/generator/state.rs
+expression: snapshot_tokens(&struct_tokens)
+---
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct AnonymousNodeA<'db> {
+    #[drive(skip)]
+    start_byte: usize,
+    #[drive(skip)]
+    end_byte: usize,
+    #[drive(skip)]
+    _kind: std::string::String,
+    #[drive(skip)]
+    start_position: Point<'db>,
+    #[drive(skip)]
+    end_position: Point<'db>,
+    #[drive(skip)]
+    buffer: Arc<Bytes>,
+    #[drive(skip)]
+    kind_id: u16,
+    #[drive(skip)]
+    is_error: bool,
+    #[drive(skip)]
+    named: bool,
+    #[drive(skip)]
+    id: usize,
+}
+impl<'db> FromNode<'db> for AnonymousNodeA<'db> {
+    fn from_node(
+        db: &'db dyn salsa::Database,
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
+        Ok(Self {
+            start_byte: node.start_byte(),
+            end_byte: node.end_byte(),
+            _kind: node.kind().to_string(),
+            start_position: start_position,
+            end_position: end_position,
+            buffer: buffer.clone(),
+            kind_id: node.kind_id(),
+            is_error: node.is_error(),
+            named: node.is_named(),
+            id: node.id(),
+        })
+    }
+}
+impl<'db> CSTNode<'db> for AnonymousNodeA<'db> {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point<'db> {
+        self.start_position
+    }
+    fn end_position(&self) -> Point<'db> {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl<'db1> HasChildren<'db1> for AnonymousNodeA<'db1> {
+    type Child = Self;
+    fn children(&self) -> Vec<Self::Child> {
+        vec![]
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            _ => vec![],
+        }
+    }
+}
+impl<'db> std::hash::Hash for AnonymousNodeA<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct NodeB<'db> {
+    #[drive(skip)]
+    start_byte: usize,
+    #[drive(skip)]
+    end_byte: usize,
+    #[drive(skip)]
+    _kind: std::string::String,
+    #[drive(skip)]
+    start_position: Point<'db>,
+    #[drive(skip)]
+    end_position: Point<'db>,
+    #[drive(skip)]
+    buffer: Arc<Bytes>,
+    #[drive(skip)]
+    kind_id: u16,
+    #[drive(skip)]
+    is_error: bool,
+    #[drive(skip)]
+    named: bool,
+    #[drive(skip)]
+    id: usize,
+}
+impl<'db> FromNode<'db> for NodeB<'db> {
+    fn from_node(
+        db: &'db dyn salsa::Database,
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
+        Ok(Self {
+            start_byte: node.start_byte(),
+            end_byte: node.end_byte(),
+            _kind: node.kind().to_string(),
+            start_position: start_position,
+            end_position: end_position,
+            buffer: buffer.clone(),
+            kind_id: node.kind_id(),
+            is_error: node.is_error(),
+            named: node.is_named(),
+            id: node.id(),
+        })
+    }
+}
+impl<'db> CSTNode<'db> for NodeB<'db> {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point<'db> {
+        self.start_position
+    }
+    fn end_position(&self) -> Point<'db> {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl<'db1> HasChildren<'db1> for NodeB<'db1> {
+    type Child = Self;
+    fn children(&self) -> Vec<Self::Child> {
+        vec![]
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            _ => vec![],
+        }
+    }
+}
+impl<'db> std::hash::Hash for NodeB<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+pub struct NodeC<'db> {
+    #[drive(skip)]
+    start_byte: usize,
+    #[drive(skip)]
+    end_byte: usize,
+    #[drive(skip)]
+    _kind: std::string::String,
+    #[drive(skip)]
+    start_position: Point<'db>,
+    #[drive(skip)]
+    end_position: Point<'db>,
+    #[drive(skip)]
+    buffer: Arc<Bytes>,
+    #[drive(skip)]
+    kind_id: u16,
+    #[drive(skip)]
+    is_error: bool,
+    #[drive(skip)]
+    named: bool,
+    #[drive(skip)]
+    id: usize,
+    pub field: Vec<NodeCField<'db>>,
+}
+impl<'db> FromNode<'db> for NodeC<'db> {
+    fn from_node(
+        db: &'db dyn salsa::Database,
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError> {
+        let start_position = Point::from(db, node.start_position());
+        let end_position = Point::from(db, node.end_position());
+        Ok(Self {
+            start_byte: node.start_byte(),
+            end_byte: node.end_byte(),
+            _kind: node.kind().to_string(),
+            start_position: start_position,
+            end_position: end_position,
+            buffer: buffer.clone(),
+            kind_id: node.kind_id(),
+            is_error: node.is_error(),
+            named: node.is_named(),
+            id: node.id(),
+            field: get_multiple_children_by_field_name(db, &node, "field", buffer)?,
+        })
+    }
+}
+impl<'db> CSTNode<'db> for NodeC<'db> {
+    fn kind(&self) -> &str {
+        &self._kind
+    }
+    fn start_byte(&self) -> usize {
+        self.start_byte
+    }
+    fn end_byte(&self) -> usize {
+        self.end_byte
+    }
+    fn start_position(&self) -> Point<'db> {
+        self.start_position
+    }
+    fn end_position(&self) -> Point<'db> {
+        self.end_position
+    }
+    fn buffer(&self) -> &Bytes {
+        &self.buffer
+    }
+    fn kind_id(&self) -> u16 {
+        self.kind_id
+    }
+    fn is_error(&self) -> bool {
+        self.is_error
+    }
+    fn is_named(&self) -> bool {
+        self.named
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+impl<'db1> HasChildren<'db1> for NodeC<'db1> {
+    type Child = NodeCChildren<'db1>;
+    fn children(&self) -> Vec<Self::Child> {
+        let mut children: Vec<_> = vec![];
+        children
+            .extend(
+                self
+                    .field
+                    .iter()
+                    .map(|child| {
+                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                    }),
+            );
+        children.sort_by_key(|c| c.start_byte());
+        children
+    }
+    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+        match field_name {
+            "field" => {
+                self.field
+                    .iter()
+                    .map(|child| {
+                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                    })
+                    .collect()
+            }
+            _ => vec![],
+        }
+    }
+    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+        match field_id {
+            1u16 => {
+                self.field
+                    .iter()
+                    .map(|child| {
+                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                    })
+                    .collect()
+            }
+            _ => vec![],
+        }
+    }
+}
+impl<'db> std::hash::Hash for NodeC<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}

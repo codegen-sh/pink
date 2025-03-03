@@ -13,7 +13,7 @@ use crate::Config;
 
 #[derive(Debug)]
 pub struct Field<'a> {
-    raw: &'a FieldDefinition,
+    raw: FieldDefinition,
     name: String,
     node_name: String,
     language: &'a Language,
@@ -24,7 +24,7 @@ impl<'a> Field<'a> {
     pub fn new(
         node_name: &str,
         name: &str,
-        raw: &'a FieldDefinition,
+        raw: FieldDefinition,
         language: &'a Language,
         config: Config,
     ) -> Self {
@@ -234,7 +234,7 @@ mod tests {
         let field = Field::new(
             "node",
             "field",
-            &field_definition,
+            field_definition,
             &language,
             Config::default(),
         );
@@ -252,7 +252,7 @@ mod tests {
         let field = Field::new(
             "test_node",
             "test_field",
-            &field_definition,
+            field_definition.clone(),
             &language,
             Config::default(),
         );
@@ -273,7 +273,7 @@ mod tests {
         let field = Field::new(
             "Node",
             "field",
-            &field_definition,
+            field_definition,
             &language,
             Config::default(),
         );
@@ -287,7 +287,7 @@ mod tests {
         let field = Field::new(
             "test_node",
             "test_field",
-            &field_definition,
+            field_definition,
             &language,
             Config::default(),
         );
@@ -298,7 +298,7 @@ mod tests {
         let optional_field = Field::new(
             "test_node",
             "test_field",
-            &optional_definition,
+            optional_definition,
             &language,
             Config::default(),
         );
@@ -309,7 +309,7 @@ mod tests {
         let multiple_field = Field::new(
             "test_node",
             "test_field",
-            &multiple_definition,
+            multiple_definition,
             &language,
             Config::default(),
         );
@@ -323,7 +323,7 @@ mod tests {
         let field = Field::new(
             "test_node",
             "test_field",
-            &field_definition,
+            field_definition,
             &language,
             Config::default(),
         );
@@ -334,7 +334,7 @@ mod tests {
         let optional_field = Field::new(
             "test_node",
             "test_field",
-            &optional_definition,
+            optional_definition,
             &language,
             Config::default(),
         );
@@ -345,7 +345,7 @@ mod tests {
         let multiple_field = Field::new(
             "test_node",
             "test_field",
-            &multiple_definition,
+            multiple_definition,
             &language,
             Config::default(),
         );
@@ -359,7 +359,7 @@ mod tests {
         let field = Field::new(
             "test_node",
             "test_field",
-            &field_definition,
+            field_definition,
             &language,
             Config::default(),
         );
@@ -374,7 +374,7 @@ mod tests {
         let optional_field = Field::new(
             "test_node",
             "test_field",
-            &optional_definition,
+            optional_definition,
             &language,
             Config::default(),
         );
@@ -392,7 +392,7 @@ mod tests {
         let multiple_field = Field::new(
             "test_node",
             "test_field",
-            &multiple_definition,
+            multiple_definition,
             &language,
             Config::default(),
         );
@@ -410,7 +410,7 @@ mod tests {
         let field = Field::new(
             "test_node",
             "test_field",
-            &field_definition,
+            field_definition,
             &language,
             Config::default(),
         );
@@ -425,7 +425,7 @@ mod tests {
         let optional_field = Field::new(
             "test_node",
             "test_field",
-            &optional_definition,
+            optional_definition,
             &language,
             Config::default(),
         );
@@ -440,7 +440,7 @@ mod tests {
         let multiple_field = Field::new(
             "test_node",
             "test_field",
-            &multiple_definition,
+            multiple_definition,
             &language,
             Config::default(),
         );

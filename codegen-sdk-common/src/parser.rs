@@ -39,7 +39,7 @@ pub struct TypeDefinition {
 }
 impl TypeDefinition {
     pub fn normalize(&self) -> String {
-        normalize_type_name(&self.type_name, true)
+        normalize_type_name(&self.type_name, self.named)
     }
 }
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
