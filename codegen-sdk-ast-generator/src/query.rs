@@ -264,7 +264,6 @@ impl<'a> Query<'a> {
     }
     fn _get_matcher_for_named_node(
         &self,
-        node: &ts_query::NamedNode,
         struct_name: &str,
         target_name: &str,
         target_kind: &str,
@@ -367,7 +366,6 @@ impl<'a> Query<'a> {
         if let Some(name_node) = name_node {
             let target_name = name_node.normalize_name();
             let matcher = self._get_matcher_for_named_node(
-                node,
                 struct_name,
                 &target_name,
                 name_node.kind(),
@@ -387,7 +385,6 @@ impl<'a> Query<'a> {
                     continue;
                 }
                 let matcher = self._get_matcher_for_named_node(
-                    node,
                     struct_name,
                     &variant.normalize_name(),
                     variant.kind(),
@@ -496,7 +493,6 @@ impl<'a> Query<'a> {
             struct_name
         };
         return self._get_matcher_for_named_node(
-            self.node(),
             struct_name,
             &struct_name,
             kind,
