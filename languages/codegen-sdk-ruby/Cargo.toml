@@ -1,0 +1,26 @@
+[package]
+name = "codegen-sdk-ruby"
+version = "0.1.0"
+edition = "2024"
+description = "Ruby language support for codegen-sdk"
+
+[dependencies]
+codegen-sdk-common = { workspace = true, features = ["ruby"] }
+salsa = { workspace = true }
+tree-sitter = { workspace = true }
+derive_more = { workspace = true }
+ambassador = { workspace = true }
+derive_generic_visitor = { workspace = true }
+subenum = {workspace = true}
+bytes = { workspace = true }
+codegen-sdk-cst = { workspace = true }
+log = { workspace = true }
+codegen-sdk-ast = { workspace = true }
+[build-dependencies]
+codegen-sdk-cst-generator = { workspace = true }
+codegen-sdk-ast-generator = { workspace = true }
+codegen-sdk-common = { workspace = true, features = ["ruby"] }
+env_logger = { workspace = true }
+log = { workspace = true }
+[features]
+serialization = ["codegen-sdk-common/serialization"]

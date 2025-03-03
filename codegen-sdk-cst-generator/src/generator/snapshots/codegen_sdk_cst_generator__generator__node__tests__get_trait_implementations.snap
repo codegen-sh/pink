@@ -2,7 +2,7 @@
 source: codegen-sdk-cst-generator/src/generator/node.rs
 expression: snapshot_tokens(&node.get_trait_implementations())
 ---
-impl CSTNode for TestNode {
+impl<'db> CSTNode<'db> for TestNode<'db> {
     fn kind(&self) -> &str {
         &self._kind
     }
@@ -12,10 +12,10 @@ impl CSTNode for TestNode {
     fn end_byte(&self) -> usize {
         self.end_byte
     }
-    fn start_position(&self) -> Point {
+    fn start_position(&self) -> Point<'db> {
         self.start_position
     }
-    fn end_position(&self) -> Point {
+    fn end_position(&self) -> Point<'db> {
         self.end_position
     }
     fn buffer(&self) -> &Bytes {
@@ -34,7 +34,7 @@ impl CSTNode for TestNode {
         self.id
     }
 }
-impl HasChildren for TestNode {
+impl<'db1> HasChildren<'db1> for TestNode<'db1> {
     type Child = Self;
     fn children(&self) -> Vec<Self::Child> {
         vec![]
@@ -48,5 +48,10 @@ impl HasChildren for TestNode {
         match field_id {
             _ => vec![],
         }
+    }
+}
+impl<'db> std::hash::Hash for TestNode<'db> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
     }
 }

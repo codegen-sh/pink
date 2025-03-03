@@ -45,6 +45,12 @@ pub fn normalize_field_name(field_name: &str) -> String {
     if field_name == "macro" {
         return "r#macro".to_string();
     }
+    if field_name == "else" {
+        return "r#else".to_string();
+    }
+    if field_name == "trait" {
+        return "r#trait".to_string();
+    }
     field_name.to_string()
 }
 fn get_char_mapping(c: char) -> String {
@@ -70,6 +76,9 @@ pub fn normalize_string(string: &str) -> String {
     escaped
 }
 pub fn normalize_type_name(type_name: &str, named: bool) -> String {
+    if type_name == "self" {
+        return "SelfNode".to_string();
+    }
     let mut cased = type_name.to_string();
     if type_name.chars().any(|c| c.is_ascii_alphabetic()) {
         cased = cased.to_case(Case::Pascal);
@@ -78,7 +87,7 @@ pub fn normalize_type_name(type_name: &str, named: bool) -> String {
     debug_assert!(
         escaped
             .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_uppercase()),
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit()),
         "Type name '{}' contains invalid characters",
         type_name
     );

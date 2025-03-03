@@ -4,15 +4,16 @@ use codegen_sdk_common::{
     CSTNode, HasChildren, Language,
     naming::{normalize_field_name, normalize_type_name},
 };
-use codegen_sdk_cst::{CSTLanguage, ts_query};
-use codegen_sdk_cst_generator::{Field, State};
+use codegen_sdk_cst::CSTLanguage;
+use codegen_sdk_cst_generator::{Config, Field, State};
+use codegen_sdk_ts_query::cst as ts_query;
 use derive_more::Debug;
 use log::{debug, info, warn};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-fn captures_for_field_definition(
-    node: &ts_query::FieldDefinition,
-) -> impl Iterator<Item = ts_query::Capture> {
+fn captures_for_field_definition<'a>(
+    node: &ts_query::FieldDefinition<'a>,
+) -> impl Iterator<Item = ts_query::Capture<'a>> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
@@ -27,7 +28,9 @@ fn captures_for_field_definition(
     }
     captures.into_iter()
 }
-fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = ts_query::Capture> {
+fn captures_for_named_node<'a>(
+    node: &ts_query::NamedNode<'a>,
+) -> impl Iterator<Item = ts_query::Capture<'a>> {
     let mut captures = Vec::new();
     for child in node.children() {
         match child {
@@ -45,14 +48,21 @@ fn captures_for_named_node(node: &ts_query::NamedNode) -> impl Iterator<Item = t
 }
 #[derive(Debug)]
 pub struct Query<'a> {
-    node: ts_query::NamedNode,
+    node: ts_query::NamedNode<'a>,
     language: &'a Language,
-    state: Arc<State<'a>>,
+    pub(crate) state: Arc<State<'a>>,
 }
 impl<'a> Query<'a> {
-    pub fn from_queries(source: &str, language: &'a Language) -> BTreeMap<String, Self> {
-        let parsed = ts_query::Query::parse(source).unwrap();
-        let state = Arc::new(State::new(language));
+    pub fn from_queries(
+        db: &'a dyn salsa::Database,
+        source: &str,
+        language: &'a Language,
+    ) -> BTreeMap<String, Self> {
+        let parsed = ts_query::Query::parse(db, source.to_string())
+            .as_ref()
+            .unwrap();
+        let config = Config::default();
+        let state = Arc::new(State::new(language, config));
         let mut queries = BTreeMap::new();
         for node in parsed.children() {
             match node {
@@ -81,7 +91,7 @@ impl<'a> Query<'a> {
         queries
     }
     fn from_named_node(
-        named: &ts_query::NamedNode,
+        named: &ts_query::NamedNode<'a>,
         language: &'a Language,
         state: Arc<State<'a>>,
     ) -> Self {
@@ -197,12 +207,11 @@ impl<'a> Query<'a> {
                 let name = normalize_field_name(&identifier.source());
                 if let Some(field) = self.get_field_for_field_name(&name, struct_name) {
                     let field_name = format_ident!("{}", name);
-                    let new_identifier = format_ident!("field");
                     let normalized_struct_name = field.type_name();
                     let wrapped = self.get_matcher_for_definition(
                         &normalized_struct_name,
                         other_child.clone(),
-                        &new_identifier,
+                        &field_name,
                     );
                     assert!(
                         wrapped.to_string().len() > 0,
@@ -213,12 +222,12 @@ impl<'a> Query<'a> {
                     );
                     if !field.is_optional() {
                         return quote! {
-                            let #new_identifier = &#current_node.#field_name;
+                            let #field_name = &*#current_node.#field_name;
                             #wrapped
                         };
                     } else {
                         return quote! {
-                            if let Some(field) = &#current_node.#field_name {
+                            if let Some(#field_name) = &*#current_node.#field_name {
                                 #wrapped
                             }
                         };
@@ -253,6 +262,96 @@ impl<'a> Query<'a> {
         }
         matchers
     }
+    fn _get_matcher_for_named_node(
+        &self,
+        struct_name: &str,
+        target_name: &str,
+        target_kind: &str,
+        current_node: &Ident,
+        remaining_nodes: Vec<ts_query::NamedNodeChildren<'_>>,
+    ) -> TokenStream {
+        let mut matchers = TokenStream::new();
+        let mut field_matchers = TokenStream::new();
+        let mut comment_variant = None;
+        let variants = self.state.get_variants(&format!("{}Children", target_kind));
+        if variants.len() == 2 {
+            if variants.iter().any(|v| v.normalize() == "Comment") {
+                for variant in variants {
+                    if variant.normalize() == "Comment" {
+                        continue;
+                    }
+                    comment_variant = Some(variant.normalize());
+                }
+            }
+        }
+
+        for child in remaining_nodes {
+            if child.kind() == "field_definition" {
+                field_matchers.extend_one(self.get_matcher_for_definition(
+                    &target_name,
+                    child.into(),
+                    current_node,
+                ));
+            } else {
+                let result = self.get_matcher_for_definition(
+                    &target_name,
+                    child.into(),
+                    &format_ident!("child"),
+                );
+
+                if let Some(ref variant) = comment_variant {
+                    let children = format_ident!("{}Children", target_name);
+                    let variant = format_ident!("{}", variant);
+                    matchers.extend_one(quote! {
+
+                        if let crate::cst::#children::#variant(#current_node) = #current_node {
+                            #result
+                        }
+                    });
+                } else {
+                    matchers.extend_one(quote! {
+                        #result
+                    });
+                }
+            }
+        }
+        let matchers = if matchers.is_empty() {
+            quote! {}
+        } else {
+            quote! {
+                for child in #current_node.children().into_iter() {
+                    #matchers
+                    break;
+                }
+            }
+        };
+        let query_source = format!(
+            "Code for query: {}",
+            &self.node().source().replace("\n", " ") // Newlines mess with quote's doc comments
+        );
+        if matchers.is_empty() && field_matchers.is_empty() {
+            return quote! {};
+        }
+        let base_matcher = quote! {
+            #[doc = #query_source]
+            #matchers
+            #field_matchers
+        };
+        if struct_name == target_name {
+            return base_matcher;
+        } else {
+            let mut children = format_ident!("{}", struct_name);
+            if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
+                children = format_ident!("{}", node.children_struct_name());
+            }
+            let variant = format_ident!("{}", target_name);
+            return quote! {
+                if let crate::cst::#children::#variant(#current_node) = #current_node {
+                    #base_matcher
+                }
+            };
+        }
+    }
 
     fn get_matcher_for_named_node(
         &self,
@@ -275,14 +374,15 @@ impl<'a> Query<'a> {
 
         let name_node = self.state.get_node_for_raw_name(&first_node.source());
         if let Some(name_node) = name_node {
-            for child in remaining_nodes {
-                let result = self.get_matcher_for_definition(
-                    &name_node.normalize_name(),
-                    child.into(),
-                    current_node,
-                );
-                matchers.extend_one(result);
-            }
+            let target_name = name_node.normalize_name();
+            let matcher = self._get_matcher_for_named_node(
+                struct_name,
+                &target_name,
+                name_node.kind(),
+                current_node,
+                remaining_nodes,
+            );
+            matchers.extend_one(matcher);
         } else {
             let subenum = self.state.get_subenum_variants(&first_node.source());
             log::info!(
@@ -294,17 +394,19 @@ impl<'a> Query<'a> {
                 if variant.normalize_name() == "Comment" {
                     continue;
                 }
-                for child in remaining_nodes.clone() {
-                    let result = self.get_matcher_for_definition(
-                        &variant.normalize_name(),
-                        child.into(),
-                        current_node,
-                    );
-                    matchers.extend_one(result);
-                }
+                let matcher = self._get_matcher_for_named_node(
+                    struct_name,
+                    &variant.normalize_name(),
+                    variant.kind(),
+                    current_node,
+                    remaining_nodes.clone(),
+                );
+                matchers.extend_one(matcher);
             }
         }
-        matchers
+        quote! {
+            #matchers
+        }
     }
     fn get_default_matcher(&self) -> TokenStream {
         let to_append = self.executor_id();
@@ -348,31 +450,32 @@ impl<'a> Query<'a> {
                 self.get_matchers_for_grouping(&grouping, struct_name, current_node)
             }
             ts_query::NodeTypes::Identifier(identifier) => {
+                // We have 2 nodes, the parent node and the identifier node
                 let to_append = self.get_default_matcher();
-                let language = format_ident!("{}", self.language.name());
                 let children;
+                // Case 1: The identifier is the same as the struct name (IE: we know this is the corrent node)
+                if normalize_type_name(&identifier.source(), true) == struct_name {
+                    return to_append;
+                }
+                // Case 2: We have a node for the parent struct
                 if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
                     children = format_ident!("{}Children", struct_name);
                     // When there is only 1 possible child, we can use the default matcher
                     if node.children_struct_name() != children.to_string() {
-                        return self.get_default_matcher();
+                        return to_append;
                     }
                 } else {
+                    // Case 3: This is a subenum
                     // If this is a field, we may be dealing with multiple types and can't operate over all of them
                     return self.get_default_matcher(); // TODO: Handle this case
                 }
                 let struct_name =
                     format_ident!("{}", normalize_type_name(&identifier.source(), true));
                 quote! {
-                    if #current_node.children().into_iter().any(|child| {
-                        if let #language::#children::#struct_name(_) = child {
-                            true
-                        } else {
-                            false
-                        }
-                    }) {
+                    if let crate::cst::#children::#struct_name(child) = #current_node {
                         #to_append
                     }
+
                 }
             }
             unhandled => {
@@ -393,21 +496,31 @@ impl<'a> Query<'a> {
             self.node().source(),
             self.node().children()
         );
-        let mut matchers = TokenStream::new();
-        for child in self.node().children().into_iter().skip(1) {
-            let result =
-                self.get_matcher_for_definition(struct_name, child.into(), &format_ident!("node"));
-            matchers.extend_one(result);
-        }
-        matchers
+        let node = self.state.get_node_for_struct_name(struct_name);
+        let kind = if let Some(node) = node {
+            node.kind()
+        } else {
+            struct_name
+        };
+        return self._get_matcher_for_named_node(
+            struct_name,
+            &struct_name,
+            kind,
+            &format_ident!("node"),
+            self.node().children().into_iter().skip(1).collect(),
+        );
     }
 }
 
 pub trait HasQuery {
-    fn queries(&self) -> BTreeMap<String, Query>;
-    fn queries_with_prefix(&self, prefix: &str) -> BTreeMap<String, Vec<Query<'_>>> {
+    fn queries<'a, 'db: 'a>(&'a self, db: &'db dyn salsa::Database) -> BTreeMap<String, Query<'a>>;
+    fn queries_with_prefix<'a, 'db: 'a>(
+        &'a self,
+        db: &'db dyn salsa::Database,
+        prefix: &str,
+    ) -> BTreeMap<String, Vec<Query<'a>>> {
         let mut queries = BTreeMap::new();
-        for (name, query) in self.queries().into_iter() {
+        for (name, query) in self.queries(db).into_iter() {
             if name.starts_with(prefix) {
                 let new_name = name.split(".").last().unwrap();
                 queries
@@ -420,7 +533,21 @@ pub trait HasQuery {
     }
 }
 impl HasQuery for Language {
-    fn queries(&self) -> BTreeMap<String, Query<'_>> {
-        Query::from_queries(&self.tag_query, self)
+    fn queries<'a, 'db: 'a>(&'a self, db: &'db dyn salsa::Database) -> BTreeMap<String, Query<'a>> {
+        Query::from_queries(db, &self.tag_query, self)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use codegen_sdk_common::language::ts_query;
+    use codegen_sdk_cst::CSTDatabase;
+
+    use super::*;
+    #[test]
+    fn test_query_basic() {
+        let database = CSTDatabase::default();
+        let language = &ts_query::Query;
+        let queries = Query::from_queries(&database, "(abc) @definition.abc", language);
+        assert!(queries.len() > 0);
     }
 }

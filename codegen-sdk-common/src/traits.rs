@@ -1,14 +1,19 @@
 use std::{fmt::Debug, sync::Arc};
 
+use ambassador::delegatable_trait;
 use bytes::Bytes;
 use tree_sitter::{self};
 
 use crate::{Point, errors::ParseError, tree::Range};
-pub trait FromNode: Sized {
-    fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError>;
+pub trait FromNode<'db>: Sized {
+    fn from_node(
+        db: &'db dyn salsa::Database,
+        node: tree_sitter::Node,
+        buffer: &Arc<Bytes>,
+    ) -> Result<Self, ParseError>;
 }
-#[enum_delegate::register]
-pub trait CSTNode {
+#[delegatable_trait]
+pub trait CSTNode<'db> {
     /// Returns the byte offset where the node starts
     fn start_byte(&self) -> usize;
 
@@ -16,15 +21,10 @@ pub trait CSTNode {
     fn end_byte(&self) -> usize;
 
     /// Returns the position where the node starts
-    fn start_position(&self) -> Point;
+    fn start_position(&self) -> Point<'db>;
 
     /// Returns the position where the node ends
-    fn end_position(&self) -> Point;
-
-    /// Returns the range of positions that this node spans
-    fn range(&self) -> Range {
-        Range::new(self.start_position(), self.end_position())
-    }
+    fn end_position(&self) -> Point<'db>;
 
     /// Returns the source text buffer for this node
     fn buffer(&self) -> &Bytes;
@@ -68,9 +68,9 @@ pub trait CSTNode {
     }
     fn id(&self) -> usize;
 }
-pub trait CSTNodeExt: CSTNode {
+pub trait CSTNodeExt<'db>: CSTNode<'db> {
     /// Get the next sibling of this node in its parent
-    fn next_sibling<Child: CSTNode + Clone, Parent: HasChildren<Child = Child>>(
+    fn next_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
         &self,
         parent: &Parent,
     ) -> Option<Child> {
@@ -82,7 +82,7 @@ pub trait CSTNodeExt: CSTNode {
         }
         None
     }
-    fn next_named_sibling<Child: CSTNode + Clone, Parent: HasChildren<Child = Child>>(
+    fn next_named_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
         &self,
         parent: &Parent,
     ) -> Option<Child> {
@@ -94,7 +94,7 @@ pub trait CSTNodeExt: CSTNode {
         }
         None
     }
-    fn prev_sibling<Child: CSTNode + Clone, Parent: HasChildren<Child = Child>>(
+    fn prev_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
         &self,
         parent: &Parent,
     ) -> Option<Child> {
@@ -107,7 +107,7 @@ pub trait CSTNodeExt: CSTNode {
         }
         None
     }
-    fn prev_named_sibling<Child: CSTNode + Clone, Parent: HasChildren<Child = Child>>(
+    fn prev_named_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
         &self,
         parent: &Parent,
     ) -> Option<Child> {
@@ -120,53 +120,57 @@ pub trait CSTNodeExt: CSTNode {
         }
         None
     }
+    /// Returns the range of positions that this node spans
+    fn range(&self, db: &'db dyn salsa::Database) -> Range<'db> {
+        Range::from_points(db, self.start_position(), self.end_position())
+    }
 }
-pub trait HasNode: Send + Debug + Clone {
-    type Node: CSTNode;
-    fn node(&self) -> &Self::Node;
-}
-impl<T: HasNode> CSTNode for T {
-    fn kind(&self) -> &str {
-        self.node().kind()
-    }
-    fn start_byte(&self) -> usize {
-        self.node().start_byte()
-    }
-    fn end_byte(&self) -> usize {
-        self.node().end_byte()
-    }
-    fn start_position(&self) -> Point {
-        self.node().start_position()
-    }
-    fn end_position(&self) -> Point {
-        self.node().end_position()
-    }
-    fn buffer(&self) -> &Bytes {
-        self.node().buffer()
-    }
-    fn kind_id(&self) -> u16 {
-        self.node().kind_id()
-    }
-    fn is_named(&self) -> bool {
-        self.node().is_named()
-    }
-    fn is_error(&self) -> bool {
-        self.node().is_error()
-    }
-    fn is_missing(&self) -> bool {
-        self.node().is_missing()
-    }
-    fn is_edited(&self) -> bool {
-        self.node().is_edited()
-    }
-    fn is_extra(&self) -> bool {
-        self.node().is_extra()
-    }
+// pub trait HasNode<'db>: Send + Debug + Clone {
+//     type Node: CSTNode<'db>;
+//     fn node(&self) -> &Self::Node;
+// }
+// impl<'db, T: HasNode<'db>> CSTNode<'db> for T {
+//     fn kind(&self) -> &'_ str {
+//         self.node().kind()
+//     }
+//     fn start_byte(&self) -> usize {
+//         self.node().start_byte()
+//     }
+//     fn end_byte(&self) -> usize {
+//         self.node().end_byte()
+//     }
+//     fn start_position(&self) -> Point<'db> {
+//         self.node().start_position()
+//     }
+//     fn end_position(&self) -> Point<'db> {
+//         self.node().end_position()
+//     }
+//     fn buffer(&self) -> &'_ Bytes {
+//         self.node().buffer()
+//     }
+//     fn kind_id(&self) -> u16 {
+//         self.node().kind_id()
+//     }
+//     fn is_named(&self) -> bool {
+//         self.node().is_named()
+//     }
+//     fn is_error(&self) -> bool {
+//         self.node().is_error()
+//     }
+//     fn is_missing(&self) -> bool {
+//         self.node().is_missing()
+//     }
+//     fn is_edited(&self) -> bool {
+//         self.node().is_edited()
+//     }
+//     fn is_extra(&self) -> bool {
+//         self.node().is_extra()
+//     }
 
-    fn id(&self) -> usize {
-        self.node().id()
-    }
-}
+//     fn id(&self) -> usize {
+//         self.node().id()
+//     }
+// }
 // impl<T: HasNode> HasChildren for T {
 //     type Child = <T::Node as HasChildren>::Child;
 //     fn child_by_field_name(&self, field_name: &str) -> Option<Self::Child> {
@@ -185,8 +189,8 @@ impl<T: HasNode> CSTNode for T {
 //         self.node().child_count()
 //     }
 // }
-pub trait HasChildren {
-    type Child: Send + Debug + Clone + CSTNode;
+pub trait HasChildren<'db> {
+    type Child: Send + Debug + Clone + CSTNode<'db>;
     /// Returns the first child with the given field name
     fn child_by_field_id(&self, field_id: u16) -> Option<Self::Child> {
         self.children_by_field_id(field_id)
@@ -237,5 +241,20 @@ pub trait HasChildren {
     /// Returns the number of children of this node
     fn child_count(&self) -> usize {
         self.children().len()
+    }
+    fn children_by_field_types(&self, field_types: &[&str]) -> Vec<Self::Child> {
+        self.children()
+            .into_iter()
+            .filter(|child| field_types.contains(&child.kind()))
+            .collect()
+    }
+    fn children_by_field_type(&self, field_type: &str) -> Vec<Self::Child> {
+        self.children_by_field_types(&[field_type])
+    }
+    fn child_by_field_type(&self, field_type: &str) -> Option<Self::Child> {
+        self.children_by_field_type(field_type).into_iter().next()
+    }
+    fn child_by_field_types(&self, field_types: &[&str]) -> Option<Self::Child> {
+        self.children_by_field_types(field_types).into_iter().next()
     }
 }

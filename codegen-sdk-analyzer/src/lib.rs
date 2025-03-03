@@ -1,14 +1,6 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test_log::test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+#![recursion_limit = "512"]
+mod database;
+mod parser;
+mod progress;
+pub use database::{CodegenDatabase, Db};
+pub use parser::{Parsed, ParsedFile, parse_file};

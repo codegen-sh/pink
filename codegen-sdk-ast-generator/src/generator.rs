@@ -1,49 +1,85 @@
 use codegen_sdk_common::language::Language;
-pub fn generate_ast(language: &Language) -> anyhow::Result<String> {
-    let content = format!(
-        "
-    #[derive(Debug, Clone)]
-    pub struct {language_struct_name}File {{
-        node: {language_name}::{root_node_name},
-        path: PathBuf,
-        pub references: References,
-        pub definitions: Definitions
-    }}
-    impl File for {language_struct_name}File {{
-        fn path(&self) -> &PathBuf {{
-            &self.path
-        }}
-        fn parse(path: &PathBuf) -> Result<Self, ParseError> {{
-            log::debug!(\"Parsing {language_name} file: {{}}\", path.display());
-            let ast = {language_name}::{language_struct_name}::parse_file(path)?;
-            let mut references = References::default();
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+fn get_definitions_impl(language: &Language) -> TokenStream {
+    if !language.tag_query.contains("@definition") {
+        return quote! {
+            pub fn definitions(self, _db: &'db dyn salsa::Database) -> (){
+            }
+        };
+    }
+    quote! {
+        #[salsa::tracked]
+        pub fn definitions(self, db: &'db dyn salsa::Database) -> Definitions<'db> {
             let mut definitions = Definitions::default();
-            ast.drive(&mut definitions);
-            ast.drive(&mut references);
-            Ok({language_struct_name}File {{ node: ast, path: path.clone(), references, definitions }})
-        }}
-    }}
-    impl HasNode for {language_struct_name}File {{
-        type Node = {language_name}::{root_node_name};
-        fn node(&self) -> &Self::Node {{
-            &self.node
-        }}
-    }}
-    ",
-        language_struct_name = language.struct_name,
-        language_name = language.name(),
-        root_node_name = language.root_node(),
-    );
-    // for (name, query) in language.definitions() {
-    //     content.push_str(&format!("
-    //     impl {language_struct_name}File {{
-    //         pub fn {name}(&self) -> {language_struct_name}File {{
-    //             {language_struct_name}File {{
-    //                 node: self.node.children().find(|node| node.type_name == \"{name}\").unwrap(),
-    //                 path: self.path.clone()
-    //             }}
-    //         }}
-    //     "));
+            if let Some(program) = self.node(db) {
+                definitions = definitions.visit_by_val_infallible(&program);
+            }
+            definitions
+        }
+    }
+}
+fn get_references_impl(language: &Language) -> TokenStream {
+    if !language.tag_query.contains("@reference") {
+        return quote! {
+            pub fn references(self, _db: &'db dyn salsa::Database) -> (){
+            }
+        };
+    }
+    quote! {
+        #[salsa::tracked]
+        pub fn references(self, db: &'db dyn salsa::Database) -> References<'db> {
+            let mut references = References::default();
+            if let Some(program) = self.node(db) {
+                references = references.visit_by_val_infallible(&program);
+            }
+            references
+        }
+    }
+}
+pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
+    let language_struct_name = format_ident!("{}File", language.struct_name);
+    let language_name_str = language.name();
+    let definitions_impl = get_definitions_impl(language);
+    let references_impl = get_references_impl(language);
+    let program_id = format_ident!("{}", language.root_node());
+    let content = quote! {
+    #[salsa::tracked]
+    pub struct #language_struct_name<'db> {
+        #[return_ref]
+        node: Option<crate::cst::#program_id<'db>>,
+        #[id]
+        pub path: PathBuf,
+    }
+    // impl<'db> File for {language_struct_name}File<'db> {{
+    //     fn path(&self) -> &PathBuf {{
+    //         &self.path(db)
+    //     }}
+    // }}
+    pub fn parse(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
+        log::debug!("Parsing {} file: {}", input.path(db).display(), #language_name_str);
+        let ast = crate::cst::parse_program_raw(db, input.contents(db));
+        #language_struct_name::new(db, ast, input.path(db).clone())
+    }
+    #[salsa::tracked]
+    pub fn parse_query(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
+        parse(db, input)
+    }
+
+
+    #[salsa::tracked]
+    impl<'db> #language_struct_name<'db> {
+        #definitions_impl
+        #references_impl
+    }
+    // impl<'db> HasNode for {language_struct_name}File<'db> {
+    //     type Node = {language_name}::{root_node_name}<'db>;
+    //     fn node(&self) -> &Self::Node {
+    //         &self.node
+    //     }
     // }
+
+    };
+
     Ok(content)
 }

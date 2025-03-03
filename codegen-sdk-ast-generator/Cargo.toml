@@ -5,14 +5,18 @@ edition = "2024"
 
 [dependencies]
 codegen-sdk-common = { workspace = true }
-codegen-sdk-cst = { workspace = true , features = ["ts_query"]}
+codegen-sdk-cst = { workspace = true }
 anyhow = { workspace = true }
 quote = { workspace = true }
 proc-macro2 = { workspace = true }
 log = { workspace = true }
 derive_more = { workspace = true }
 codegen-sdk-cst-generator = { workspace = true }
+codegen-sdk-ts_query = { workspace = true }
 convert_case = { workspace = true }
+salsa = { workspace = true }
+syn = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 insta = { workspace = true }
+codegen-sdk-typescript = {workspace = true}

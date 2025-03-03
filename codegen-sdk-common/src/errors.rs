@@ -1,5 +1,6 @@
 use std::backtrace::Backtrace;
 
+use salsa::Accumulator;
 use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ParseError {
@@ -30,4 +31,17 @@ pub enum ParseError {
     },
     #[error("Failed to serialize: {0}")]
     Serialize(#[from] rkyv::rancor::Error),
+}
+#[salsa::accumulator]
+#[allow(dead_code)] // Debug impl uses them
+struct AccumulatedParseError {
+    message: String,
+}
+impl ParseError {
+    pub fn report(self, db: &dyn salsa::Database) {
+        AccumulatedParseError {
+            message: self.to_string(),
+        }
+        .accumulate(db);
+    }
 }

@@ -1,21 +1,21 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::Point;
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Archive, Deserialize, Serialize)]
-pub struct Range {
-    start: Point,
-    end: Point,
+#[salsa::interned]
+#[derive(Archive, Deserialize, Serialize)]
+pub struct Range<'db> {
+    start: Point<'db>,
+    end: Point<'db>,
 }
-impl From<tree_sitter::Range> for Range {
-    fn from(value: tree_sitter::Range) -> Self {
-        Self {
-            start: value.start_point.into(),
-            end: value.end_point.into(),
-        }
+impl<'db> Range<'db> {
+    pub fn from_points(db: &'db dyn salsa::Database, start: Point<'db>, end: Point<'db>) -> Self {
+        Self::new(db, start, end)
     }
-}
-impl Range {
-    pub fn new(start: Point, end: Point) -> Self {
-        Self { start, end }
+    pub fn from_tree_sitter(db: &'db dyn salsa::Database, value: tree_sitter::Range) -> Self {
+        Self::from_points(
+            db,
+            Point::from(db, value.start_point),
+            Point::from(db, value.end_point),
+        )
     }
 }

@@ -9,26 +9,31 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::constants::TYPE_NAME;
+use crate::Config;
+
 #[derive(Debug)]
 pub struct Field<'a> {
-    raw: &'a FieldDefinition,
+    raw: FieldDefinition,
     name: String,
     node_name: String,
     language: &'a Language,
+    config: Config,
 }
 
 impl<'a> Field<'a> {
     pub fn new(
         node_name: &str,
         name: &str,
-        raw: &'a FieldDefinition,
+        raw: FieldDefinition,
         language: &'a Language,
+        config: Config,
     ) -> Self {
         Self {
             node_name: node_name.to_string(),
             name: name.to_string(),
             raw,
             language,
+            config,
         }
     }
     fn field_id(&self) -> u16 {
@@ -56,15 +61,15 @@ impl<'a> Field<'a> {
         let original_name = &self.name;
         if self.raw.multiple {
             quote! {
-                #field_name_ident: get_multiple_children_by_field_name(&node, #original_name, buffer)?
+                #field_name_ident: get_multiple_children_by_field_name(db, &node, #original_name, buffer)?
             }
         } else if !self.raw.required {
             quote! {
-                #field_name_ident: Box::new(get_optional_child_by_field_name(&node, #original_name, buffer)?)
+                #field_name_ident: Box::new(get_optional_child_by_field_name(db, &node, #original_name, buffer)?)
             }
         } else {
             quote! {
-                #field_name_ident: Box::new(get_child_by_field_name(&node, #original_name, buffer)?)
+                #field_name_ident: Box::new(get_child_by_field_name(db,&node, #original_name, buffer)?)
             }
         }
     }
@@ -156,20 +161,27 @@ impl<'a> Field<'a> {
     pub fn get_struct_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
         let converted_type_name = format_ident!("{}", self.type_name());
-        if self.raw.multiple {
+        let bounds = if self.config.serialize {
             quote! {
                 #[rkyv(omit_bounds)]
-                pub #field_name_ident: Vec<#converted_type_name>
+            }
+        } else {
+            quote! {}
+        };
+        if self.raw.multiple {
+            quote! {
+                #bounds
+                pub #field_name_ident: Vec<#converted_type_name<'db>>
             }
         } else if !self.raw.required {
             quote! {
-                #[rkyv(omit_bounds)]
-                pub #field_name_ident: Box<Option<#converted_type_name>>
+                #bounds
+                pub #field_name_ident: Box<Option<#converted_type_name<'db>>>
             }
         } else {
             quote! {
-                #[rkyv(omit_bounds)]
-                pub #field_name_ident: Box<#converted_type_name>
+                #bounds
+                pub #field_name_ident: Box<#converted_type_name<'db>>
             }
         }
     }
@@ -219,7 +231,13 @@ mod tests {
     fn test_field_normalized_name() {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
-        let field = Field::new("node", "field", &field_definition, &language);
+        let field = Field::new(
+            "node",
+            "field",
+            field_definition,
+            &language,
+            Config::default(),
+        );
         assert_eq!(field.normalized_name(), "Field");
     }
 
@@ -231,7 +249,13 @@ mod tests {
             true,
         );
         let language = get_language_no_nodes();
-        let field = Field::new("test_node", "test_field", &field_definition, &language);
+        let field = Field::new(
+            "test_node",
+            "test_field",
+            field_definition.clone(),
+            &language,
+            Config::default(),
+        );
         assert_eq!(
             field.types(),
             field_definition.types.iter().collect::<Vec<_>>()
@@ -246,7 +270,13 @@ mod tests {
             true,
         );
         let language = get_language_no_nodes();
-        let field = Field::new("Node", "field", &field_definition, &language);
+        let field = Field::new(
+            "Node",
+            "field",
+            field_definition,
+            &language,
+            Config::default(),
+        );
         assert_eq!(field.type_name(), "NodeField");
     }
 
@@ -254,17 +284,35 @@ mod tests {
     fn test_get_struct_field() {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
-        let field = Field::new("test_node", "test_field", &field_definition, &language);
+        let field = Field::new(
+            "test_node",
+            "test_field",
+            field_definition,
+            &language,
+            Config::default(),
+        );
         insta::assert_debug_snapshot!(snapshot_tokens(&field.get_struct_field()));
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
-        let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
+        let optional_field = Field::new(
+            "test_node",
+            "test_field",
+            optional_definition,
+            &language,
+            Config::default(),
+        );
         insta::assert_debug_snapshot!(snapshot_tokens(&optional_field.get_struct_field()));
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
-        let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
+        let multiple_field = Field::new(
+            "test_node",
+            "test_field",
+            multiple_definition,
+            &language,
+            Config::default(),
+        );
         insta::assert_debug_snapshot!(snapshot_tokens(&multiple_field.get_struct_field()));
     }
 
@@ -272,17 +320,35 @@ mod tests {
     fn test_get_constructor_field() {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
-        let field = Field::new("test_node", "test_field", &field_definition, &language);
+        let field = Field::new(
+            "test_node",
+            "test_field",
+            field_definition,
+            &language,
+            Config::default(),
+        );
         insta::assert_debug_snapshot!(snapshot_tokens(&field.get_constructor_field()));
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
-        let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
+        let optional_field = Field::new(
+            "test_node",
+            "test_field",
+            optional_definition,
+            &language,
+            Config::default(),
+        );
         insta::assert_debug_snapshot!(snapshot_tokens(&optional_field.get_constructor_field()));
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
-        let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
+        let multiple_field = Field::new(
+            "test_node",
+            "test_field",
+            multiple_definition,
+            &language,
+            Config::default(),
+        );
         insta::assert_debug_snapshot!(snapshot_tokens(&multiple_field.get_constructor_field()));
     }
 
@@ -290,7 +356,13 @@ mod tests {
     fn test_get_children_field() {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
-        let field = Field::new("test_node", "test_field", &field_definition, &language);
+        let field = Field::new(
+            "test_node",
+            "test_field",
+            field_definition,
+            &language,
+            Config::default(),
+        );
 
         assert_eq!(
             field.get_children_field(true).to_string(),
@@ -299,7 +371,13 @@ mod tests {
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
-        let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
+        let optional_field = Field::new(
+            "test_node",
+            "test_field",
+            optional_definition,
+            &language,
+            Config::default(),
+        );
 
         assert_eq!(
             optional_field.get_children_field(true).to_string(),
@@ -311,7 +389,13 @@ mod tests {
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
-        let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
+        let multiple_field = Field::new(
+            "test_node",
+            "test_field",
+            multiple_definition,
+            &language,
+            Config::default(),
+        );
 
         assert_eq!(
             multiple_field.get_children_field(true).to_string(),
@@ -323,7 +407,13 @@ mod tests {
     fn test_get_children_by_field_name_field() {
         let field_definition = create_test_field_definition("test_type", false, true);
         let language = get_language_no_nodes();
-        let field = Field::new("test_node", "test_field", &field_definition, &language);
+        let field = Field::new(
+            "test_node",
+            "test_field",
+            field_definition,
+            &language,
+            Config::default(),
+        );
 
         assert_eq!(
             field.get_children_by_field_name_field(true).to_string(),
@@ -332,7 +422,13 @@ mod tests {
 
         // Test optional field
         let optional_definition = create_test_field_definition("test_type", false, false);
-        let optional_field = Field::new("test_node", "test_field", &optional_definition, &language);
+        let optional_field = Field::new(
+            "test_node",
+            "test_field",
+            optional_definition,
+            &language,
+            Config::default(),
+        );
 
         assert_eq!(
             optional_field.get_children_by_field_name_field(true).to_string(),
@@ -341,7 +437,13 @@ mod tests {
 
         // Test multiple field
         let multiple_definition = create_test_field_definition("test_type", true, true);
-        let multiple_field = Field::new("test_node", "test_field", &multiple_definition, &language);
+        let multiple_field = Field::new(
+            "test_node",
+            "test_field",
+            multiple_definition,
+            &language,
+            Config::default(),
+        );
 
         assert_eq!(
             multiple_field.get_children_by_field_name_field(true).to_string(),

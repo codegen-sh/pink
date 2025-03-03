@@ -6,38 +6,15 @@ edition = "2024"
 [dependencies]
 tree-sitter = { workspace = true }
 bytes = { workspace = true }
-codegen-sdk-common = { workspace = true }
-codegen-sdk-macros = { path = "../codegen-sdk-macros" }
-derive_more = { workspace = true }
+codegen-sdk-common = { path = "../codegen-sdk-common" }
 convert_case = { workspace = true }
 rkyv = { workspace = true }
-subenum = "1.1.2"
 log = { workspace = true }
-enum_delegate = { workspace = true }
-derive-visitor = { workspace = true }
-[build-dependencies]
-codegen-sdk-cst-generator = { path = "../codegen-sdk-cst-generator"}
-codegen-sdk-common = { workspace = true }
-rayon = { workspace = true }
-env_logger = { workspace = true }
-log = { workspace = true }
+salsa = { workspace = true }
+dashmap = "6.1.0"
 [dev-dependencies]
 tempfile = { workspace = true }
 test-log = { workspace = true }
 
 [features]
-python = [ "codegen-sdk-common/python"]
-typescript = [ "codegen-sdk-common/typescript"]
-tsx = [ "codegen-sdk-common/typescript"]
-jsx = [ "codegen-sdk-common/typescript"]
-javascript = [ "codegen-sdk-common/typescript"]
-json = [ "codegen-sdk-common/json"]
-java = [ "codegen-sdk-common/java"]
-rust = [ "codegen-sdk-common/rust"]
-go = [ "codegen-sdk-common/go"]
-ruby = [ "codegen-sdk-common/ruby"]
-yaml = [ "codegen-sdk-common/yaml"]
-toml = [ "codegen-sdk-common/toml"]
-markdown = [ "codegen-sdk-common/markdown"]
-ts_query = [ "codegen-sdk-common/ts_query"]
-default = ["json", "ts_query", "toml"]
+serialization = ["codegen-sdk-common/serialization"]

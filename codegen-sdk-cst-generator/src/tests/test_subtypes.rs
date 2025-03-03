@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use codegen_sdk_common::parser::{Fields, Node, TypeDefinition};
 
-use crate::{generate_cst, test_util::get_language};
+use crate::{Config, generate_cst, test_util::get_language};
 
 #[test_log::test]
 fn test_basic_subtypes() {
@@ -44,7 +44,7 @@ fn test_basic_subtypes() {
     ];
 
     let language = get_language(nodes);
-    let output = generate_cst(&language).unwrap();
+    let output = generate_cst(&language, Config::default()).unwrap();
     insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }
 
@@ -112,7 +112,7 @@ fn test_subtypes_with_fields() {
     ];
 
     let language = get_language(nodes);
-    let output = generate_cst(&language).unwrap();
+    let output = generate_cst(&language, Config::default()).unwrap();
     insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }
 
@@ -194,6 +194,6 @@ fn test_deeply_nested_subtypes() {
         },
     ];
     let language = get_language(nodes);
-    let output = generate_cst(&language).unwrap();
+    let output = generate_cst(&language, Config::default()).unwrap();
     insta::assert_debug_snapshot!(crate::test_util::snapshot_string(&output));
 }

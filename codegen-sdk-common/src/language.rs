@@ -1,4 +1,4 @@
-use std::num::NonZeroU16;
+use std::{hash::Hash, num::NonZeroU16, sync::Arc};
 
 use convert_case::{Case, Casing};
 use mockall::automock;
@@ -9,7 +9,7 @@ use crate::{
     naming::normalize_type_name,
     parser::{Node, parse_node_types},
 };
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Language {
     name: &'static str,
     pub struct_name: &'static str,
@@ -17,8 +17,14 @@ pub struct Language {
     pub file_extensions: &'static [&'static str],
     tree_sitter_language: tree_sitter::Language,
     pub tag_query: &'static str,
-    nodes: Vec<Node>,
+    nodes: Vec<Arc<Node>>,
 }
+impl Hash for Language {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
 #[automock]
 impl Language {
     pub fn new(
@@ -29,7 +35,10 @@ impl Language {
         tree_sitter_language: tree_sitter::Language,
         tag_query: &'static str,
     ) -> anyhow::Result<Self> {
-        let nodes = parse_node_types(node_types)?;
+        let nodes = parse_node_types(node_types)?
+            .into_iter()
+            .map(|node| Arc::new(node))
+            .collect();
         Ok(Self {
             name,
             struct_name,
@@ -45,7 +54,7 @@ impl Language {
         parser.set_language(&self.tree_sitter_language)?;
         parser.parse(content, None).ok_or(ParseError::Miscelaneous)
     }
-    pub fn nodes(&self) -> &Vec<Node> {
+    pub fn nodes(&self) -> &Vec<Arc<Node>> {
         &self.nodes
     }
     pub fn root_node(&self) -> String {
@@ -71,7 +80,10 @@ impl Language {
     pub fn name(&self) -> &'static str {
         self.name
     }
-    pub fn node_for_struct_name(&self, struct_name: &str) -> Option<Node> {
+    pub fn struct_name(&self) -> &'static str {
+        self.struct_name
+    }
+    pub fn node_for_struct_name(&self, struct_name: &str) -> Option<Arc<Node>> {
         self.nodes
             .iter()
             .find(|node| normalize_type_name(&node.type_name, node.named) == struct_name)

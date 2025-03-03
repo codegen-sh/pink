@@ -1,3 +1,5 @@
+use std::{collections::HashMap, sync::Arc};
+
 #[double]
 use codegen_sdk_common::language::Language;
 use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
@@ -6,21 +8,36 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use super::field::Field;
-use crate::generator::utils::{get_comment_type, get_serialize_bounds};
+use crate::{
+    Config,
+    generator::utils::{get_comment_type, get_serialize_bounds},
+};
 #[derive(Debug)]
 pub struct Node<'a> {
-    raw: &'a codegen_sdk_common::parser::Node,
+    raw: Arc<codegen_sdk_common::parser::Node>,
     pub subenums: Vec<String>,
     pub fields: Vec<Field<'a>>,
     language: &'a Language,
+    config: Config,
+    normalized_name: String,
 }
 impl<'a> Node<'a> {
-    pub fn new(raw: &'a codegen_sdk_common::parser::Node, language: &'a Language) -> Self {
+    pub fn new(
+        raw: Arc<codegen_sdk_common::parser::Node>,
+        language: &'a Language,
+        config: Config,
+    ) -> Self {
         let mut fields = Vec::new();
         let normalized_name = normalize_type_name(&raw.type_name, raw.named);
         if let Some(raw_fields) = &raw.fields {
             for (name, field) in raw_fields.fields.iter() {
-                fields.push(Field::new(&normalized_name, name, field, language));
+                fields.push(Field::new(
+                    &normalized_name,
+                    name,
+                    field.clone(),
+                    language,
+                    config.clone(),
+                ));
             }
         }
         fields.sort_by_key(|f| f.normalized_name().clone());
@@ -29,6 +46,8 @@ impl<'a> Node<'a> {
             subenums: Vec::new(),
             fields,
             language,
+            config: config,
+            normalized_name,
         }
     }
     pub fn kind(&self) -> &str {
@@ -38,7 +57,7 @@ impl<'a> Node<'a> {
         self.language.kind_id(&self.raw.type_name, self.raw.named)
     }
     pub fn normalize_name(&self) -> String {
-        normalize_type_name(&self.raw.type_name, self.raw.named)
+        self.normalized_name.clone()
     }
     pub fn type_definition(&self) -> TypeDefinition {
         TypeDefinition {
@@ -51,21 +70,22 @@ impl<'a> Node<'a> {
             self.subenums.push(subenum);
         }
     }
-    pub fn get_enum_tokens(&self) -> TokenStream {
+    pub fn get_enum_tokens(&self, subenum_name_map: &HashMap<String, String>) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let subenum_names = &self
             .subenums
             .iter()
-            .map(|s| format_ident!("{}", normalize_type_name(s, true)))
+            .map(|s| subenum_name_map.get(s).unwrap_or(&s))
+            .map(|s| format_ident!("{}", s))
             .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
-                #name(#name)
+                #name(#name<'db1>)
             }
         } else {
             quote! {
                 #[subenum(#(#subenum_names), *)]
-                #name(#name)
+                #name(#name<'db1>)
             }
         }
     }
@@ -99,9 +119,16 @@ impl<'a> Node<'a> {
     fn get_children_field(&self) -> TokenStream {
         if self.has_children() {
             let children_type_name = format_ident!("{}", self.children_struct_name());
+            let bounds = if self.config.serialize {
+                quote! {
+                    #[rkyv(omit_bounds)]
+                }
+            } else {
+                quote! {}
+            };
             quote! {
-                #[rkyv(omit_bounds)]
-                pub children: Vec<#children_type_name>,
+                #bounds
+                pub _children: Vec<#children_type_name<'db>>,
             }
         } else {
             quote! {}
@@ -117,38 +144,40 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
         let children_field = self.get_children_field();
         let name = format_ident!("{}", self.normalize_name());
-        let serialize_bounds = get_serialize_bounds();
         let trait_impls = self.get_trait_implementations();
+        let derives = if self.config.serialize {
+            let serialize_bounds = get_serialize_bounds();
+            quote! {
+                #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive, Eq, PartialEq, salsa::Update)]
+                #serialize_bounds
+            }
+        } else {
+            quote! {
+                #[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
 
+            }
+        };
         quote! {
-            #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive)]
-            #serialize_bounds
-            pub struct #name {
+            #derives
+            pub struct #name<'db> {
                 #[drive(skip)]
                 start_byte: usize,
                 #[drive(skip)]
                 end_byte: usize,
                 #[drive(skip)]
                 _kind: std::string::String,
-                #[debug("[{},{}]", start_position.row, start_position.column)]
                 #[drive(skip)]
-                start_position: Point,
-                #[debug("[{},{}]", end_position.row, end_position.column)]
+                start_position: Point<'db>,
                 #[drive(skip)]
-                end_position: Point,
-                #[debug(ignore)]
+                end_position: Point<'db>,
                 #[drive(skip)]
                 buffer: Arc<Bytes>,
-                #[debug(ignore)]
                 #[drive(skip)]
                 kind_id: u16,
-                #[debug(ignore)]
                 #[drive(skip)]
                 is_error: bool,
-                #[debug(ignore)]
                 #[drive(skip)]
                 named: bool,
-                #[debug(ignore)]
                 #[drive(skip)]
                 id: usize,
                 #children_field
@@ -161,7 +190,7 @@ impl<'a> Node<'a> {
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
             quote! {
-                children: named_children_without_field_names(node, buffer)?
+                _children: named_children_without_field_names(db, node, buffer)?
             }
         } else {
             quote! {}
@@ -176,34 +205,43 @@ impl<'a> Node<'a> {
         constructor_fields.push(self.get_children_constructor());
 
         quote! {
-            impl FromNode for #name {
-                fn from_node(node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+            impl<'db> FromNode<'db> for #name<'db> {
+                fn from_node(db: &'db dyn salsa::Database, node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+                    let start_position = Point::from(db, node.start_position());
+                    let end_position = Point::from(db, node.end_position());
                     Ok(Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
                         _kind: node.kind().to_string(),
-                        start_position: node.start_position().into(),
-                        end_position: node.end_position().into(),
+                        start_position: start_position,
+                        end_position: end_position,
                         buffer: buffer.clone(),
                         kind_id: node.kind_id(),
                         is_error: node.is_error(),
                         named: node.is_named(),
                         id: node.id(),
                         #(#constructor_fields),*
-                    })
+                })
                 }
             }
         }
     }
     fn get_children_impl(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
-        let children_type_name = format_ident!("{}", self.children_struct_name());
+
+        let children_type_name = self.children_struct_name();
+        let children_type_ident = format_ident!("{}", children_type_name);
+        let mut children_type_generic = quote! {#children_type_ident};
+        if children_type_name != "Self" {
+            children_type_generic = quote! {#children_type_generic<'db1>};
+        }
+
         let children_field = self.get_children_field_impl();
         let children_by_field_name = self.get_children_by_field_name_impl();
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
-            impl HasChildren for #name {
-                type Child = #children_type_name;
+            impl<'db1> HasChildren<'db1> for #name<'db1> {
+                type Child = #children_type_generic;
                 #children_field
                 #children_by_field_name
                 #children_by_field_id
@@ -215,7 +253,7 @@ impl<'a> Node<'a> {
         let children_impl = self.get_children_impl();
 
         quote! {
-            impl CSTNode for #name {
+            impl<'db> CSTNode<'db> for #name<'db> {
                 fn kind(&self) -> &str {
                     &self._kind
                 }
@@ -225,10 +263,10 @@ impl<'a> Node<'a> {
                 fn end_byte(&self) -> usize {
                     self.end_byte
                 }
-                fn start_position(&self) -> Point {
+                fn start_position(&self) -> Point<'db> {
                     self.start_position
                 }
-                fn end_position(&self) -> Point {
+                fn end_position(&self) -> Point<'db> {
                     self.end_position
                 }
                 fn buffer(&self) -> &Bytes {
@@ -248,6 +286,11 @@ impl<'a> Node<'a> {
                 }
             }
             #children_impl
+            impl<'db> std::hash::Hash for #name<'db> {
+                fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                    self.id.hash(state);
+                }
+            }
         }
     }
     fn get_children_field_impl(&self) -> TokenStream {
@@ -267,7 +310,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self.children.iter().cloned().collect()
+                self._children.iter().cloned().collect()
             }
         } else {
             quote! {
@@ -386,13 +429,16 @@ mod tests {
     fn test_get_enum_tokens() {
         let base_node = create_test_node("test");
         let language = get_language_no_nodes();
-        let mut node = Node::new(&base_node, &language);
-
-        let tokens = node.get_enum_tokens();
+        let mut node = Node::new(Arc::new(base_node), &language, Config::default());
+        let mut subenum_name_map = HashMap::new();
+        for subenum in &node.subenums {
+            subenum_name_map.insert(subenum.clone(), normalize_type_name(subenum, true));
+        }
+        let tokens = node.get_enum_tokens(&subenum_name_map);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
 
         node.add_subenum("subenum".to_string());
-        let tokens = node.get_enum_tokens();
+        let tokens = node.get_enum_tokens(&subenum_name_map);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
     }
 
@@ -400,7 +446,7 @@ mod tests {
     fn test_get_struct_tokens_simple() {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -421,7 +467,7 @@ mod tests {
             )],
         );
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -467,7 +513,7 @@ mod tests {
         );
         let nodes = vec![raw_node.clone()];
         let language = get_language(nodes);
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -476,7 +522,7 @@ mod tests {
         let raw_node =
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -484,7 +530,7 @@ mod tests {
     fn test_get_struct_tokens_with_single_child_type() {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
     }
 
@@ -492,7 +538,7 @@ mod tests {
     fn test_get_trait_implementations() {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_trait_implementations()));
     }
 
@@ -513,7 +559,7 @@ mod tests {
             )],
         );
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_children_field_impl()));
     }
 
@@ -534,7 +580,7 @@ mod tests {
             )],
         );
         let language = get_language_no_nodes();
-        let node = Node::new(&raw_node, &language);
+        let node = Node::new(Arc::new(raw_node), &language, Config::default());
         insta::assert_debug_snapshot!(snapshot_tokens(&node.get_children_by_field_name_impl()));
     }
 }

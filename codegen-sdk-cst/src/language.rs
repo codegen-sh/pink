@@ -6,23 +6,45 @@ use codegen_sdk_common::{
     language::Language,
     traits::{CSTNode, FromNode},
 };
+
 pub trait CSTLanguage {
-    type Program: CSTNode + FromNode + Send;
+    type Program<'db1>: CSTNode<'db1> + FromNode<'db1> + Send;
     fn language() -> &'static Language;
-    fn parse(content: &str) -> Result<Self::Program, ParseError> {
-        let buffer = Bytes::from(content.as_bytes().to_vec());
-        let tree = Self::language().parse_tree_sitter(content)?;
-        if tree.root_node().has_error() {
-            Err(ParseError::SyntaxError)
-        } else {
-            let buffer = Arc::new(buffer);
-            Self::Program::from_node(tree.root_node(), &buffer)
+    fn parse<'db>(db: &'db dyn salsa::Database, content: String)
+    -> &'db Option<Self::Program<'db>>;
+    fn parse_file_from_cache<'db>(
+        db: &'db dyn salsa::Database,
+        file_path: &PathBuf,
+        #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
+    ) -> Result<&'db Option<Self::Program<'db>>, ParseError> {
+        #[cfg(feature = "serialization")]
+        {
+            let serialized_path = cache.get_path(file_path);
+            if serialized_path.exists() {
+                let parsed = cache.read_entry::<Self::Program<'db>>(&serialized_path)?;
+                return Ok(Some(parsed));
+            }
         }
+        Ok(&None)
     }
-    fn parse_file(file_path: &PathBuf) -> Result<Self::Program, ParseError> {
+    fn parse_file<'db>(
+        db: &'db dyn salsa::Database,
+        file_path: &PathBuf,
+        #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
+    ) -> Result<&'db Self::Program<'db>, ParseError> {
+        if let Some(parsed) = Self::parse_file_from_cache(
+            db,
+            file_path,
+            #[cfg(feature = "serialization")]
+            cache,
+        )? {
+            return Ok(parsed);
+        }
         let content = std::fs::read_to_string(file_path)?;
-        let parsed = Self::parse(&content)?;
-        Ok(parsed)
+        if let Some(parsed) = Self::parse(db, content) {
+            return Ok(parsed);
+        }
+        Err(ParseError::SyntaxError)
     }
 
     fn should_parse(file_path: &PathBuf) -> Result<bool, ParseError> {

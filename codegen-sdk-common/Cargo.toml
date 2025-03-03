@@ -24,21 +24,22 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 convert_case = { workspace = true }
 tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", optional = true}
-tree-sitter-language = "0.1.4"
 phf = { version = "0.11.3", features = ["macros"] }
-rkyv = { workspace = true }
+rkyv = { workspace = true  }
 xdg = "2.5.2"
 base64 = "0.22.1"
 buildid = "1.0.3"
 sha2 = "0.10.8"
-zstd = { version = "0.13.2", features = ["zstdmt"] }
-enum_delegate = { workspace = true }
+zstd = { version = "0.13.2", features = ["zstdmt"], optional = true }
+ambassador = { workspace = true }
 mockall = { workspace = true }
 syn = { workspace = true }
 prettyplease = { workspace = true }
+salsa = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 [features]
+serialization = ["dep:zstd"]
 python = ["dep:tree-sitter-python"]
 json = ["dep:tree-sitter-json"]
 java = ["dep:tree-sitter-java"]

@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap, VecDeque},
+    sync::Arc,
+};
 
 #[double]
 use codegen_sdk_common::language::Language;
@@ -6,31 +9,40 @@ use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::Ident;
 
 use super::node::Node;
-use crate::generator::{
-    constants::TYPE_NAME,
-    utils::{get_comment_type, get_from_node},
+use crate::{
+    Config,
+    generator::{
+        constants::TYPE_NAME,
+        utils::{get_comment_type, get_from_node, get_from_type},
+    },
 };
 #[derive(Debug)]
 pub struct State<'a> {
     pub subenums: BTreeSet<String>,
+    config: Config,
     nodes: BTreeMap<String, Node<'a>>,
 }
 impl<'a> State<'a> {
-    pub fn new(language: &'a Language) -> Self {
+    pub fn new(language: &'a Language, config: Config) -> Self {
         let mut nodes = BTreeMap::new();
         let mut subenums = BTreeSet::new();
         let raw_nodes = language.nodes();
         for raw_node in raw_nodes {
             if raw_node.subtypes.is_empty() {
-                let node = Node::new(raw_node, language);
+                let node = Node::new(raw_node.clone(), language, config.clone());
                 nodes.insert(node.normalize_name(), node);
             } else {
                 subenums.insert(raw_node.type_name.clone());
             }
         }
-        let mut ret = Self { nodes, subenums };
+        let mut ret = Self {
+            nodes,
+            subenums,
+            config,
+        };
         let mut subenums = VecDeque::new();
         for raw_node in raw_nodes.iter().filter(|n| !n.subtypes.is_empty()) {
             subenums.push_back(raw_node.clone());
@@ -47,11 +59,44 @@ impl<'a> State<'a> {
                 ret.add_subenum(&raw_node.type_name, &raw_node.subtypes.iter().collect());
             }
         }
+
         log::info!("Adding child subenums");
         ret.add_child_subenums();
+        log::info!("Adding missing fields");
+        ret.add_missing_fields(language);
         log::info!("Adding field subenums");
         ret.add_field_subenums();
         ret
+    }
+    fn add_missing_fields(&mut self, language: &'a Language) {
+        let mut to_insert = Vec::new();
+        for node in self.nodes.values() {
+            for field in &node.fields {
+                for type_def in field.types() {
+                    let name = type_def.normalize();
+                    if !self.nodes.contains_key(&name)
+                        && !self.subenums.contains(&type_def.type_name)
+                    {
+                        let node = codegen_sdk_common::parser::Node {
+                            type_name: type_def.type_name.clone(),
+                            subtypes: vec![],
+                            named: type_def.named,
+                            root: false,
+                            fields: None,
+                            children: None,
+                        };
+                        to_insert.push((name, node));
+                    }
+                }
+            }
+        }
+        to_insert.dedup_by_key(|(name, _)| name.clone());
+        for (name, node) in to_insert {
+            self.nodes.insert(
+                name,
+                Node::new(Arc::new(node), language, self.config.clone()),
+            );
+        }
     }
     fn add_child_subenums(&mut self) {
         let keys = self.nodes.keys().cloned().collect::<Vec<_>>();
@@ -127,7 +172,7 @@ impl<'a> State<'a> {
                 variant_map.insert(
                     node.kind_id(),
                     quote! {
-                        Ok(Self::#variant_name(#variant_name::from_node(node, buffer)?))
+                        Ok(Self::#variant_name(#variant_name::from_node(db, node, buffer)?))
                     },
                 );
             }
@@ -144,8 +189,13 @@ impl<'a> State<'a> {
         let mut enum_tokens = Vec::new();
         let mut from_tokens = TokenStream::new();
         let mut subenums = Vec::new();
+        let mut subenum_name_map = HashMap::new();
+        for name in self.subenums.iter() {
+            subenum_name_map.insert(name.clone(), normalize_type_name(name, true));
+        }
         for node in self.nodes.values() {
-            enum_tokens.push(node.get_enum_tokens());
+            enum_tokens.push(node.get_enum_tokens(&subenum_name_map));
+            from_tokens.extend_one(get_from_type(&node.normalize_name()));
         }
         for subenum in self.subenums.iter() {
             assert!(
@@ -159,8 +209,14 @@ impl<'a> State<'a> {
         let subenum_tokens = if !subenums.is_empty() {
             subenums.sort();
             subenums.dedup();
-            quote! {
-                #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
+            if self.config.serialize {
+                quote! {
+                    #[subenum(#(#subenums(derive(Archive, Deserialize, Serialize))),*)]
+                }
+            } else {
+                quote! {
+                    #[subenum(#(#subenums),*)]
+                }
             }
         } else {
             quote! {}
@@ -168,9 +224,11 @@ impl<'a> State<'a> {
         let enum_name = format_ident!("{}", TYPE_NAME);
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone, Drive)]
-        #[enum_delegate::implement(CSTNode)]
-        pub enum #enum_name {
+        #[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+        #[delegate(
+            CSTNode<'db1>
+        )]
+        pub enum #enum_name<'db1> {
                 #(#enum_tokens),*
             }
             #from_tokens
@@ -204,6 +262,18 @@ impl<'a> State<'a> {
         }
         nodes
     }
+    pub fn get_node_struct_names(&self) -> Vec<Ident> {
+        self.nodes
+            .values()
+            .map(|node| format_ident!("{}", node.normalize_name()))
+            .collect()
+    }
+    pub fn get_subenum_struct_names(&self) -> Vec<Ident> {
+        self.subenums
+            .iter()
+            .map(|s| format_ident!("{}", normalize_type_name(s, true)))
+            .collect()
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -224,7 +294,7 @@ mod tests {
         };
         let nodes = vec![node];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -269,7 +339,7 @@ mod tests {
         };
         let nodes = vec![child, child_two, node];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -317,7 +387,7 @@ mod tests {
         };
         let nodes = vec![definition, class, function];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
@@ -365,9 +435,51 @@ mod tests {
         };
         let nodes = vec![node_a, node_b, node_c];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let enum_tokens = state.get_enum();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
+    }
+    #[test_log::test]
+    fn test_add_field_subenums_missing_node() {
+        let node_a = codegen_sdk_common::parser::Node {
+            type_name: "node_a".to_string(),
+            subtypes: vec![],
+            named: false,
+            root: false,
+            fields: None,
+            children: None,
+        };
+        let field = codegen_sdk_common::parser::FieldDefinition {
+            types: vec![
+                TypeDefinition {
+                    type_name: "node_a".to_string(),
+                    named: false,
+                },
+                TypeDefinition {
+                    type_name: "node_b".to_string(),
+                    named: true,
+                },
+            ],
+            multiple: true,
+            required: false,
+        };
+        let node_c = codegen_sdk_common::parser::Node {
+            type_name: "node_c".to_string(),
+            subtypes: vec![],
+            named: true,
+            root: false,
+            fields: Some(codegen_sdk_common::parser::Fields {
+                fields: HashMap::from([("field".to_string(), field)]),
+            }),
+            children: None,
+        };
+        let nodes = vec![node_a, node_c];
+        let language = get_language(nodes);
+        let state = State::new(&language, Config::default());
+        let enum_tokens = state.get_enum();
+        let struct_tokens = state.get_structs();
+        insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
+        insta::assert_debug_snapshot!(snapshot_tokens(&struct_tokens));
     }
     #[test_log::test]
     fn test_get_structs() {
@@ -381,7 +493,7 @@ mod tests {
         };
         let nodes = vec![node];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
         let struct_tokens = state.get_structs();
         insta::assert_debug_snapshot!(snapshot_tokens(&struct_tokens));
     }
@@ -422,7 +534,7 @@ mod tests {
         };
         let nodes = vec![node_a, node_b, parent];
         let language = get_language(nodes);
-        let state = State::new(&language);
+        let state = State::new(&language, Config::default());
 
         let variants = state.get_variants("parent");
         assert_eq!(
@@ -455,7 +567,7 @@ mod tests {
         };
         let nodes = vec![node_a];
         let language = get_language(nodes);
-        let mut state = State::new(&language);
+        let mut state = State::new(&language, Config::default());
 
         state.add_subenum(
             "TestEnum",

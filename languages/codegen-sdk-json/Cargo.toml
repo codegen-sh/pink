@@ -1,0 +1,27 @@
+[package]
+name = "codegen-sdk-json"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+codegen-sdk-common = { workspace = true, features = ["json"] }
+salsa = { workspace = true }
+tree-sitter = { workspace = true }
+derive_more = { workspace = true }
+ambassador = { workspace = true }
+derive_generic_visitor = { workspace = true }
+subenum = {workspace = true}
+bytes = { workspace = true }
+codegen-sdk-cst = { workspace = true }
+codegen-sdk-ast = { workspace = true }
+log = { workspace = true }
+[build-dependencies]
+codegen-sdk-cst-generator = { workspace = true }
+codegen-sdk-ast-generator = { workspace = true }
+codegen-sdk-common = { workspace = true, features = ["json"] }
+env_logger = { workspace = true }
+log = { workspace = true }
+[dev-dependencies]
+test-log = { workspace = true }
+[features]
+serialization = ["codegen-sdk-common/serialization"]

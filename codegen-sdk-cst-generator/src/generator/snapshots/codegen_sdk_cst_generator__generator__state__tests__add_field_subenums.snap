@@ -2,26 +2,39 @@
 source: codegen-sdk-cst-generator/src/generator/state.rs
 expression: snapshot_tokens(&enum_tokens)
 ---
-#[subenum(
-    NodeCChildren(derive(Archive, Deserialize, Serialize)),
-    NodeCField(derive(Archive, Deserialize, Serialize))
-)]
-#[derive(Debug, Clone, Drive)]
-#[enum_delegate::implement(CSTNode)]
-pub enum NodeTypes {
+#[subenum(NodeCChildren, NodeCField)]
+#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[delegate(CSTNode<'db1>)]
+pub enum NodeTypes<'db1> {
     #[subenum(NodeCChildren, NodeCField)]
-    NodeA(NodeA),
+    NodeA(NodeA<'db1>),
     #[subenum(NodeCChildren, NodeCField)]
-    NodeB(NodeB),
-    NodeC(NodeC),
+    NodeB(NodeB<'db1>),
+    NodeC(NodeC<'db1>),
 }
-impl FromNode for NodeCChildren {
+impl<'db3> From<NodeA<'db3>> for NodeTypes<'db3> {
+    fn from(node: NodeA<'db3>) -> Self {
+        Self::NodeA(node)
+    }
+}
+impl<'db3> From<NodeB<'db3>> for NodeTypes<'db3> {
+    fn from(node: NodeB<'db3>) -> Self {
+        Self::NodeB(node)
+    }
+}
+impl<'db3> From<NodeC<'db3>> for NodeTypes<'db3> {
+    fn from(node: NodeC<'db3>) -> Self {
+        Self::NodeC(node)
+    }
+}
+impl<'db4> FromNode<'db4> for NodeCChildren<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
         match node.kind_id() {
-            0u16 => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
+            0u16 => Ok(Self::NodeB(NodeB::from_node(db, node, buffer)?)),
             _ => {
                 Err(ParseError::UnexpectedNode {
                     node_type: node.kind().to_string(),
@@ -31,13 +44,14 @@ impl FromNode for NodeCChildren {
         }
     }
 }
-impl FromNode for NodeCField {
+impl<'db4> FromNode<'db4> for NodeCField<'db4> {
     fn from_node(
+        db: &'db4 dyn salsa::Database,
         node: tree_sitter::Node,
         buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError> {
         match node.kind_id() {
-            0u16 => Ok(Self::NodeB(NodeB::from_node(node, buffer)?)),
+            0u16 => Ok(Self::NodeB(NodeB::from_node(db, node, buffer)?)),
             _ => {
                 Err(ParseError::UnexpectedNode {
                     node_type: node.kind().to_string(),
