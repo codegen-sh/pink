@@ -530,6 +530,11 @@ expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_strin
 #[visit(drive(&crate::cst::WithStatementChildren<'db>))]
 #[visit(drive(&crate::cst::YieldExpression<'db>))]
 #[visit(drive(&crate::cst::YieldExpressionChildren<'db>))]
+#[visit(drive(&crate::cst::AbstractClassDeclaration<'db>))]
+#[visit(drive(&crate::cst::AbstractMethodSignature<'db>))]
+#[visit(drive(&crate::cst::FunctionSignature<'db>))]
+#[visit(drive(&crate::cst::InterfaceDeclaration<'db>))]
+#[visit(drive(&crate::cst::Module<'db>))]
 #[visit(drive(crate::cst::AbstractClassDeclarationChildren<'db>))]
 #[visit(drive(crate::cst::AbstractMethodSignatureChildren<'db>))]
 #[visit(drive(crate::cst::AbstractMethodSignatureName<'db>))]
@@ -1080,29 +1085,34 @@ impl<'db> Definitions<'db> {
         &mut self,
         node: &crate::cst::AbstractClassDeclaration<'db>,
     ) {
-        let field = &node.name;
+        ///Code for query: (abstract_class_declaration   name: (type_identifier) @name) @definition.class
+        let name = &*node.name;
         self.classes.push(node.clone());
     }
     fn enter_AbstractMethodSignature(
         &mut self,
         node: &crate::cst::AbstractMethodSignature<'db>,
     ) {
-        let field = &node.name;
+        ///Code for query: (abstract_method_signature   name: (property_identifier) @name) @definition.method
+        let name = &*node.name;
         self.methods.push(node.clone());
     }
     fn enter_FunctionSignature(&mut self, node: &crate::cst::FunctionSignature<'db>) {
-        let field = &node.name;
+        ///Code for query: (function_signature   name: (identifier) @name) @definition.function
+        let name = &*node.name;
         self.functions.push(node.clone());
     }
     fn enter_InterfaceDeclaration(
         &mut self,
         node: &crate::cst::InterfaceDeclaration<'db>,
     ) {
-        let field = &node.name;
+        ///Code for query: (interface_declaration   name: (type_identifier) @name) @definition.interface
+        let name = &*node.name;
         self.interfaces.push(node.clone());
     }
     fn enter_Module(&mut self, node: &crate::cst::Module<'db>) {
-        let field = &node.name;
+        ///Code for query: (module   name: (identifier) @name) @definition.module
+        let name = &*node.name;
         self.modules.push(node.clone());
     }
 }

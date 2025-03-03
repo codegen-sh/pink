@@ -315,13 +315,20 @@ impl<'a> Query<'a> {
                 }
             }
         }
-        let matchers = quote! {
-            for child in #current_node.children().into_iter() {
-                #matchers
-                break;
+        let matchers = if matchers.is_empty() {
+            quote! {}
+        } else {
+            quote! {
+                for child in #current_node.children().into_iter() {
+                    #matchers
+                    break;
+                }
             }
         };
-        let query_source = format!("Code for query: {}", &self.node().source());
+        let query_source = format!(
+            "Code for query: {}",
+            &self.node().source().replace("\n", " ") // Newlines mess with quote's doc comments
+        );
         let base_matcher = quote! {
             #[doc = #query_source]
             #matchers
