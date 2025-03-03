@@ -71,7 +71,11 @@ impl<'a> Query<'a> {
                     queries.insert(query.name(), query);
                 }
                 node => {
-                    println!("Unhandled query: {:#?}", node);
+                    log::warn!(
+                        "Unhandled query: {:#?}. Source: {:#?}",
+                        node.kind(),
+                        node.source()
+                    );
                 }
             }
         }
