@@ -329,6 +329,9 @@ impl<'a> Query<'a> {
             "Code for query: {}",
             &self.node().source().replace("\n", " ") // Newlines mess with quote's doc comments
         );
+        if matchers.is_empty() && field_matchers.is_empty() {
+            return quote! {};
+        }
         let base_matcher = quote! {
             #[doc = #query_source]
             #matchers
