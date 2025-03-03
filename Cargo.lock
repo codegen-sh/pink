@@ -286,6 +286,7 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 name = "codegen-sdk-analyzer"
 version = "0.1.0"
 dependencies = [
+ "ambassador",
  "anyhow",
  "codegen-sdk-ast",
  "codegen-sdk-common",
@@ -307,10 +308,12 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "env_logger",
+ "glob",
  "indicatif",
  "indicatif-log-bridge",
  "log",
  "notify-debouncer-mini",
+ "rayon",
  "salsa",
  "test-log",
 ]
@@ -319,6 +322,7 @@ dependencies = [
 name = "codegen-sdk-ast"
 version = "0.1.0"
 dependencies = [
+ "ambassador",
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-typescript",
@@ -400,7 +404,6 @@ dependencies = [
  "crossbeam",
  "crossbeam-channel",
  "env_logger",
- "glob",
  "indicatif",
  "log",
  "rayon",

@@ -55,6 +55,15 @@ pub fn languages_ast(_item: TokenStream) -> TokenStream {
     }
     let enum_output: TokenStream = quote! {
     #[derive(Debug, Clone, Eq, PartialEq, Hash, salsa::Update)]
+    // #[delegate(
+    //     codegen_sdk_ast::Definitions<'db>
+    // )]
+    // #[delegate(
+    //     codegen_sdk_ast::References<'db>
+    // )]
+    // #[delegate(
+    //     codegen_sdk_ast::FileExt<'db>
+    // )]
     pub enum ParsedFile<'db> {
         #(#output)*
     }

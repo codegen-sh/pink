@@ -1,28 +1,24 @@
 #![recursion_limit = "2048"]
 use std::{path::PathBuf, time::Instant};
 
-use anyhow::Context;
 use clap::Parser;
-use codegen_sdk_analyzer::{CodegenDatabase, Db, ParsedFile, parse_file};
-use codegen_sdk_ast::Input;
+use codegen_sdk_analyzer::{Codebase, ParsedFile};
+use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
-use codegen_sdk_core::{discovery::FilesToParse, parser::parse_files, system::get_memory};
-use salsa::Setter;
+use codegen_sdk_core::system::get_memory;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
 }
-#[salsa::tracked]
-fn get_total_definitions(
-    db: &dyn Db,
-    files_to_parse: FilesToParse,
-) -> Vec<(usize, usize, usize, usize, usize)> {
-    salsa::par_map(db, files_to_parse.files(db), |db, file| {
-        let parsed = parse_file(db, file);
-        if let Some(parsed) = parsed.file(db) {
+fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize, usize)> {
+    codebase
+        .files()
+        .into_iter()
+        .map(|parsed| {
+            #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(file) = parsed {
-                let definitions = file.definitions(db);
+                let definitions = file.definitions(codebase.db());
                 return (
                     definitions.classes.len(),
                     definitions.functions.len(),
@@ -31,19 +27,18 @@ fn get_total_definitions(
                     definitions.modules.len(),
                 );
             }
-        }
-        (0, 0, 0, 0, 0)
-    })
+            (0, 0, 0, 0, 0)
+        })
+        .collect()
 }
 #[cfg(feature = "typescript")]
-fn print_definitions(db: &CodegenDatabase, files_to_parse: &FilesToParse) {
+fn print_definitions(codebase: &Codebase) {
     let mut total_classes = 0;
     let mut total_functions = 0;
     let mut total_interfaces = 0;
     let mut total_methods = 0;
     let mut total_modules = 0;
-    let new_files = FilesToParse::new(db, files_to_parse.files(db).clone());
-    let definitions = get_total_definitions(db, new_files);
+    let definitions = get_total_definitions(codebase);
     for (classes, functions, interfaces, methods, modules) in definitions {
         total_classes += classes;
         total_functions += functions;
@@ -65,32 +60,22 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let dir = args.input;
     let start = Instant::now();
-    let (tx, rx) = crossbeam_channel::unbounded();
-    let mut db = CodegenDatabase::new(tx);
-    db.watch_dir(PathBuf::from(&dir)).unwrap();
-    let (files_to_parse, errors) = parse_files(
-        &db,
-        #[cfg(feature = "serialization")]
-        &cache,
-        dir,
-    );
-    let num_errors = errors.len();
-    drop(errors);
+    let mut codebase = Codebase::new(PathBuf::from(&dir));
     let end = Instant::now();
     let duration: std::time::Duration = end.duration_since(start);
     let memory = get_memory();
     log::info!(
         "{} files parsed in {:?}.{} seconds with {} errors. Using {} MB of memory",
-        files_to_parse.files(&db).len(),
+        codebase.files().len(),
         duration.as_secs(),
         duration.subsec_millis(),
-        num_errors,
+        codebase.errors().len(),
         memory / 1024 / 1024
     );
     loop {
         // Compile the code starting at the provided input, this will read other
         // needed files using the on-demand mechanism.
-        print_definitions(&db, &files_to_parse);
+        print_definitions(&codebase);
         // let diagnostics = compile::accumulated::<Diagnostic>(&db, initial);
         // if diagnostics.is_empty() {
         //     println!("Sum is: {}", sum);
@@ -99,33 +84,8 @@ fn main() -> anyhow::Result<()> {
         //         println!("{}", diagnostic.0);
         //     }
         // }
-
+        codebase.check_update()?;
         // Wait for file change events, the output can't change unless the
         // inputs change.
-        for event in rx.recv()?.unwrap() {
-            match event.path.canonicalize() {
-                Ok(path) => {
-                    log::info!("File changed: {}", path.display());
-                    let file = match db.files.get(&path) {
-                        Some(file) => *file,
-                        None => continue,
-                    };
-                    // `path` has changed, so read it and update the contents to match.
-                    // This creates a new revision and causes the incremental algorithm
-                    // to kick in, just like any other update to a salsa input.
-                    let contents = std::fs::read_to_string(path)
-                        .with_context(|| format!("Failed to read file {}", event.path.display()))?;
-                    let input = Input::new(&db, contents);
-                    file.set_contents(&mut db).to(input);
-                }
-                Err(e) => {
-                    log::error!(
-                        "Failed to canonicalize path {} for file {}",
-                        e,
-                        event.path.display()
-                    );
-                }
-            }
-        }
     }
 }
