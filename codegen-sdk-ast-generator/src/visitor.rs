@@ -71,6 +71,7 @@ pub fn generate_visitor<'db>(
         nodes = nodes.difference(&variants).cloned().collect();
         quote! {
             #(#[visit(drive(&crate::cst::#nodes<'db>))])*
+            #(#[visit(drive(&crate::cst::#variants<'db>))])*
             #(#[visit(drive(crate::cst::#nodes<'db>))])*
             #[visit(drive(for<T> Box<T>))]
             #[visit(drive(for<T> Vec<T>))]

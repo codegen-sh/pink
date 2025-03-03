@@ -2,7 +2,7 @@
 #![allow(unused)]
 #![allow(non_snake_case)]
 
-mod cst {
+pub mod cst {
     include!(concat!(env!("OUT_DIR"), "/javascript.rs"));
 }
 pub mod ast {
