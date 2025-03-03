@@ -13,14 +13,10 @@ codegen-sdk-common = { workspace = true}
 anyhow = { workspace = true}
 salsa = { workspace = true}
 codegen-sdk-typescript = { workspace = true}
-crossbeam = "0.8.4"
 env_logger = { workspace = true }
 log = { workspace = true }
-rayon = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
-indicatif = { workspace = true }
-crossbeam-channel = { workspace = true }
 [features]
 python = [ "codegen-sdk-analyzer/python"] # TODO: Add python support
 typescript = [ "codegen-sdk-analyzer/typescript"]
