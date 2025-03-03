@@ -32,9 +32,9 @@ rustup toolchain install nightly
 ### Installing tools
 
 ```bash
-cargo install cargo-binstall -y
-cargo binstall cargo-nextest -y
-cargo binstall cargo-insta -y
+cargo install --no-confirm cargo-binstall
+cargo binstall --no-confirm cargo-nextest
+cargo binstall --no-confirm cargo-insta
 ```
 
 ### Building the project
