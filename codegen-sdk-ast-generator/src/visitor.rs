@@ -88,7 +88,7 @@ pub fn generate_visitor<'db>(
         #[derive(Visitor, Visit, Debug, Clone, Eq, PartialEq, salsa::Update, Hash, Default)]
         #visitor
         pub struct #name<'db> {
-            #(pub #names: Vec<crate::cst::#types<'db>>,)*
+            #(pub #names: BTreeMap<String, Vec<crate::cst::#types<'db>>>,)*
             phantom: std::marker::PhantomData<&'db ()>,
         }
         impl<'db> #name<'db> {
@@ -99,16 +99,19 @@ pub fn generate_visitor<'db>(
 
 #[cfg(all(test))]
 mod tests {
-    use codegen_sdk_common::language::typescript::Typescript;
+    use codegen_sdk_common::language::{python::Python, typescript::Typescript};
+    use rstest::rstest;
 
     use super::*;
 
-    #[test_log::test]
-    fn test_generate_visitor() {
-        let language = &Typescript;
+    #[test_log::test(rstest)]
+    #[case::typescript(&Typescript)]
+    #[case::python(&Python)]
+    fn test_generate_visitor(#[case] language: &Language) {
         let db = codegen_sdk_cst::CSTDatabase::default();
         let visitor = generate_visitor(&db, language, "definition");
         insta::assert_snapshot!(
+            format!("{}", language.name()),
             codegen_sdk_common::generator::format_code_string(&visitor.to_string()).unwrap()
         );
     }

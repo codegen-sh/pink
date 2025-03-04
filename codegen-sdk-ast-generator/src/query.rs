@@ -71,7 +71,11 @@ impl<'a> Query<'a> {
                     queries.insert(query.name(), query);
                 }
                 node => {
-                    println!("Unhandled query: {:#?}", node);
+                    log::warn!(
+                        "Unhandled query: {:#?}. Source: {:#?}",
+                        node.kind(),
+                        node.source()
+                    );
                 }
             }
         }
@@ -199,6 +203,7 @@ impl<'a> Query<'a> {
         field: &ts_query::FieldDefinition,
         struct_name: &str,
         current_node: &Ident,
+        name_value: Option<TokenStream>,
     ) -> TokenStream {
         let other_child: ts_query::NodeTypes =
             field.children().into_iter().skip(2).next().unwrap().into();
@@ -212,14 +217,15 @@ impl<'a> Query<'a> {
                         &normalized_struct_name,
                         other_child.clone(),
                         &field_name,
+                        name_value,
                     );
-                    assert!(
-                        wrapped.to_string().len() > 0,
-                        "Wrapped is empty, {} {} {}",
-                        normalized_struct_name,
-                        other_child.source(),
-                        other_child.kind()
-                    );
+                    // assert!(
+                    //     wrapped.to_string().len() > 0,
+                    //     "Wrapped is empty, {} {} {}",
+                    //     normalized_struct_name,
+                    //     other_child.source(),
+                    //     other_child.kind()
+                    // );
                     if !field.is_optional() {
                         return quote! {
                             let #field_name = &*#current_node.#field_name;
@@ -254,10 +260,16 @@ impl<'a> Query<'a> {
         node: &ts_query::Grouping,
         struct_name: &str,
         current_node: &Ident,
+        name_value: Option<TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
         for group in node.children() {
-            let result = self.get_matcher_for_definition(struct_name, group.into(), current_node);
+            let result = self.get_matcher_for_definition(
+                struct_name,
+                group.into(),
+                current_node,
+                name_value.clone(),
+            );
             matchers.extend_one(result);
         }
         matchers
@@ -269,6 +281,7 @@ impl<'a> Query<'a> {
         target_kind: &str,
         current_node: &Ident,
         remaining_nodes: Vec<ts_query::NamedNodeChildren<'_>>,
+        name_value: Option<TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
         let mut field_matchers = TokenStream::new();
@@ -291,12 +304,14 @@ impl<'a> Query<'a> {
                     &target_name,
                     child.into(),
                     current_node,
+                    name_value.clone(),
                 ));
             } else {
                 let result = self.get_matcher_for_definition(
                     &target_name,
                     child.into(),
                     &format_ident!("child"),
+                    name_value.clone(),
                 );
 
                 if let Some(ref variant) = comment_variant {
@@ -352,24 +367,86 @@ impl<'a> Query<'a> {
             };
         }
     }
-
+    fn group_children<'b>(
+        &self,
+        node: &ts_query::NamedNode<'b>,
+        first_node: &ts_query::NamedNodeChildren<'_>,
+        mut name_value: Option<TokenStream>,
+        current_node: &Ident,
+    ) -> (Option<TokenStream>, Vec<ts_query::NamedNodeChildren<'b>>) {
+        let mut prev = first_node.clone();
+        let mut remaining_nodes = Vec::new();
+        for child in node.children().into_iter().skip(1) {
+            if child.kind() == "capture" {
+                if child.source() == "@name" {
+                    log::info!(
+                        "Found @name! prev: {:#?}, {:#?}",
+                        prev.source(),
+                        prev.kind()
+                    );
+                    match prev {
+                        ts_query::NamedNodeChildren::FieldDefinition(field) => {
+                            let field_name = field
+                                .name
+                                .iter()
+                                .filter(|c| c.is_named())
+                                .map(|c| format_ident!("{}", c.source()))
+                                .next()
+                                .unwrap();
+                            name_value = Some(quote! {
+                                #current_node.#field_name.source()
+                            });
+                        }
+                        ts_query::NamedNodeChildren::Identifier(named) => {
+                            log::info!(
+                                "Found @name! prev: {:#?}, {:#?}",
+                                named.source(),
+                                named.kind()
+                            );
+                            name_value = Some(quote! {
+                                #current_node.source()
+                            });
+                        }
+                        ts_query::NamedNodeChildren::AnonymousUnderscore(_) => {
+                            name_value = Some(quote! {
+                                #current_node.source()
+                            });
+                        }
+                        _ => panic!(
+                            "Unexpected prev: {:#?}, source: {:#?}. Query: {:#?}",
+                            prev.kind(),
+                            prev.source(),
+                            self.node().source()
+                        ),
+                    }
+                    break;
+                }
+                continue;
+            }
+            prev = child.clone();
+            remaining_nodes.push(child);
+        }
+        (name_value, remaining_nodes)
+    }
     fn get_matcher_for_named_node(
         &self,
         node: &ts_query::NamedNode,
         struct_name: &str,
         current_node: &Ident,
+        name_value: Option<TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
         let first_node = node.children().into_iter().next().unwrap();
-        let remaining_nodes = node
-            .children()
-            .into_iter()
-            .skip(1)
-            .filter(|child| child.kind() != "capture")
-            .collect::<Vec<_>>();
+        let (name_value, remaining_nodes) =
+            self.group_children(node, &first_node, name_value, current_node);
         if remaining_nodes.len() == 0 {
             log::info!("single node, {}", first_node.source());
-            return self.get_matcher_for_definition(struct_name, first_node.into(), current_node);
+            return self.get_matcher_for_definition(
+                struct_name,
+                first_node.into(),
+                current_node,
+                name_value,
+            );
         }
 
         let name_node = self.state.get_node_for_raw_name(&first_node.source());
@@ -381,6 +458,7 @@ impl<'a> Query<'a> {
                 name_node.kind(),
                 current_node,
                 remaining_nodes,
+                name_value,
             );
             matchers.extend_one(matcher);
         } else {
@@ -400,6 +478,7 @@ impl<'a> Query<'a> {
                     variant.kind(),
                     current_node,
                     remaining_nodes.clone(),
+                    name_value.clone(),
                 );
                 matchers.extend_one(matcher);
             }
@@ -408,10 +487,50 @@ impl<'a> Query<'a> {
             #matchers
         }
     }
-    fn get_default_matcher(&self) -> TokenStream {
+    fn get_default_matcher(&self, name_value: Option<TokenStream>) -> TokenStream {
         let to_append = self.executor_id();
+        if let Some(name_value) = name_value {
+            return quote! {
+                self.#to_append.entry(#name_value).or_insert(Vec::new()).push(
+                    node.clone()
+                );
+            };
+        }
+        log::warn!("No name value found for: {}", self.node().source());
+        quote! {}
+    }
+    fn get_matcher_for_identifier(
+        &self,
+        identifier: &ts_query::Identifier,
+        struct_name: &str,
+        current_node: &Ident,
+        name_value: Option<TokenStream>,
+    ) -> TokenStream {
+        // We have 2 nodes, the parent node and the identifier node
+        let to_append = self.get_default_matcher(name_value);
+        let children;
+        // Case 1: The identifier is the same as the struct name (IE: we know this is the corrent node)
+        if normalize_type_name(&identifier.source(), true) == struct_name {
+            return to_append;
+        }
+        // Case 2: We have a node for the parent struct
+        if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
+            children = format_ident!("{}Children", struct_name);
+            // When there is only 1 possible child, we can use the default matcher
+            if node.children_struct_name() != children.to_string() {
+                return to_append;
+            }
+        } else {
+            // Case 3: This is a subenum
+            // If this is a field, we may be dealing with multiple types and can't operate over all of them
+            return to_append; // TODO: Handle this case
+        }
+        let struct_name = format_ident!("{}", normalize_type_name(&identifier.source(), true));
         quote! {
-            self.#to_append.push(node.clone());
+            if let crate::cst::#children::#struct_name(child) = #current_node {
+                #to_append
+            }
+
         }
     }
     fn get_matcher_for_definition(
@@ -419,64 +538,43 @@ impl<'a> Query<'a> {
         struct_name: &str,
         node: ts_query::NodeTypes,
         current_node: &Ident,
+        name_value: Option<TokenStream>,
     ) -> TokenStream {
         if !node.is_named() {
-            return self.get_default_matcher();
+            return self.get_default_matcher(name_value);
         }
         match node {
             ts_query::NodeTypes::FieldDefinition(field) => {
-                self.get_matcher_for_field(&field, struct_name, current_node)
+                self.get_matcher_for_field(&field, struct_name, current_node, name_value)
             }
             ts_query::NodeTypes::Capture(named) => {
                 info!("Capture: {:#?}", named.source());
                 quote! {}
             }
             ts_query::NodeTypes::NamedNode(named) => {
-                self.get_matcher_for_named_node(&named, struct_name, current_node)
+                self.get_matcher_for_named_node(&named, struct_name, current_node, name_value)
             }
             ts_query::NodeTypes::Comment(_) => {
                 quote! {}
             }
             ts_query::NodeTypes::List(subenum) => {
                 for child in subenum.children() {
-                    let result =
-                        self.get_matcher_for_definition(struct_name, child.into(), current_node);
+                    let result = self.get_matcher_for_definition(
+                        struct_name,
+                        child.into(),
+                        current_node,
+                        name_value.clone(),
+                    );
                     // Currently just returns the first child
                     return result; // TODO: properly handle list
                 }
                 quote! {}
             }
             ts_query::NodeTypes::Grouping(grouping) => {
-                self.get_matchers_for_grouping(&grouping, struct_name, current_node)
+                self.get_matchers_for_grouping(&grouping, struct_name, current_node, name_value)
             }
             ts_query::NodeTypes::Identifier(identifier) => {
-                // We have 2 nodes, the parent node and the identifier node
-                let to_append = self.get_default_matcher();
-                let children;
-                // Case 1: The identifier is the same as the struct name (IE: we know this is the corrent node)
-                if normalize_type_name(&identifier.source(), true) == struct_name {
-                    return to_append;
-                }
-                // Case 2: We have a node for the parent struct
-                if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
-                    children = format_ident!("{}Children", struct_name);
-                    // When there is only 1 possible child, we can use the default matcher
-                    if node.children_struct_name() != children.to_string() {
-                        return to_append;
-                    }
-                } else {
-                    // Case 3: This is a subenum
-                    // If this is a field, we may be dealing with multiple types and can't operate over all of them
-                    return self.get_default_matcher(); // TODO: Handle this case
-                }
-                let struct_name =
-                    format_ident!("{}", normalize_type_name(&identifier.source(), true));
-                quote! {
-                    if let crate::cst::#children::#struct_name(child) = #current_node {
-                        #to_append
-                    }
-
-                }
+                self.get_matcher_for_identifier(&identifier, struct_name, current_node, name_value)
             }
             unhandled => {
                 log::warn!(
@@ -485,29 +583,32 @@ impl<'a> Query<'a> {
                     unhandled.kind(),
                     unhandled.source()
                 );
-                self.get_default_matcher()
+                self.get_default_matcher(name_value)
             }
         }
     }
 
     pub fn matcher(&self, struct_name: &str) -> TokenStream {
-        info!(
-            "Generating matcher for: {:#?}. Has children: {:#?}",
-            self.node().source(),
-            self.node().children()
-        );
         let node = self.state.get_node_for_struct_name(struct_name);
         let kind = if let Some(node) = node {
             node.kind()
         } else {
             struct_name
         };
+        let starting_node = format_ident!("node");
+        let (name_value, remaining_nodes) = self.group_children(
+            &self.node(),
+            &self.node().children().into_iter().next().unwrap(),
+            None,
+            &starting_node,
+        );
         return self._get_matcher_for_named_node(
             struct_name,
             &struct_name,
             kind,
-            &format_ident!("node"),
-            self.node().children().into_iter().skip(1).collect(),
+            &starting_node,
+            remaining_nodes,
+            name_value,
         );
     }
 }

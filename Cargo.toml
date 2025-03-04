@@ -15,6 +15,7 @@ salsa = { workspace = true}
 codegen-sdk-typescript = { workspace = true}
 env_logger = { workspace = true }
 log = { workspace = true }
+codegen-sdk-resolution = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
 [features]
@@ -57,7 +58,7 @@ members = [
   "languages/codegen-sdk-yaml",
   "languages/codegen-sdk-toml",
   "languages/codegen-sdk-ts_query",
-  "languages/codegen-sdk-typescript",
+  "languages/codegen-sdk-typescript", "codegen-sdk-resolution",
 ]
 resolver = "2"
 [workspace.dependencies]
@@ -88,6 +89,7 @@ mockall = "0.13.1"
 codegen-sdk-common = { path = "codegen-sdk-common" }
 codegen-sdk-cst = { path = "codegen-sdk-cst"}
 codegen-sdk-ast = { path = "codegen-sdk-ast" }
+codegen-sdk-resolution = { path = "codegen-sdk-resolution" }
 codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
 codegen-sdk-ast-generator = { path = "codegen-sdk-ast-generator" }
 codegen-sdk-ts_query = { path = "languages/codegen-sdk-ts_query" }
@@ -117,6 +119,7 @@ subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
 crossbeam-channel = "0.5.11"
+rstest = "0.25.0"
 [profile.dev]
 # codegen-backend = "cranelift"
 split-debuginfo = "unpacked"

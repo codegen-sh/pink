@@ -4,6 +4,7 @@ use anyhow::Context;
 use codegen_sdk_ast::Input;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialization::Cache;
+use codegen_sdk_resolution::CodebaseContext;
 use discovery::FilesToParse;
 use notify_debouncer_mini::DebounceEventResult;
 use salsa::Setter;
@@ -60,25 +61,11 @@ impl Codebase {
         }
         Ok(())
     }
-    pub fn get_file(&self, path: PathBuf) -> Option<&ParsedFile<'_>> {
-        let file = self.db.files.get(&path);
-        if let Some(file) = file {
-            return parse_file(&self.db, file.clone()).file(&self.db).as_ref();
-        }
-        None
-    }
+
     fn discover(&self) -> FilesToParse {
         discovery::collect_files(&self.db, &self.root)
     }
-    pub fn files(&self) -> Vec<&ParsedFile<'_>> {
-        let mut files = Vec::new();
-        for file in self.discover().files(&self.db) {
-            if let Some(file) = self.get_file(file.path(&self.db)) {
-                files.push(file);
-            }
-        }
-        files
-    }
+
     pub fn errors(&self) -> Vec<()> {
         let mut errors = Vec::new();
         for file in self.discover().files(&self.db) {
@@ -97,7 +84,26 @@ impl Codebase {
             files,
         )
     }
-    pub fn db(&self) -> &CodegenDatabase {
+}
+impl CodebaseContext for Codebase {
+    type File<'a> = ParsedFile<'a>;
+    fn files<'a>(&'a self) -> Vec<&'a Self::File<'a>> {
+        let mut files = Vec::new();
+        for file in self.discover().files(&self.db) {
+            if let Some(file) = self.get_file(file.path(&self.db)) {
+                files.push(file);
+            }
+        }
+        files
+    }
+    fn db(&self) -> &dyn salsa::Database {
         &self.db
+    }
+    fn get_file<'a>(&'a self, path: PathBuf) -> Option<&'a Self::File<'a>> {
+        let file = self.db.files.get(&path);
+        if let Some(file) = file {
+            return parse_file(&self.db, file.clone()).file(&self.db).as_ref();
+        }
+        None
     }
 }

@@ -8,6 +8,7 @@ salsa = { workspace = true }
 codegen-sdk-common = { workspace = true }
 codegen-sdk-ast = { workspace = true }
 codegen-sdk-cst = { workspace = true }
+codegen-sdk-resolution = { workspace = true }
 codegen-sdk-python = { workspace = true, optional = true}
 codegen-sdk-typescript = { workspace = true, optional = true}
 codegen-sdk-tsx = { workspace = true, optional = true}
