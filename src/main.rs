@@ -7,6 +7,7 @@ use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
+use codegen_sdk_resolution::CodebaseContext;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
@@ -25,6 +26,17 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                     definitions.interfaces.len(),
                     definitions.methods.len(),
                     definitions.modules.len(),
+                );
+            }
+            #[cfg(feature = "python")]
+            if let ParsedFile::Python(file) = parsed {
+                let definitions = file.definitions(codebase.db());
+                return (
+                    definitions.classes.len(),
+                    definitions.functions.len(),
+                    0,
+                    0,
+                    0,
                 );
             }
             (0, 0, 0, 0, 0)

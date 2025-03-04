@@ -61,6 +61,11 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
                 parsed.definitions(db);
                 parsed.references(db);
             }
+            #[cfg(feature = "python")]
+            if let ParsedFile::Python(parsed) = parsed {
+                parsed.definitions(db);
+                parsed.references(db);
+            }
         }
         ()
     });

@@ -15,6 +15,7 @@ salsa = { workspace = true}
 codegen-sdk-typescript = { workspace = true}
 env_logger = { workspace = true }
 log = { workspace = true }
+codegen-sdk-resolution = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
 [features]
