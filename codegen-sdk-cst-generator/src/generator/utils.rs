@@ -3,8 +3,10 @@ use std::collections::BTreeMap;
 use codegen_sdk_common::{naming::normalize_type_name, parser::TypeDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::Ident;
 
 use super::constants::TYPE_NAME;
+use crate::generator::constants::TYPE_NAME_REF;
 pub fn get_serialize_bounds() -> TokenStream {
     quote! {
        #[rkyv(serialize_bounds(
@@ -20,17 +22,61 @@ pub fn get_serialize_bounds() -> TokenStream {
        ))]
     }
 }
-pub fn get_from_type(struct_name: &str) -> TokenStream {
-    let name = format_ident!("{}", struct_name);
-    let target = format_ident!("{}", TYPE_NAME);
+
+pub fn get_from_type(struct_name: &str, target: &Ident, is_ref: bool) -> TokenStream {
+    let name_ident = format_ident!("{}", struct_name);
+    let name = if is_ref {
+        quote! { &'db3 #name_ident }
+    } else {
+        quote! { #name_ident }
+    };
+
     quote! {
         impl<'db3> From<#name<'db3>> for #target<'db3> {
             fn from(node: #name<'db3>) -> Self {
-                Self::#name(node)
+                Self::#name_ident(node)
             }
         }
     }
 }
+pub fn subenum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> TokenStream {
+    let name = format_ident!("{}Ref", enum_name);
+    let node_types_ref = format_ident!("{}", TYPE_NAME_REF);
+
+    quote! {
+        // impl<'db3> From<#name<'db3>> for #node_types_ref<'db3> {
+        //     fn from(node: #name<'db3>) -> Self {
+        //         match node {
+        //             #(Self::#variant_names(data) => #node_types_ref::#variant_names(data),)*
+        //         }
+        //     }
+        // }
+    }
+}
+pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> TokenStream {
+    let name = format_ident!("{}", enum_name);
+    let name_ref = format_ident!("{}Ref", enum_name);
+
+    quote! {
+        impl<'db3> #name<'db3> {
+            pub fn as_ref(&'db3 self) -> #name_ref<'db3> {
+                match self {
+                    #(Self::#variant_names(data) => #name_ref::#variant_names(data),)*
+                }
+            }
+        }
+        // #[delegate_to_methods]
+        // #[delegate(CSTNode<'db3>, target_ref = "deref")]
+        // impl<'db3> #name_ref<'db3> {
+        //     fn deref(&'db3 self) -> &'db3 dyn CSTNode<'db3> {
+        //         match self {
+        //             #(Self::#variant_names(data) => *data,)*
+        //         }
+        //     }
+        // }
+    }
+}
+
 pub fn get_from_node(
     node: &str,
     named: bool,

@@ -40,7 +40,9 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                     .map(|(_, functions)| functions)
                     .flatten()
                 {
-                    total_references += function.references(codebase, file).len();
+                    total_references += function
+                        .references_for_scopes(codebase.db(), vec![*file], &file)
+                        .len();
                 }
                 return (
                     definitions.classes.len(),

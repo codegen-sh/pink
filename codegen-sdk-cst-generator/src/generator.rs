@@ -27,6 +27,7 @@ fn get_imports(config: &Config) -> TokenStream {
         use bytes::Bytes;
         use derive_generic_visitor::Drive;
         use ambassador::Delegate;
+        use ambassador::delegate_to_methods;
         use codegen_sdk_cst::CSTLanguage;
     };
     if config.serialize {
@@ -93,12 +94,14 @@ fn get_parser(language: &Language) -> TokenStream {
 pub fn generate_cst(language: &Language, config: Config) -> anyhow::Result<String> {
     let imports: TokenStream = get_imports(&config);
     let state = State::new(language, config);
-    let enums = state.get_enum();
+    let enums = state.get_enum(false);
+    let enums_ref = state.get_enum(true);
     let structs = state.get_structs();
     let parser = get_parser(language);
     let result: syn::File = parse_quote! {
         #imports
         #enums
+        #enums_ref
         #structs
         #parser
     };
