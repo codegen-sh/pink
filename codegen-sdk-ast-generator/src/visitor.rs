@@ -46,7 +46,7 @@ pub fn generate_visitor<'db>(
             let node = query.node();
             for child in node.children() {
                 info!("child kind:{} source:{}", child.kind(), child.source());
-                if let ts_query::NamedNodeChildren::FieldDefinition(field_definition) = child {
+                if let ts_query::NamedNodeChildrenRef::FieldDefinition(field_definition) = child {
                     let field_name = &field_definition.name;
                     let source = field_definition.source();
                     let children = &field_definition.children();

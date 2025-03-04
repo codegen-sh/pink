@@ -8,7 +8,7 @@ use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use super::constants::TYPE_NAME;
+use super::constants::{TYPE_NAME, TYPE_NAME_REF};
 use crate::Config;
 
 #[derive(Debug)]
@@ -75,28 +75,35 @@ impl<'a> Field<'a> {
     }
     pub fn get_convert_child(&self, convert_children: bool) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
-        let types = format_ident!("{}", TYPE_NAME);
+        let types = format_ident!("{}", TYPE_NAME_REF);
+        let as_ref = if self.raw.types.len() > 1 {
+            quote! {
+                .as_ref()
+            }
+        } else {
+            quote! {}
+        };
         if convert_children {
             if self.raw.multiple {
                 quote! {
-                    Self::Child::try_from(#types::from(child.clone())).unwrap()
+                    Self::Child::try_from(#types::from(child #as_ref)).unwrap()
                 }
             } else if !self.raw.required {
                 quote! {
-                    Self::Child::try_from(#types::from(child.clone())).unwrap()
+                    Self::Child::try_from(#types::from(child #as_ref)).unwrap()
                 }
             } else {
                 quote! {
-                    Self::Child::try_from(#types::from(self.#field_name_ident.as_ref().clone())).unwrap()
+                    Self::Child::try_from(#types::from(self.#field_name_ident.as_ref()#as_ref)).unwrap()
                 }
             }
         } else if self.raw.multiple || !self.raw.required {
             quote! {
-                child.clone()
+                child
             }
         } else {
             quote! {
-                self.#field_name_ident.as_ref().clone()
+                self.#field_name_ident.as_ref()
             }
         }
     }

@@ -70,22 +70,37 @@ impl<'a> Node<'a> {
             self.subenums.push(subenum);
         }
     }
-    pub fn get_enum_tokens(&self, subenum_name_map: &HashMap<String, String>) -> TokenStream {
+    pub fn get_enum_tokens(
+        &self,
+        subenum_name_map: &HashMap<String, String>,
+        is_ref: bool,
+    ) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
+        let value = if is_ref {
+            quote! { &'db1 #name }
+        } else {
+            quote! { #name }
+        };
         let subenum_names = &self
             .subenums
             .iter()
             .map(|s| subenum_name_map.get(s).unwrap_or(&s))
-            .map(|s| format_ident!("{}", s))
+            .map(|s| {
+                if is_ref {
+                    format_ident!("{}Ref", s)
+                } else {
+                    format_ident!("{}", s)
+                }
+            })
             .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
-                #name(#name<'db1>)
+                #name(#value<'db1>)
             }
         } else {
             quote! {
                 #[subenum(#(#subenum_names), *)]
-                #name(#name<'db1>)
+                #name(#value<'db1>)
             }
         }
     }
@@ -148,12 +163,12 @@ impl<'a> Node<'a> {
         let derives = if self.config.serialize {
             let serialize_bounds = get_serialize_bounds();
             quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Deserialize, Archive, Serialize, Drive, Eq, PartialEq, salsa::Update)]
                 #serialize_bounds
             }
         } else {
             quote! {
-                #[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Drive, Eq, PartialEq, salsa::Update)]
 
             }
         };
@@ -230,10 +245,12 @@ impl<'a> Node<'a> {
         let name = format_ident!("{}", self.normalize_name());
 
         let children_type_name = self.children_struct_name();
-        let children_type_ident = format_ident!("{}", children_type_name);
-        let mut children_type_generic = quote! {#children_type_ident};
+        let children_type_generic;
         if children_type_name != "Self" {
-            children_type_generic = quote! {#children_type_generic<'db1>};
+            let children_type_ident = format_ident!("{}Ref", children_type_name);
+            children_type_generic = quote! {#children_type_ident<'db2>};
+        } else {
+            children_type_generic = quote! {#name<'db2>};
         }
 
         let children_field = self.get_children_field_impl();
@@ -241,7 +258,7 @@ impl<'a> Node<'a> {
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
             impl<'db1> HasChildren<'db1> for #name<'db1> {
-                type Child = #children_type_generic;
+                type Child<'db2> = #children_type_generic where Self: 'db2;
                 #children_field
                 #children_by_field_name
                 #children_by_field_id
@@ -291,6 +308,22 @@ impl<'a> Node<'a> {
                     self.id.hash(state);
                 }
             }
+            impl<'db> PartialOrd for #name<'db> {
+                fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                    Some(self.cmp(other))
+                }
+            }
+            impl<'db> Ord for #name<'db> {
+                fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+                    let res = self.start_byte().cmp(&other.start_byte());
+                    if res == std::cmp::Ordering::Equal {
+                        self.end_byte().cmp(&other.end_byte())
+                    } else {
+                        res
+                    }
+                }
+            }
+
         }
     }
     fn get_children_field_impl(&self) -> TokenStream {
@@ -298,7 +331,7 @@ impl<'a> Node<'a> {
         let num_children = self.get_children_names().len();
         if num_children == 0 {
             return quote! {
-                fn children(&self) -> Vec<Self::Child> {
+                fn children<'db2>(&'db2 self) -> Vec<Self::Child<'db2>> {
                     vec![]
                 }
             };
@@ -310,7 +343,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self._children.iter().cloned().collect()
+                self._children.iter().map(|c| c.as_ref().into()).collect()
             }
         } else {
             quote! {
@@ -318,10 +351,10 @@ impl<'a> Node<'a> {
             }
         };
         quote! {
-            fn children(&self) -> Vec<Self::Child> {
-                let mut children: Vec<_> = #children_init;
+            fn children<'db2>(&'db2 self) -> Vec<Self::Child<'db2>> {
+                let mut children: Vec<Self::Child<'db2>> = #children_init;
                 #(#children_fields;)*
-                children.sort_by_key(|c| c.start_byte());
+                children.sort();
                 children
             }
         }
@@ -335,7 +368,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+            fn children_by_field_name<'db2>(&'db2 self, field_name: &str) -> Vec<Self::Child<'db2>> {
                 match field_name {
                     #(#field_matches,)*
                     _ => vec![],
@@ -352,7 +385,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+            fn children_by_field_id<'db2>(&'db2 self, field_id: u16) -> Vec<Self::Child<'db2>> {
                 match field_id {
                     #(#field_matches,)*
                     _ => vec![],

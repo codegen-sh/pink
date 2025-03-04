@@ -15,8 +15,10 @@ use super::node::Node;
 use crate::{
     Config,
     generator::{
-        constants::TYPE_NAME,
-        utils::{get_comment_type, get_from_node, get_from_type},
+        constants::{TYPE_NAME, TYPE_NAME_REF},
+        utils::{
+            get_comment_type, get_from_enum_to_ref, get_from_node, get_from_type, subenum_to_ref,
+        },
     },
 };
 #[derive(Debug)]
@@ -146,14 +148,17 @@ impl<'a> State<'a> {
                     node.add_subenum(name.to_string());
                 }
             } else {
-                let variants = self.get_variants(&node.type_name);
+                let variants = self.get_variants(&node.type_name, true);
                 self.add_subenum(name, &variants.iter().collect());
             }
         }
     }
-    pub fn get_variants(&self, subenum: &str) -> Vec<TypeDefinition> {
-        let comment = get_comment_type();
-        let mut variants = vec![comment];
+    pub fn get_variants(&self, subenum: &str, include_comment: bool) -> Vec<TypeDefinition> {
+        let mut variants = Vec::new();
+        if include_comment {
+            let comment = get_comment_type();
+            variants.push(comment);
+        }
         for node in self.nodes.values() {
             log::debug!("Checking subenum: {} for {}", subenum, node.kind());
             if node.subenums.contains(&subenum.to_string()) {
@@ -185,7 +190,7 @@ impl<'a> State<'a> {
         get_from_node(enum_name, true, &variant_map)
     }
     // Get the overarching enum for the nodes
-    pub fn get_enum(&self) -> TokenStream {
+    pub fn get_enum(&self, is_ref: bool) -> TokenStream {
         let mut enum_tokens = Vec::new();
         let mut from_tokens = TokenStream::new();
         let mut subenums = Vec::new();
@@ -193,18 +198,42 @@ impl<'a> State<'a> {
         for name in self.subenums.iter() {
             subenum_name_map.insert(name.clone(), normalize_type_name(name, true));
         }
+        let enum_name = if is_ref {
+            format_ident!("{}Ref", TYPE_NAME)
+        } else {
+            format_ident!("{}", TYPE_NAME)
+        };
         for node in self.nodes.values() {
-            enum_tokens.push(node.get_enum_tokens(&subenum_name_map));
-            from_tokens.extend_one(get_from_type(&node.normalize_name()));
+            enum_tokens.push(node.get_enum_tokens(&subenum_name_map, is_ref));
+            from_tokens.extend_one(get_from_type(&node.normalize_name(), &enum_name, is_ref));
+        }
+        if is_ref {
+            let variants = self.get_node_struct_names();
+            let ref_convert = get_from_enum_to_ref(&TYPE_NAME, &variants);
+            from_tokens.extend_one(ref_convert);
         }
         for subenum in self.subenums.iter() {
             assert!(
-                self.get_variants(subenum).len() > 0,
+                self.get_variants(subenum, true).len() > 0,
                 "Subenum {} has no variants",
                 subenum
             );
-            from_tokens.extend_one(self.get_from_node(subenum));
-            subenums.push(format_ident!("{}", normalize_type_name(&subenum, true)));
+            if is_ref {
+                let normalized_subenum = normalize_type_name(&subenum, true);
+                let ref_name = format_ident!("{}Ref", normalized_subenum);
+                subenums.push(ref_name);
+                let variants = self
+                    .get_variants(subenum, false)
+                    .into_iter()
+                    .map(|v| v.ident())
+                    .collect();
+                let ref_convert = get_from_enum_to_ref(&normalized_subenum, &variants);
+                from_tokens.extend_one(ref_convert);
+                from_tokens.extend_one(subenum_to_ref(&normalized_subenum, &variants));
+            } else {
+                from_tokens.extend_one(self.get_from_node(subenum));
+                subenums.push(format_ident!("{}", normalize_type_name(&subenum, true)));
+            }
         }
         let subenum_tokens = if !subenums.is_empty() {
             subenums.sort();
@@ -221,13 +250,21 @@ impl<'a> State<'a> {
         } else {
             quote! {}
         };
-        let enum_name = format_ident!("{}", TYPE_NAME);
+        let derive_header = if is_ref {
+            quote! {
+                #[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
+            }
+        } else {
+            quote! {
+            #[derive(Debug, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
+            #[delegate(
+                CSTNode<'db1>
+            )]
+                }
+        };
         quote! {
             #subenum_tokens
-        #[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
-        #[delegate(
-            CSTNode<'db1>
-        )]
+            #derive_header
         pub enum #enum_name<'db1> {
                 #(#enum_tokens),*
             }
@@ -253,7 +290,7 @@ impl<'a> State<'a> {
         None
     }
     pub fn get_subenum_variants(&self, name: &str) -> Vec<&Node<'a>> {
-        let variants = self.get_variants(name);
+        let variants = self.get_variants(name, true);
         let mut nodes = Vec::new();
         for variant in variants {
             if let Some(node) = self.get_node_for_struct_name(&variant.normalize()) {
@@ -536,7 +573,7 @@ mod tests {
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
 
-        let variants = state.get_variants("parent");
+        let variants = state.get_variants("parent", true);
         assert_eq!(
             vec![
                 TypeDefinition {

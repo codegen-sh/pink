@@ -1,3 +1,5 @@
+use proc_macro2::Ident;
+use quote::format_ident;
 use serde::{Deserialize, Serialize};
 
 use crate::naming::normalize_type_name;
@@ -40,6 +42,9 @@ pub struct TypeDefinition {
 impl TypeDefinition {
     pub fn normalize(&self) -> String {
         normalize_type_name(&self.type_name, self.named)
+    }
+    pub fn ident(&self) -> Ident {
+        format_ident!("{}", self.normalize())
     }
 }
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]

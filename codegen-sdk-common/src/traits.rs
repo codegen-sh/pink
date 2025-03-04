@@ -13,7 +13,10 @@ pub trait FromNode<'db>: Sized {
     ) -> Result<Self, ParseError>;
 }
 #[delegatable_trait]
-pub trait CSTNode<'db> {
+pub trait CSTNode<'db>
+where
+    Self: 'db,
+{
     /// Returns the byte offset where the node starts
     fn start_byte(&self) -> usize;
 
@@ -68,11 +71,12 @@ pub trait CSTNode<'db> {
     }
     fn id(&self) -> usize;
 }
+
 pub trait CSTNodeExt<'db>: CSTNode<'db> {
     /// Get the next sibling of this node in its parent
-    fn next_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
+    fn next_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child<'db> = Child>>(
         &self,
-        parent: &Parent,
+        parent: &'db Parent,
     ) -> Option<Child> {
         let mut iter = parent.children().into_iter();
         while let Some(child) = iter.next() {
@@ -82,9 +86,12 @@ pub trait CSTNodeExt<'db>: CSTNode<'db> {
         }
         None
     }
-    fn next_named_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
+    fn next_named_sibling<
+        Child: CSTNode<'db> + Clone,
+        Parent: HasChildren<'db, Child<'db> = Child>,
+    >(
         &self,
-        parent: &Parent,
+        parent: &'db Parent,
     ) -> Option<Child> {
         let mut iter = parent.named_children().into_iter();
         while let Some(child) = iter.next() {
@@ -94,9 +101,9 @@ pub trait CSTNodeExt<'db>: CSTNode<'db> {
         }
         None
     }
-    fn prev_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
+    fn prev_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child<'db> = Child>>(
         &self,
-        parent: &Parent,
+        parent: &'db Parent,
     ) -> Option<Child> {
         let mut prev = None;
         for child in parent.children() {
@@ -107,9 +114,12 @@ pub trait CSTNodeExt<'db>: CSTNode<'db> {
         }
         None
     }
-    fn prev_named_sibling<Child: CSTNode<'db> + Clone, Parent: HasChildren<'db, Child = Child>>(
+    fn prev_named_sibling<
+        Child: CSTNode<'db> + Clone,
+        Parent: HasChildren<'db, Child<'db> = Child>,
+    >(
         &self,
-        parent: &Parent,
+        parent: &'db Parent,
     ) -> Option<Child> {
         let mut prev = None;
         for child in parent.named_children() {
@@ -190,31 +200,42 @@ pub trait CSTNodeExt<'db>: CSTNode<'db> {
 //     }
 // }
 pub trait HasChildren<'db> {
-    type Child: Send + Debug + Clone + CSTNode<'db>;
+    type Child<'db2>: Send + Debug
+    where
+        Self: 'db2;
     /// Returns the first child with the given field name
-    fn child_by_field_id(&self, field_id: u16) -> Option<Self::Child> {
+    fn child_by_field_id<'db1>(&'db1 self, field_id: u16) -> Option<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: Clone,
+    {
         self.children_by_field_id(field_id)
             .first()
             .map(|child| child.clone())
     }
 
     /// Returns all children with the given field name
-    fn children_by_field_id(&self, _field_id: u16) -> Vec<Self::Child>;
+    fn children_by_field_id<'db1>(&'db1 self, _field_id: u16) -> Vec<Self::Child<'db1>>;
 
     /// Returns the first child with the given field name
-    fn child_by_field_name(&self, field_name: &str) -> Option<Self::Child> {
+    fn child_by_field_name<'db1>(&'db1 self, field_name: &str) -> Option<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: Clone,
+    {
         self.children_by_field_name(field_name)
             .first()
             .map(|child| child.clone())
     }
 
     /// Returns all children with the given field name
-    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child>;
+    fn children_by_field_name<'db1>(&'db1 self, field_name: &str) -> Vec<Self::Child<'db1>>;
 
     /// Returns all children of the node
-    fn children(&self) -> Vec<Self::Child>;
+    fn children<'db1>(&'db1 self) -> Vec<Self::Child<'db1>>;
     /// Returns all named children of the node
-    fn named_children(&self) -> Vec<Self::Child> {
+    fn named_children<'db1>(&'db1 self) -> Vec<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: CSTNode<'db1>,
+    {
         self.children()
             .into_iter()
             .filter(|child| child.is_named())
@@ -230,31 +251,43 @@ pub trait HasChildren<'db> {
     // }
 
     /// Returns the first child of the node
-    fn first_child(&self) -> Option<Self::Child> {
+    fn first_child<'db1>(&'db1 self) -> Option<Self::Child<'db1>> {
         self.children().into_iter().next()
     }
 
     /// Returns the last child of the node
-    fn last_child(&self) -> Option<Self::Child> {
+    fn last_child<'db1>(&'db1 self) -> Option<Self::Child<'db1>> {
         self.children().into_iter().last()
     }
     /// Returns the number of children of this node
-    fn child_count(&self) -> usize {
+    fn child_count(&'db self) -> usize {
         self.children().len()
     }
-    fn children_by_field_types(&self, field_types: &[&str]) -> Vec<Self::Child> {
+    fn children_by_field_types<'db1>(&'db1 self, field_types: &[&str]) -> Vec<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: CSTNode<'db1>,
+    {
         self.children()
             .into_iter()
             .filter(|child| field_types.contains(&child.kind()))
             .collect()
     }
-    fn children_by_field_type(&self, field_type: &str) -> Vec<Self::Child> {
+    fn children_by_field_type<'db1>(&'db1 self, field_type: &str) -> Vec<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: CSTNode<'db1>,
+    {
         self.children_by_field_types(&[field_type])
     }
-    fn child_by_field_type(&self, field_type: &str) -> Option<Self::Child> {
+    fn child_by_field_type<'db1>(&'db1 self, field_type: &str) -> Option<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: CSTNode<'db1>,
+    {
         self.children_by_field_type(field_type).into_iter().next()
     }
-    fn child_by_field_types(&self, field_types: &[&str]) -> Option<Self::Child> {
+    fn child_by_field_types<'db1>(&'db1 self, field_types: &[&str]) -> Option<Self::Child<'db1>>
+    where
+        Self::Child<'db1>: CSTNode<'db1>,
+    {
         self.children_by_field_types(field_types).into_iter().next()
     }
 }

@@ -367,6 +367,8 @@ dependencies = [
  "mockall",
  "phf",
  "prettyplease",
+ "proc-macro2",
+ "quote",
  "rkyv",
  "salsa",
  "serde",
