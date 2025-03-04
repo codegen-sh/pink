@@ -7,7 +7,7 @@ pub trait CodebaseContext {
     type File<'a>
     where
         Self: 'a;
-    fn files(&self) -> Vec<&Self::File<'_>>;
+    fn files<'a>(&'a self) -> Vec<&'a Self::File<'a>>;
     fn db(&self) -> &dyn Database;
-    fn get_file(&self, path: PathBuf) -> Option<&Self::File<'_>>;
+    fn get_file<'a>(&'a self, path: PathBuf) -> Option<&'a Self::File<'a>>;
 }

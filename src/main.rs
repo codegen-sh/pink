@@ -7,12 +7,12 @@ use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
-use codegen_sdk_resolution::CodebaseContext;
+use codegen_sdk_resolution::{CodebaseContext, References};
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
 }
-fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize, usize)> {
+fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize, usize, usize)> {
     codebase
         .files()
         .into_iter()
@@ -26,45 +26,59 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                     definitions.interfaces.len(),
                     definitions.methods.len(),
                     definitions.modules.len(),
+                    0,
                 );
             }
             #[cfg(feature = "python")]
             if let ParsedFile::Python(file) = parsed {
                 let definitions = file.definitions(codebase.db());
+                let functions = definitions.functions;
+                let mut total_references = 0;
+                let total_functions = functions.len();
+                for function in functions
+                    .into_iter()
+                    .map(|(_, functions)| functions)
+                    .flatten()
+                {
+                    total_references += function.references(codebase).len();
+                }
                 return (
                     definitions.classes.len(),
-                    definitions.functions.len(),
+                    total_functions,
                     0,
                     0,
                     0,
+                    total_references,
                 );
             }
-            (0, 0, 0, 0, 0)
+            (0, 0, 0, 0, 0, 0)
         })
         .collect()
 }
-#[cfg(feature = "typescript")]
 fn print_definitions(codebase: &Codebase) {
     let mut total_classes = 0;
     let mut total_functions = 0;
     let mut total_interfaces = 0;
     let mut total_methods = 0;
     let mut total_modules = 0;
+    let mut total_references = 0;
     let definitions = get_total_definitions(codebase);
-    for (classes, functions, interfaces, methods, modules) in definitions {
+    for (classes, functions, interfaces, methods, modules, references) in definitions {
         total_classes += classes;
         total_functions += functions;
         total_interfaces += interfaces;
         total_methods += methods;
         total_modules += modules;
+        total_references += references;
     }
     log::info!(
-        "{} classes, {} functions, {} interfaces, {} methods, {} modules",
+        "{} classes, {} functions, {} interfaces, {} methods, {} modules, {} references",
         total_classes,
         total_functions,
         total_interfaces,
         total_methods,
-        total_modules
+        total_modules,
+        total_references
     );
 }
 fn main() -> anyhow::Result<()> {

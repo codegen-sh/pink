@@ -1,4 +1,4 @@
-use crate::ResolveType;
+use crate::{CodebaseContext, ResolveType};
 
 pub trait References<
     'db,
@@ -6,7 +6,15 @@ pub trait References<
     Scope: crate::Scope<'db, Type = Self, ReferenceType = ReferenceType> + Clone,
 >: Eq + PartialEq
 {
-    fn references(&self, db: &'db dyn salsa::Database, scopes: Vec<Scope>) -> Vec<ReferenceType>
+    fn references<F: TryInto<Scope> + Clone + 'db, T>(&self, codebase: &'db T) -> Vec<ReferenceType>
+    where
+        Self: Sized,
+        for<'b> T: CodebaseContext<File<'db> = F> + 'static,
+    {
+        let scopes: Vec<Scope> = codebase.files().into_iter().filter_map(|file| file.clone().try_into().ok()).collect();
+        return self.references_for_scopes(codebase.db(), scopes);
+    }
+    fn references_for_scopes(&self, db: &'db dyn salsa::Database, scopes: Vec<Scope>) -> Vec<ReferenceType>
     where
         Self: Sized,
     {

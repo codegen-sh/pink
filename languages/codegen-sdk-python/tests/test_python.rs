@@ -67,5 +67,5 @@ test()";
     assert_eq!(file.references(&db).calls.len(), 1);
     let definitions = file.definitions(&db);
     let function = definitions.functions.get("test").unwrap().first().unwrap();
-    assert_eq!(function.references(&db, vec![file]).len(), 1);
+    assert_eq!(function.references_for_scopes(&db, vec![file]).len(), 1);
 }

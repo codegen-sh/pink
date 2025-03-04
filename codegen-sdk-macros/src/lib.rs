@@ -39,6 +39,7 @@ use quote::{format_ident, quote};
 #[proc_macro]
 pub fn languages_ast(_item: TokenStream) -> TokenStream {
     let mut output = Vec::new();
+    let mut from_conversions = proc_macro2::TokenStream::new();
     for language in LANGUAGES.iter() {
         if language.name() == "ts_query" {
             continue;
@@ -52,6 +53,19 @@ pub fn languages_ast(_item: TokenStream) -> TokenStream {
         #struct_name(#package_name::ast::#file_name<'db>),
         };
         output.push(variant);
+        from_conversions.extend_one(quote! {
+            #[cfg(feature = #name)]
+            impl<'db> TryInto<#package_name::ast::#file_name<'db>> for ParsedFile<'db> {
+                type Error = ();
+                fn try_into(self) -> Result<#package_name::ast::#file_name<'db>, ()> {
+                    if let Self::#struct_name(parsed) = self {
+                        Ok(parsed)
+                    } else {
+                        Err(())
+                    }
+                }
+            }
+        });
     }
     let enum_output: TokenStream = quote! {
     #[derive(Debug, Clone, Eq, PartialEq, Hash, salsa::Update)]
@@ -67,8 +81,10 @@ pub fn languages_ast(_item: TokenStream) -> TokenStream {
     pub enum ParsedFile<'db> {
         #(#output)*
     }
+    #from_conversions
     }
     .into();
+
     enum_output
 }
 
