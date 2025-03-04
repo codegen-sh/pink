@@ -40,7 +40,7 @@ pub mod ast {
             db: &'db dyn salsa::Database,
             scope: PythonFile<'db>,
             _scopes: Vec<PythonFile<'db>>,
-        ) -> Vec<Self::Type> {
+        ) -> Vec<&Self::Type> {
             scope.resolve(db, self.function.source())
         }
     }

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use codegen_sdk_common::{CSTNode, HasChildren, Language};
+use codegen_sdk_common::{CSTNode, HasChildren, Language, naming::normalize_type_name};
 use codegen_sdk_ts_query::cst as ts_query;
 use convert_case::{Case, Casing};
 use log::info;
@@ -57,7 +57,7 @@ pub fn generate_visitor<'db>(
             }
         }
         methods.push(quote! {
-            fn #enter(&mut self, node: &crate::cst::#struct_name<'db>) {
+            fn #enter<'db2>(&self, node: &'db2 crate::cst::#struct_name<'db>) where 'db2: 'db {
                 #matchers
             }
         });
@@ -70,8 +70,8 @@ pub fn generate_visitor<'db>(
         nodes.extend(state.get_subenum_struct_names());
         nodes = nodes.difference(&variants).cloned().collect();
         quote! {
-            #(#[visit(drive(&crate::cst::#nodes<'db>))])*
-            #(#[visit(drive(&crate::cst::#variants<'db>))])*
+            #(#[visit(drive(&'db1 crate::cst::#nodes<'db>))])*
+            #(#[visit(drive(&'db1 crate::cst::#variants<'db>))])*
             #(#[visit(drive(crate::cst::#nodes<'db>))])*
             #[visit(drive(for<T> Box<T>))]
             #[visit(drive(for<T> Vec<T>))]
@@ -84,14 +84,80 @@ pub fn generate_visitor<'db>(
         quote! {}
     };
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
+    let visitor_name = format_ident!("{}Visitor", name);
+    let root_name = format_ident!("{}", normalize_type_name(&language.root_node(), true));
+    let i = (0..types.len()).map(syn::Index::from);
+    let sender_param = quote! {
+        #(Sender<(String, &'db1 crate::cst::#types<'db>)>),*
+    };
+    let visitor_constructor = quote! {
+        fn new(sender: (#sender_param)) -> Self {
+            Self {
+                #(#names: sender.#i,)*
+                phantom: std::marker::PhantomData,
+                phantom2: std::marker::PhantomData,
+            }
+        }
+    };
+    let senders = types
+        .iter()
+        .map(|t| format_ident!("sender_{}", t))
+        .collect::<Vec<_>>();
+    let receivers = types
+        .iter()
+        .map(|t| format_ident!("receiver_{}", t))
+        .collect::<Vec<_>>();
+    let empty_constructors = types
+        .iter()
+        .map(|_| quote! {Default::default()})
+        .collect::<Vec<_>>();
+    let output_constructor = quote! {
+        pub fn visit(db: &'db dyn salsa::Database, root: &'db crate::cst::#root_name<'db>) -> Self {
+            #(let (#senders, #receivers) = std::sync::mpsc::channel();)*
+            let visitor = #visitor_name::new(
+                (
+                    #(#senders),*
+                )
+            );
+            visitor.visit_by_val_infallible(root);
+
+            #(
+                let mut #names: BTreeMap<String, Vec<&'db crate::cst::#types<'db>>> = BTreeMap::new();
+                while let Ok(val) = #receivers.recv() {
+                    let (name, node) = val;
+                    #names.entry(name).or_default().push(node);
+                }
+            )*
+            Self {
+                #(#names),*
+            }
+        }
+    };
     quote! {
-        #[derive(Visitor, Visit, Debug, Clone, Eq, PartialEq, salsa::Update, Hash, Default)]
-        #visitor
+        // Three lifetimes:
+        // db: the lifetime of the database
+        // db1: the lifetime of the visitor executing per-node
+        // db2: the lifetime of the references held by the visitor
+        #[derive(Debug, Clone, Eq, PartialEq, Hash, Default, salsa::Update)]
         pub struct #name<'db> {
-            #(pub #names: BTreeMap<String, Vec<crate::cst::#types<'db>>>,)*
-            phantom: std::marker::PhantomData<&'db ()>,
+
+            #(
+                pub #names: BTreeMap<String, Vec<&'db crate::cst::#types<'db>>>,
+            )*
         }
         impl<'db> #name<'db> {
+            #output_constructor
+        }
+
+        #[derive(Visitor, Visit, Debug)]
+        #visitor
+        pub struct #visitor_name<'db, 'db1> where 'db1: 'db {
+            #(pub #names: Sender<(String, &'db1 crate::cst::#types<'db>)>,)*
+            phantom: std::marker::PhantomData<&'db ()>,
+            phantom2: std::marker::PhantomData<&'db1 ()>,
+        }
+        impl<'db, 'db1> #visitor_name<'db, 'db1> {
+            #visitor_constructor
             #(#methods)*
         }
     }

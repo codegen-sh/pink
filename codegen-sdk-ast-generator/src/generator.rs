@@ -20,11 +20,11 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
             type Definitions = Definitions<'db>;
             #[salsa::tracked]
             fn definitions(self, db: &'db dyn salsa::Database) -> Self::Definitions {
-                let mut definitions = Definitions::default();
                 if let Some(program) = self.node(db) {
-                    definitions = definitions.visit_by_val_infallible(&program);
+                    return Definitions::visit(db, &program);
+                } else {
+                    return Definitions::default();
                 }
-                definitions
             }
         }
     }
@@ -47,11 +47,11 @@ fn get_references_impl(language: &Language) -> TokenStream {
             type References = References<'db>;
             #[salsa::tracked]
             fn references(self, db: &'db dyn salsa::Database) -> Self::References {
-                let mut references = References::default();
-            if let Some(program) = self.node(db) {
-                references = references.visit_by_val_infallible(&program);
-            }
-                references
+                if let Some(program) = self.node(db) {
+                    return References::visit(db, &program);
+                } else {
+                    return References::default();
+                }
             }
         }
     }

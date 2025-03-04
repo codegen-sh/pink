@@ -15,10 +15,8 @@ use super::node::Node;
 use crate::{
     Config,
     generator::{
-        constants::{TYPE_NAME, TYPE_NAME_REF},
-        utils::{
-            get_comment_type, get_from_enum_to_ref, get_from_node, get_from_type, subenum_to_ref,
-        },
+        constants::TYPE_NAME,
+        utils::{get_comment_type, get_from_enum_to_ref, get_from_node, get_from_type},
     },
 };
 #[derive(Debug)]
@@ -229,7 +227,6 @@ impl<'a> State<'a> {
                     .collect();
                 let ref_convert = get_from_enum_to_ref(&normalized_subenum, &variants);
                 from_tokens.extend_one(ref_convert);
-                from_tokens.extend_one(subenum_to_ref(&normalized_subenum, &variants));
             } else {
                 from_tokens.extend_one(self.get_from_node(subenum));
                 subenums.push(format_ident!("{}", normalize_type_name(&subenum, true)));

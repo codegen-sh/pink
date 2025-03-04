@@ -318,7 +318,7 @@ impl<'a> Query<'a> {
 
                 if let Some(ref variant) = comment_variant {
                     let children = format_ident!("{}Children", target_name);
-                    let variant = format_ident!("{}", variant);
+                    let variant = format_ident!("{}Ref", variant);
                     matchers.extend_one(quote! {
 
                         if let crate::cst::#children::#variant(#current_node) = #current_node {
@@ -371,7 +371,7 @@ impl<'a> Query<'a> {
     }
     fn group_children<'b>(
         &self,
-        node: &ts_query::NamedNode<'b>,
+        node: &'b ts_query::NamedNode<'b>,
         first_node: &ts_query::NamedNodeChildrenRef<'_>,
         mut name_value: Option<TokenStream>,
         current_node: &Ident,
@@ -479,7 +479,7 @@ impl<'a> Query<'a> {
                     &variant.normalize_name(),
                     variant.kind(),
                     current_node,
-                    remaining_nodes,
+                    remaining_nodes.clone(),
                     name_value.clone(),
                 );
                 matchers.extend_one(matcher);
@@ -493,9 +493,7 @@ impl<'a> Query<'a> {
         let to_append = self.executor_id();
         if let Some(name_value) = name_value {
             return quote! {
-                self.#to_append.entry(#name_value).or_insert(Vec::new()).push(
-                    node.clone()
-                );
+                self.#to_append.send((#name_value, node)).unwrap();
             };
         }
         log::warn!("No name value found for: {}", self.node().source());
@@ -527,6 +525,7 @@ impl<'a> Query<'a> {
             // If this is a field, we may be dealing with multiple types and can't operate over all of them
             return to_append; // TODO: Handle this case
         }
+        let children = format_ident!("{}ChildrenRef", struct_name);
         let struct_name = format_ident!("{}", normalize_type_name(&identifier.source(), true));
         quote! {
             if let crate::cst::#children::#struct_name(child) = #current_node {

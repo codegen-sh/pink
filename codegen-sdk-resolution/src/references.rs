@@ -4,7 +4,7 @@ pub trait References<
     'db,
     ReferenceType: ResolveType<'db, Scope, Type = Self> + Clone, // References must resolve to this type
     Scope: crate::Scope<'db, Type = Self, ReferenceType = ReferenceType> + Clone,
->: Eq + PartialEq
+>: Eq + PartialEq where Self:'db
 {
     fn references<F: TryInto<Scope> + Clone + 'db, T>(&self, codebase: &'db T, scope: &Scope) -> Vec<ReferenceType>
     where
@@ -16,12 +16,12 @@ pub trait References<
     }
     fn references_for_scopes(&self, db: &'db dyn salsa::Database, scopes: Vec<Scope>, scope: &Scope) -> Vec<ReferenceType>
     where
-        Self: Sized,
+        Self: Sized + 'db,
     {
         let mut results = Vec::new();
         for reference in scope.clone().resolvables(db) {
             let resolved = reference.clone().resolve_type(db, scope.clone(), scopes.clone());
-                if resolved.iter().any(|result| result == self) {
+                if resolved.iter().any(|result| result.clone() == self) {
                     results.push(reference);
                 }
         }

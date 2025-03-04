@@ -5,7 +5,6 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use super::constants::TYPE_NAME;
 use crate::generator::constants::TYPE_NAME_REF;
 pub fn get_serialize_bounds() -> TokenStream {
     quote! {
@@ -39,23 +38,10 @@ pub fn get_from_type(struct_name: &str, target: &Ident, is_ref: bool) -> TokenSt
         }
     }
 }
-pub fn subenum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> TokenStream {
-    let name = format_ident!("{}Ref", enum_name);
-    let node_types_ref = format_ident!("{}", TYPE_NAME_REF);
-
-    quote! {
-        // impl<'db3> From<#name<'db3>> for #node_types_ref<'db3> {
-        //     fn from(node: #name<'db3>) -> Self {
-        //         match node {
-        //             #(Self::#variant_names(data) => #node_types_ref::#variant_names(data),)*
-        //         }
-        //     }
-        // }
-    }
-}
 pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> TokenStream {
     let name = format_ident!("{}", enum_name);
     let name_ref = format_ident!("{}Ref", enum_name);
+    let node_types_ref = format_ident!("{}", TYPE_NAME_REF);
 
     quote! {
         impl<'db3> #name<'db3> {
@@ -65,15 +51,21 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
                 }
             }
         }
-        // #[delegate_to_methods]
-        // #[delegate(CSTNode<'db3>, target_ref = "deref")]
-        // impl<'db3> #name_ref<'db3> {
-        //     fn deref(&'db3 self) -> &'db3 dyn CSTNode<'db3> {
-        //         match self {
-        //             #(Self::#variant_names(data) => *data,)*
-        //         }
-        //     }
-        // }
+        #[delegate_to_methods]
+        #[delegate(CSTNode<'db3>, target_ref = "deref")]
+        impl<'db3> #name_ref<'db3> {
+            fn deref<'db2>(&'db2 self) -> &'db2 dyn CSTNode<'db3> {
+                match self {
+                    #(Self::#variant_names(data) => *data,)*
+                }
+            }
+        }
+        impl<'db3> From<&'db3 #name<'db3>> for #node_types_ref<'db3> {
+            fn from(node: &'db3 #name<'db3>) -> Self {
+                node.as_ref().into()
+            }
+        }
+
     }
 }
 

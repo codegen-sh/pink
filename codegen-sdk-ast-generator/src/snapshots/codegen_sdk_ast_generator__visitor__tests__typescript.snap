@@ -1072,12 +1072,15 @@ expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_strin
     enter(InterfaceDeclaration:crate::cst::InterfaceDeclaration<'db>),
     enter(Module:crate::cst::Module<'db>)
 )]
-pub struct Definitions<'db> {
-    pub classes: BTreeMap<String, Vec<crate::cst::AbstractClassDeclaration<'db>>>,
-    pub functions: BTreeMap<String, Vec<crate::cst::FunctionSignature<'db>>>,
-    pub interfaces: BTreeMap<String, Vec<crate::cst::InterfaceDeclaration<'db>>>,
-    pub methods: BTreeMap<String, Vec<crate::cst::AbstractMethodSignature<'db>>>,
-    pub modules: BTreeMap<String, Vec<crate::cst::Module<'db>>>,
+pub struct Definitions<'db>
+where
+    Self: 'db,
+{
+    pub classes: BTreeMap<String, Vec<&'db crate::cst::AbstractClassDeclaration<'db>>>,
+    pub functions: BTreeMap<String, Vec<&'db crate::cst::FunctionSignature<'db>>>,
+    pub interfaces: BTreeMap<String, Vec<&'db crate::cst::InterfaceDeclaration<'db>>>,
+    pub methods: BTreeMap<String, Vec<&'db crate::cst::AbstractMethodSignature<'db>>>,
+    pub modules: BTreeMap<String, Vec<&'db crate::cst::Module<'db>>>,
     phantom: std::marker::PhantomData<&'db ()>,
 }
 impl<'db> Definitions<'db> {

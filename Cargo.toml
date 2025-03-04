@@ -122,26 +122,26 @@ crossbeam-channel = "0.5.11"
 rstest = "0.25.0"
 [profile.dev]
 # codegen-backend = "cranelift"
-split-debuginfo = "unpacked"
+# split-debuginfo = "unpacked"
 
 [profile.dev.package]
 insta.opt-level = 3
 similar.opt-level = 3
 syn.opt-level = 3
 convert_case.opt-level = 3
-codegen-sdk-cst-generator.opt-level = 3
-codegen-sdk-common.opt-level = 3
+# codegen-sdk-cst-generator.opt-level = 3
+# codegen-sdk-common.opt-level = 3
 
 [profile.dev.build-override]
 opt-level = 3
 
-[profile.test.package."codegen-sdk-cst"]
-inherits = "dev"
-opt-level = 0
-debug = 0
-strip = "none"
-codegen-units = 256
-incremental = true
+# [profile.test.package."codegen-sdk-cst"]
+# inherits = "dev"
+# opt-level = 0
+# debug = 0
+# strip = "none"
+# codegen-units = 256
+# incremental = true
 # codegen-backend = "cranelift"
 
 [profile.test]

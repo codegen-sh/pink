@@ -704,10 +704,13 @@ expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_strin
     enter(FunctionDefinition:crate::cst::FunctionDefinition<'db>),
     enter(Module:crate::cst::Module<'db>)
 )]
-pub struct Definitions<'db> {
-    pub classes: BTreeMap<String, Vec<crate::cst::ClassDefinition<'db>>>,
-    pub constants: BTreeMap<String, Vec<crate::cst::Module<'db>>>,
-    pub functions: BTreeMap<String, Vec<crate::cst::FunctionDefinition<'db>>>,
+pub struct Definitions<'db>
+where
+    Self: 'db,
+{
+    pub classes: BTreeMap<String, Vec<&'db crate::cst::ClassDefinition<'db>>>,
+    pub constants: BTreeMap<String, Vec<&'db crate::cst::Module<'db>>>,
+    pub functions: BTreeMap<String, Vec<&'db crate::cst::FunctionDefinition<'db>>>,
     phantom: std::marker::PhantomData<&'db ()>,
 }
 impl<'db> Definitions<'db> {

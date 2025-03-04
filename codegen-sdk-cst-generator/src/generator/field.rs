@@ -8,7 +8,7 @@ use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use super::constants::{TYPE_NAME, TYPE_NAME_REF};
+use super::constants::TYPE_NAME_REF;
 use crate::Config;
 
 #[derive(Debug)]
