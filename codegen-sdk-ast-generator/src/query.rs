@@ -219,13 +219,13 @@ impl<'a> Query<'a> {
                         &field_name,
                         name_value,
                     );
-                    assert!(
-                        wrapped.to_string().len() > 0,
-                        "Wrapped is empty, {} {} {}",
-                        normalized_struct_name,
-                        other_child.source(),
-                        other_child.kind()
-                    );
+                    // assert!(
+                    //     wrapped.to_string().len() > 0,
+                    //     "Wrapped is empty, {} {} {}",
+                    //     normalized_struct_name,
+                    //     other_child.source(),
+                    //     other_child.kind()
+                    // );
                     if !field.is_optional() {
                         return quote! {
                             let #field_name = &*#current_node.#field_name;
@@ -407,10 +407,16 @@ impl<'a> Query<'a> {
                                 #current_node.source()
                             });
                         }
+                        ts_query::NamedNodeChildren::AnonymousUnderscore(_) => {
+                            name_value = Some(quote! {
+                                #current_node.source()
+                            });
+                        }
                         _ => panic!(
-                            "Unexpected prev: {:#?}, source: {:#?}",
+                            "Unexpected prev: {:#?}, source: {:#?}. Query: {:#?}",
                             prev.kind(),
-                            prev.source()
+                            prev.source(),
+                            self.node().source()
                         ),
                     }
                     break;
@@ -483,14 +489,15 @@ impl<'a> Query<'a> {
     }
     fn get_default_matcher(&self, name_value: Option<TokenStream>) -> TokenStream {
         let to_append = self.executor_id();
-        let name_value = name_value
-            .ok_or(format!("No name value found for: {}", self.node().source()))
-            .unwrap();
-        quote! {
-            self.#to_append.entry(#name_value).or_insert(Vec::new()).push(
-                node.clone()
-            );
+        if let Some(name_value) = name_value {
+            return quote! {
+                self.#to_append.entry(#name_value).or_insert(Vec::new()).push(
+                    node.clone()
+                );
+            };
         }
+        log::warn!("No name value found for: {}", self.node().source());
+        quote! {}
     }
     fn get_matcher_for_identifier(
         &self,

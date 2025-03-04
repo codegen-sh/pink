@@ -48,19 +48,4 @@ pub mod ast {
         for crate::cst::FunctionDefinition<'db>
     {
     }
-    #[salsa::tracked]
-    impl<'db> PythonFile<'db> {
-        #[salsa::tracked]
-        pub fn get_calls(
-            self,
-            db: &'db dyn salsa::Database,
-            name: String,
-        ) -> Vec<crate::cst::Call<'db>> {
-            let mut usages = Vec::new();
-            if let Some(usage) = self.references(db).calls.get(&name) {
-                usages.extend(usage.iter().cloned());
-            }
-            usages
-        }
-    }
 }

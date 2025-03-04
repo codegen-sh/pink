@@ -705,21 +705,21 @@ expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_strin
     enter(Module:crate::cst::Module<'db>)
 )]
 pub struct Definitions<'db> {
-    pub classes: BTreeMap<String, crate::cst::ClassDefinition<'db>>,
-    pub constants: BTreeMap<String, crate::cst::Module<'db>>,
-    pub functions: BTreeMap<String, crate::cst::FunctionDefinition<'db>>,
+    pub classes: BTreeMap<String, Vec<crate::cst::ClassDefinition<'db>>>,
+    pub constants: BTreeMap<String, Vec<crate::cst::Module<'db>>>,
+    pub functions: BTreeMap<String, Vec<crate::cst::FunctionDefinition<'db>>>,
     phantom: std::marker::PhantomData<&'db ()>,
 }
 impl<'db> Definitions<'db> {
     fn enter_ClassDefinition(&mut self, node: &crate::cst::ClassDefinition<'db>) {
         ///Code for query: (class_definition   name: (identifier) @name) @definition.class
         let name = &*node.name;
-        self.classes.insert(name, node.clone());
+        self.classes.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
     fn enter_FunctionDefinition(&mut self, node: &crate::cst::FunctionDefinition<'db>) {
         ///Code for query: (function_definition   name: (identifier) @name) @definition.function
         let name = &*node.name;
-        self.functions.insert(name, node.clone());
+        self.functions.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
     fn enter_Module(&mut self, node: &crate::cst::Module<'db>) {
         ///Code for query: (module (expression_statement (assignment left: (identifier) @name) @definition.constant))
@@ -730,7 +730,10 @@ impl<'db> Definitions<'db> {
                     if let crate::cst::ExpressionStatementChildren::Assignment(child) = child {
                         ///Code for query: (module (expression_statement (assignment left: (identifier) @name) @definition.constant))
                         let left = &*child.left;
-                        self.constants.insert(left, node.clone());
+                        self.constants
+                            .entry(left.source())
+                            .or_insert(Vec::new())
+                            .push(node.clone());
                     }
                     break;
                 }

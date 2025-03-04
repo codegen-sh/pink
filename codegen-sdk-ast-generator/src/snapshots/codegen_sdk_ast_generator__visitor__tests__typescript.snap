@@ -1073,11 +1073,11 @@ expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_strin
     enter(Module:crate::cst::Module<'db>)
 )]
 pub struct Definitions<'db> {
-    pub classes: BTreeMap<String, crate::cst::AbstractClassDeclaration<'db>>,
-    pub functions: BTreeMap<String, crate::cst::FunctionSignature<'db>>,
-    pub interfaces: BTreeMap<String, crate::cst::InterfaceDeclaration<'db>>,
-    pub methods: BTreeMap<String, crate::cst::AbstractMethodSignature<'db>>,
-    pub modules: BTreeMap<String, crate::cst::Module<'db>>,
+    pub classes: BTreeMap<String, Vec<crate::cst::AbstractClassDeclaration<'db>>>,
+    pub functions: BTreeMap<String, Vec<crate::cst::FunctionSignature<'db>>>,
+    pub interfaces: BTreeMap<String, Vec<crate::cst::InterfaceDeclaration<'db>>>,
+    pub methods: BTreeMap<String, Vec<crate::cst::AbstractMethodSignature<'db>>>,
+    pub modules: BTreeMap<String, Vec<crate::cst::Module<'db>>>,
     phantom: std::marker::PhantomData<&'db ()>,
 }
 impl<'db> Definitions<'db> {
@@ -1087,7 +1087,7 @@ impl<'db> Definitions<'db> {
     ) {
         ///Code for query: (abstract_class_declaration   name: (type_identifier) @name) @definition.class
         let name = &*node.name;
-        self.classes.insert(name, node.clone());
+        self.classes.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
     fn enter_AbstractMethodSignature(
         &mut self,
@@ -1095,12 +1095,12 @@ impl<'db> Definitions<'db> {
     ) {
         ///Code for query: (abstract_method_signature   name: (property_identifier) @name) @definition.method
         let name = &*node.name;
-        self.methods.insert(name, node.clone());
+        self.methods.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
     fn enter_FunctionSignature(&mut self, node: &crate::cst::FunctionSignature<'db>) {
         ///Code for query: (function_signature   name: (identifier) @name) @definition.function
         let name = &*node.name;
-        self.functions.insert(name, node.clone());
+        self.functions.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
     fn enter_InterfaceDeclaration(
         &mut self,
@@ -1108,11 +1108,11 @@ impl<'db> Definitions<'db> {
     ) {
         ///Code for query: (interface_declaration   name: (type_identifier) @name) @definition.interface
         let name = &*node.name;
-        self.interfaces.insert(name, node.clone());
+        self.interfaces.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
     fn enter_Module(&mut self, node: &crate::cst::Module<'db>) {
         ///Code for query: (module   name: (identifier) @name) @definition.module
         let name = &*node.name;
-        self.modules.insert(name, node.clone());
+        self.modules.entry(name.source()).or_insert(Vec::new()).push(node.clone());
     }
 }
