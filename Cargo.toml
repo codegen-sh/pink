@@ -57,7 +57,7 @@ members = [
   "languages/codegen-sdk-yaml",
   "languages/codegen-sdk-toml",
   "languages/codegen-sdk-ts_query",
-  "languages/codegen-sdk-typescript",
+  "languages/codegen-sdk-typescript", "codegen-sdk-resolution",
 ]
 resolver = "2"
 [workspace.dependencies]
@@ -88,6 +88,7 @@ mockall = "0.13.1"
 codegen-sdk-common = { path = "codegen-sdk-common" }
 codegen-sdk-cst = { path = "codegen-sdk-cst"}
 codegen-sdk-ast = { path = "codegen-sdk-ast" }
+codegen-sdk-resolution = { path = "codegen-sdk-resolution" }
 codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
 codegen-sdk-ast-generator = { path = "codegen-sdk-ast-generator" }
 codegen-sdk-ts_query = { path = "languages/codegen-sdk-ts_query" }

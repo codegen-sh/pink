@@ -1,0 +1,8 @@
+[package]
+name = "codegen-sdk-resolution"
+description = "Traits for implementing type resolution in codegen-sdk"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+salsa = { workspace = true }

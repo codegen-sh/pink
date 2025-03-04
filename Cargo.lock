@@ -584,6 +584,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_generic_visitor",
  "derive_more",
  "env_logger",
@@ -593,6 +594,13 @@ dependencies = [
  "tempfile",
  "test-log",
  "tree-sitter",
+]
+
+[[package]]
+name = "codegen-sdk-resolution"
+version = "0.1.0"
+dependencies = [
+ "salsa",
 ]
 
 [[package]]
