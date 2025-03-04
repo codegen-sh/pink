@@ -18,6 +18,7 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
         #[salsa::tracked]
         impl<'db> codegen_sdk_ast::Definitions<'db> for #language_struct_name<'db> {
             type Definitions = Definitions<'db>;
+            #[salsa::tracked]
             fn definitions(self, db: &'db dyn salsa::Database) -> Self::Definitions {
                 let mut definitions = Definitions::default();
                 if let Some(program) = self.node(db) {
@@ -44,6 +45,7 @@ fn get_references_impl(language: &Language) -> TokenStream {
         #[salsa::tracked]
         impl<'db> codegen_sdk_ast::References<'db> for #language_struct_name<'db> {
             type References = References<'db>;
+            #[salsa::tracked]
             fn references(self, db: &'db dyn salsa::Database) -> Self::References {
                 let mut references = References::default();
             if let Some(program) = self.node(db) {

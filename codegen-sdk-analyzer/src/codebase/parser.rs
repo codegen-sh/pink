@@ -45,15 +45,15 @@ fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>(
     multi.remove(&pg);
     results
 }
-#[salsa::tracked]
-fn parse_files_par(db: &dyn Db, files: FilesToParse) {
-    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file| {
-        parse_file(db, file);
-    });
-}
+// #[salsa::tracked]
+// fn parse_files_par(db: &dyn Db, files: FilesToParse) {
+//     let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file| {
+//         parse_file(db, file);
+//     });
+// }
 #[salsa::tracked]
 fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
-    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Definitions", |db, file| {
+    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file| {
         let file = parse_file(db, file);
         if let Some(parsed) = file.file(db) {
             #[cfg(feature = "typescript")]
@@ -85,13 +85,6 @@ pub fn parse_files<'db>(
     #[cfg(feature = "serialization")]
     let cached = get_cached_count(&cache, &files_to_parse);
     log::info!("Parsing {} files", files_to_parse.files(db).len());
-    parse_files_par(
-        db,
-        #[cfg(feature = "serialization")]
-        &cache,
-        files_to_parse,
-    );
-    log::info!("Parsing definitions");
     parse_files_definitions_par(
         db,
         #[cfg(feature = "serialization")]
