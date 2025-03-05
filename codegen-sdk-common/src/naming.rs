@@ -38,6 +38,13 @@ static MAPPINGS: phf::Map<char, &'static str> = phf_map! {
     ';' => "Semicolon",
     '\0' => "Null",
 };
+pub fn field_name_getter(field_name: &str) -> String {
+    if field_name == "source" {
+        return "source_node".to_string();
+    }
+    field_name.to_string()
+}
+
 pub fn normalize_field_name(field_name: &str) -> String {
     if field_name == "type" {
         return "r#type".to_string();

@@ -21,9 +21,9 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
             #[salsa::tracked]
             fn definitions(self, db: &'db dyn salsa::Database) -> Self::Definitions {
                 if let Some(program) = self.node(db) {
-                    return Definitions::visit(db, &program);
+                    return Definitions::visit(db, program);
                 } else {
-                    return Definitions::default();
+                    return Definitions::default(db);
                 }
             }
         }
@@ -48,9 +48,9 @@ fn get_references_impl(language: &Language) -> TokenStream {
             #[salsa::tracked]
             fn references(self, db: &'db dyn salsa::Database) -> Self::References {
                 if let Some(program) = self.node(db) {
-                    return References::visit(db, &program);
+                    return References::visit(db, program);
                 } else {
-                    return References::default();
+                    return References::default(db);
                 }
             }
         }
@@ -61,12 +61,11 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     let language_name_str = language.name();
     let definitions_impl = get_definitions_impl(language);
     let references_impl = get_references_impl(language);
-    let program_id = format_ident!("{}", language.root_node());
     let content = quote! {
     #[salsa::tracked]
     pub struct #language_struct_name<'db> {
         #[return_ref]
-        node: Option<crate::cst::#program_id<'db>>,
+        node: Option<crate::cst::Parsed<'db>>,
         #[id]
         pub id: codegen_sdk_common::FileNodeId<'db>,
     }
@@ -81,7 +80,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
         let file_id = codegen_sdk_common::FileNodeId::new(db, input.path(db).clone());
         #language_struct_name::new(db, ast, file_id)
     }
-    #[salsa::tracked]
+    #[salsa::tracked(return_ref)]
     pub fn parse_query(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
         parse(db, input)
     }

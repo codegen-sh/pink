@@ -60,7 +60,7 @@ where
     fn kind_id(&self) -> u16;
 
     /// Returns the node's type as a string
-    fn kind(&self) -> &str;
+    fn kind_name(&self) -> &str;
 
     /// Returns true if this node is named, false if it is anonymous
     fn is_named(&self) -> bool;
@@ -308,7 +308,7 @@ pub trait HasChildren<'db, Types: TreeNode> {
     {
         self.children(context)
             .into_iter()
-            .filter(|child| field_types.contains(&child.kind()))
+            .filter(|child| field_types.contains(&child.kind_name()))
             .collect()
     }
     fn children_by_field_type<'db1>(

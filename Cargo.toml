@@ -109,10 +109,9 @@ codegen-sdk-json = { path = "languages/codegen-sdk-json" }
 tempfile = "3.16.0"
 quote = "1.0.38"
 proc-macro2 = "1.0.93"
-derive_generic_visitor = "0.1.1"
 insta = "1.42.1"
 prettyplease = "0.2.29"
-syn = { version = "2.0.98", features = ["proc-macro"] }
+syn = { version = "2.0.98", features = ["proc-macro", "full"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
 salsa = {git = "https://github.com/salsa-rs/salsa", branch = "master"}
 subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
@@ -135,6 +134,7 @@ convert_case.opt-level = 3
 
 [profile.dev.build-override]
 opt-level = 3
+debug = true
 
 # [profile.test.package."codegen-sdk-cst"]
 # inherits = "dev"

@@ -25,8 +25,8 @@ fn get_imports(config: &Config) -> TokenStream {
     use subenum::subenum;
     use std::backtrace::Backtrace;
         use bytes::Bytes;
-        use derive_generic_visitor::Drive;
         use ambassador::Delegate;
+        use derive_more::Debug;
         use ambassador::delegate_to_methods;
         use codegen_sdk_cst::CSTLanguage;
         use crate::cst::tree::ParseContext;

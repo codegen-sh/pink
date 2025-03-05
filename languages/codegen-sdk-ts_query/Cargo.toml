@@ -9,7 +9,6 @@ salsa = { workspace = true }
 tree-sitter = { workspace = true }
 derive_more = { workspace = true }
 ambassador = { workspace = true }
-derive_generic_visitor = { workspace = true }
 subenum = {workspace = true}
 bytes = { workspace = true }
 codegen-sdk-cst = { workspace = true }

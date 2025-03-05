@@ -76,7 +76,7 @@ impl<'a> Query<'a> {
                 node => {
                     log::warn!(
                         "Unhandled query: {:#?}. Source: {:#?}",
-                        node.kind(),
+                        node.kind_name(),
                         node.source()
                     );
                 }
@@ -238,12 +238,14 @@ impl<'a> Query<'a> {
                     // );
                     if !field.is_optional() {
                         return quote! {
-                            let #field_name = &*#current_node.#field_name;
+                            let id = #current_node.#field_name;
+                            let #field_name = #current_node.#field_name(tree);
                             #wrapped
                         };
                     } else {
                         return quote! {
-                            if let Some(#field_name) = &*#current_node.#field_name {
+                            if let Some(#field_name) = #current_node.#field_name(tree) {
+                                let id = #current_node.#field_name.unwrap();
                                 #wrapped
                             }
                         };
@@ -311,7 +313,7 @@ impl<'a> Query<'a> {
         }
 
         for child in remaining_nodes {
-            if child.kind() == "field_definition" {
+            if child.kind_name() == "field_definition" {
                 field_matchers.extend_one(self.get_matcher_for_definition(
                     &target_name,
                     child.into(),
@@ -331,7 +333,7 @@ impl<'a> Query<'a> {
                     let variant = format_ident!("{}Ref", variant);
                     matchers.extend_one(quote! {
 
-                        if let crate::cst::#children::#variant(#current_node) = #current_node {
+                        if let crate::cst::NodeTypes::#variant(#current_node) = #current_node {
                             #result
                         }
                     });
@@ -346,7 +348,7 @@ impl<'a> Query<'a> {
             quote! {}
         } else {
             quote! {
-                for child in #current_node.children().into_iter() {
+                for (child, id) in tree.children(&id) {
                     #matchers
                     break;
                 }
@@ -367,13 +369,9 @@ impl<'a> Query<'a> {
         if struct_name == target_name {
             return base_matcher;
         } else {
-            let mut children = format_ident!("{}", struct_name);
-            if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
-                children = format_ident!("{}", node.children_struct_name());
-            }
             let variant = format_ident!("{}", target_name);
             return quote! {
-                if let crate::cst::#children::#variant(#current_node) = #current_node {
+                if let crate::cst::NodeTypes::#variant(#current_node) = #current_node {
                     #base_matcher
                 }
             };
@@ -389,12 +387,12 @@ impl<'a> Query<'a> {
         let mut prev = first_node.clone();
         let mut remaining_nodes = Vec::new();
         for child in node.children(self.tree).into_iter().skip(1) {
-            if child.kind() == "capture" {
+            if child.kind_name() == "capture" {
                 if child.source() == "@name" {
                     log::info!(
                         "Found @name! prev: {:#?}, {:#?}",
                         prev.source(),
-                        prev.kind()
+                        prev.kind_name()
                     );
                     match prev {
                         ts_query::NamedNodeChildrenRef::FieldDefinition(field) => {
@@ -413,7 +411,7 @@ impl<'a> Query<'a> {
                             log::info!(
                                 "Found @name! prev: {:#?}, {:#?}",
                                 named.source(),
-                                named.kind()
+                                named.kind_name()
                             );
                             name_value = Some(quote! {
                                 #current_node.source()
@@ -426,7 +424,7 @@ impl<'a> Query<'a> {
                         }
                         _ => panic!(
                             "Unexpected prev: {:#?}, source: {:#?}. Query: {:#?}",
-                            prev.kind(),
+                            prev.kind_name(),
                             prev.source(),
                             self.node().source()
                         ),
@@ -503,7 +501,7 @@ impl<'a> Query<'a> {
         let to_append = self.executor_id();
         if let Some(name_value) = name_value {
             return quote! {
-                self.#to_append.send((#name_value, node)).unwrap();
+                #to_append.entry(#name_value).or_default().push(id);
             };
         }
         log::warn!("No name value found for: {}", self.node().source());
@@ -535,10 +533,9 @@ impl<'a> Query<'a> {
             // If this is a field, we may be dealing with multiple types and can't operate over all of them
             return to_append; // TODO: Handle this case
         }
-        let children = format_ident!("{}ChildrenRef", struct_name);
         let struct_name = format_ident!("{}", normalize_type_name(&identifier.source(), true));
         quote! {
-            if let crate::cst::#children::#struct_name(child) = #current_node {
+            if let crate::cst::NodeTypes::#struct_name(child) = #current_node {
                 #to_append
             }
 
@@ -591,7 +588,7 @@ impl<'a> Query<'a> {
                 log::warn!(
                     "Unhandled definition in language {}: {:#?}, {:#?}",
                     self.language.name(),
-                    unhandled.kind(),
+                    unhandled.kind_name(),
                     unhandled.source()
                 );
                 self.get_default_matcher(name_value)

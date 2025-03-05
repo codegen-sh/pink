@@ -65,10 +65,10 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
             }
         }
         #(
-            impl<'db3> TryInto<&'db3 #variant_names<'db3>> for #name_ref<'db3> {
+            impl<'db3> TryFrom<#name_ref<'db3>> for &'db3 #variant_names<'db3> {
                 type Error = ();
-                fn try_into(self) -> Result<&'db3 #variant_names<'db3>, Self::Error> {
-                    if let Self::#variant_names(node) = self {
+                fn try_from(node: #name_ref<'db3>) -> Result<Self, Self::Error> {
+                    if let #name_ref::#variant_names(node) = node {
                         Ok(node)
                     } else {
                         Err(())

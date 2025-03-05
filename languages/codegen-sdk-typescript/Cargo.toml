@@ -10,12 +10,12 @@ salsa = { workspace = true }
 tree-sitter = { workspace = true }
 derive_more = { workspace = true }
 ambassador = { workspace = true }
-derive_generic_visitor = { workspace = true }
 subenum = {workspace = true}
 bytes = { workspace = true }
 codegen-sdk-cst = { workspace = true }
 log = { workspace = true }
 codegen-sdk-ast = { workspace = true }
+indextree = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { workspace = true }
 codegen-sdk-ast-generator = { workspace = true }

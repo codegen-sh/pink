@@ -1,15 +1,16 @@
+use std::collections::HashSet;
+
 #[double]
 use codegen_sdk_common::language::Language;
 use codegen_sdk_common::{
-    naming::{normalize_field_name, normalize_type_name},
+    naming::{field_name_getter, normalize_field_name, normalize_type_name},
     parser::{FieldDefinition, TypeDefinition},
 };
 use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, token::Token};
+use syn::parse_quote;
 
-use super::constants::TYPE_NAME_REF;
 use crate::Config;
 
 #[derive(Debug)]
@@ -57,15 +58,18 @@ impl<'a> Field<'a> {
             format!("{}{}", self.node_name, self.normalized_name())
         }
     }
-    pub fn type_name_ref(&self) -> TokenStream {
+    pub fn type_name_ref(&self, subenums: &HashSet<&String>) -> TokenStream {
         let types = self.types();
+        // We return a direct reference if the there is only one type and it is not a subenum
         if types.len() == 1 {
-            let ident = format_ident!(
-                "{}",
-                normalize_type_name(&types[0].type_name, types[0].named)
-            );
-            quote! {
-                &#ident
+            let ident = format_ident!("{}", types[0].normalize());
+            if subenums.contains(&types[0].type_name) {
+                let ident = format_ident!("{}Ref", ident);
+                quote! {#ident}
+            } else {
+                quote! {
+                    &#ident
+                }
             }
         } else {
             let ident = format_ident!("{}{}Ref", self.node_name, self.normalized_name());
@@ -95,7 +99,6 @@ impl<'a> Field<'a> {
     }
     pub fn get_convert_child(&self, convert_children: bool) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
-        let types = format_ident!("{}", TYPE_NAME_REF);
         if convert_children {
             if self.raw.multiple {
                 quote! {
@@ -204,25 +207,19 @@ impl<'a> Field<'a> {
             }
         }
     }
-    pub fn get_field_getter(&self) -> syn::ImplItemFn {
+    pub fn get_field_getter(&self, subenums: &HashSet<&String>) -> syn::ImplItemFn {
+        let function_name = format_ident!("{}", field_name_getter(&self.name()));
         let field_name_ident = format_ident!("{}", self.name());
-        let converted_type_name = self.type_name_ref();
-        let as_ref = if self.types().len() > 1 {
-            quote! {
-                .as_ref()
-            }
-        } else {
-            quote! {}
-        };
+        let converted_type_name = self.type_name_ref(subenums);
         if self.raw.multiple {
             parse_quote! {
-                pub fn #field_name_ident(&self, tree: &'db Tree<NodeTypes<'db>>) -> Vec<#converted_type_name<'db>> {
+                pub fn #function_name(&self, tree: &'db Tree<NodeTypes<'db>>) -> Vec<#converted_type_name<'db>> {
                     self.#field_name_ident.iter().map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap()).collect()
                 }
             }
         } else if !self.raw.required {
             parse_quote! {
-                pub fn #field_name_ident(&self, tree: &'db Tree<NodeTypes<'db>>) -> Option<#converted_type_name<'db>> {
+                pub fn #function_name(&self, tree: &'db Tree<NodeTypes<'db>>) -> Option<#converted_type_name<'db>> {
                     if let Some(id) = self.#field_name_ident {
                         Some(tree.get(&id).unwrap().as_ref().try_into().unwrap())
                     } else {
@@ -232,7 +229,7 @@ impl<'a> Field<'a> {
             }
         } else {
             parse_quote! {
-                pub fn #field_name_ident(&self, tree: &'db Tree<NodeTypes<'db>>) -> #converted_type_name<'db> {
+                pub fn #function_name(&self, tree: &'db Tree<NodeTypes<'db>>) -> #converted_type_name<'db> {
                     tree.get(&self.#field_name_ident).unwrap().as_ref().try_into().unwrap()
                 }
             }

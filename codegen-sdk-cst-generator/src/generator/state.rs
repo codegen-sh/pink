@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, VecDeque},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
     sync::Arc,
 };
 
@@ -256,7 +256,7 @@ impl<'a> State<'a> {
             }
         } else {
             quote! {
-            #[derive(Debug, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
+            #[derive(Debug, Eq, PartialEq, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
             #[delegate(
                 CSTNode<'db1>
             )]
@@ -273,8 +273,9 @@ impl<'a> State<'a> {
     }
     pub fn get_structs(&self) -> TokenStream {
         let mut struct_tokens = TokenStream::new();
+        let subenums = HashSet::from_iter(self.subenums.iter());
         for node in self.nodes.values() {
-            struct_tokens.extend_one(node.get_struct_tokens());
+            struct_tokens.extend_one(node.get_struct_tokens(&subenums));
         }
         struct_tokens
     }

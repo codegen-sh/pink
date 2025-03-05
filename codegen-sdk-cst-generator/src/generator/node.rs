@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 #[double]
 use codegen_sdk_common::language::Language;
@@ -133,7 +136,6 @@ impl<'a> Node<'a> {
     }
     fn get_children_field(&self) -> TokenStream {
         if self.has_children() {
-            let children_type_name = format_ident!("{}", self.children_struct_name());
             let bounds = if self.config.serialize {
                 quote! {
                     #[rkyv(omit_bounds)]
@@ -150,7 +152,7 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn get_struct_tokens(&self) -> TokenStream {
+    pub fn get_struct_tokens(&self, subenums: &HashSet<&String>) -> TokenStream {
         let constructor = self.get_constructor();
         let struct_fields = self
             .fields
@@ -159,43 +161,33 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
         let children_field = self.get_children_field();
         let name = format_ident!("{}", self.normalize_name());
-        let trait_impls = self.get_trait_implementations();
+        let trait_impls = self.get_trait_implementations(subenums);
         let derives = if self.config.serialize {
             let serialize_bounds = get_serialize_bounds();
             quote! {
-                #[derive(Debug, Deserialize, Archive, Serialize, Drive, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Deserialize, Archive, Serialize, Eq, PartialEq, salsa::Update)]
                 #serialize_bounds
             }
         } else {
             quote! {
-                #[derive(Debug, Drive, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Eq, PartialEq, salsa::Update)]
 
             }
         };
         quote! {
             #derives
             pub struct #name<'db> {
-                #[drive(skip)]
                 start_byte: usize,
-                #[drive(skip)]
                 end_byte: usize,
-                #[drive(skip)]
                 _kind: std::string::String,
-                #[drive(skip)]
                 start_position: Point<'db>,
-                #[drive(skip)]
                 end_position: Point<'db>,
-                #[drive(skip)]
+                #[debug(ignore)]
                 buffer: Arc<Bytes>,
-                #[drive(skip)]
                 kind_id: u16,
-                #[drive(skip)]
                 is_error: bool,
-                #[drive(skip)]
                 named: bool,
-                #[drive(skip)]
                 id: CSTNodeId<'db>,
-                #[drive(skip)]
                 file_id: FileNodeId<'db>,
                 #children_field
                 #(#struct_fields),*
@@ -271,20 +263,20 @@ impl<'a> Node<'a> {
             }
         }
     }
-    pub fn get_trait_implementations(&self) -> TokenStream {
+    pub fn get_trait_implementations(&self, subenums: &HashSet<&String>) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let children_impl = self.get_children_impl();
         let getters = self
             .fields
             .iter()
-            .map(|f| f.get_field_getter())
+            .map(|f| f.get_field_getter(subenums))
             .collect::<Vec<_>>();
         quote! {
             impl<'db> #name<'db> {
                 #(#getters)*
             }
             impl<'db> CSTNode<'db> for #name<'db> {
-                fn kind(&self) -> &str {
+                fn kind_name(&self) -> &str {
                     &self._kind
                 }
                 fn start_byte(&self) -> usize {

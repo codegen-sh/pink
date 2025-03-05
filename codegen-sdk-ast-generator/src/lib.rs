@@ -10,7 +10,6 @@ use syn::parse_quote;
 pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     let db = CSTDatabase::default();
     let imports = quote! {
-        use derive_generic_visitor::{Visitor, Drive, Visit};
         use codegen_sdk_common::*;
         use std::path::PathBuf;
         use codegen_sdk_cst::CSTLanguage;

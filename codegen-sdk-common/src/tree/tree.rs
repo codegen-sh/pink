@@ -31,6 +31,14 @@ impl<T: TreeNode> Tree<T> {
     pub fn get(&self, id: &NodeId) -> Option<&T> {
         self.ids.get(*id).map(|node| node.get())
     }
+    pub fn descendants(&self, id: &NodeId) -> impl Iterator<Item = (&T, NodeId)> {
+        id.descendants(&self.ids)
+            .map(|id| (self.get(&id).unwrap(), id))
+    }
+    pub fn children(&self, id: &NodeId) -> impl Iterator<Item = (&T, NodeId)> {
+        id.children(&self.ids)
+            .map(|id| (self.get(&id).unwrap(), id))
+    }
 }
 unsafe impl<T> Update for Tree<T>
 where
