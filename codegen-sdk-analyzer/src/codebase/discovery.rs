@@ -22,14 +22,15 @@ pub fn log_languages() {
 
 pub fn collect_files(db: &CodegenDatabase, dir: &PathBuf) -> FilesToParse {
     let mut files = Vec::new();
+    let dir = dir.canonicalize().unwrap();
     for language in LANGUAGES.iter() {
         for extension in language.file_extensions.iter() {
             files.extend(
-                glob(&format!(
-                    "{dir}**/*.{extension}",
-                    extension = extension,
-                    dir = dir.display()
-                ))
+                glob(
+                    &dir.join(format!("**/*.{extension}", extension = extension))
+                        .to_str()
+                        .unwrap(),
+                )
                 .unwrap(),
             );
         }

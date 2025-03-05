@@ -37,6 +37,9 @@ stable = ["json", "toml", "typescript", "tsx", "jsx", "go", "python", "yaml", "j
 default = []
 [dev-dependencies]
 test-log = { workspace = true }
+criterion = { version = "0.5", features = ["html_reports"] }
+git2 = { version = "0.20.0" }
+tempfile = {workspace = true}
 [workspace]
 members = [
   "codegen-sdk-analyzer",
@@ -149,3 +152,8 @@ debug = true
 
 [profile.test]
 lto = false
+
+[[bench]]
+name = "parse"
+harness = false
+required-features = ["stable"]

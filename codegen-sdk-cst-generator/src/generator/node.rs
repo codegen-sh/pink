@@ -181,14 +181,11 @@ impl<'a> Node<'a> {
                 file_id: FileNodeId<'db>,
                 start_byte: usize,
                 end_byte: usize,
-                _kind: std::string::String,
                 start_position: Point<'db>,
                 end_position: Point<'db>,
                 #[debug(ignore)]
                 buffer: Arc<Bytes>,
-                kind_id: u16,
                 is_error: bool,
-                named: bool,
                 #children_field
                 #(#struct_fields),*
             }
@@ -233,13 +230,10 @@ impl<'a> Node<'a> {
                     Ok((Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
-                        _kind: node.kind().to_string(),
                         start_position: start_position,
                         end_position: end_position,
                         buffer: context.buffer.clone(),
-                        kind_id: node.kind_id(),
                         is_error: node.is_error(),
-                        named: node.is_named(),
                         id,
                         file_id: context.file_id.clone(),
                         #(#constructor_names),*
@@ -280,13 +274,17 @@ impl<'a> Node<'a> {
             .iter()
             .map(|f| f.get_field_getter(subenums))
             .collect::<Vec<_>>();
+        let kind_name = &self.raw.type_name;
+        let is_named = self.raw.named;
+        let kind_id = self.kind_id();
         quote! {
             impl<'db> #name<'db> {
+                const KIND_NAME: &'static str = #kind_name;
                 #(#getters)*
             }
             impl<'db> CSTNode<'db> for #name<'db> {
                 fn kind_name(&self) -> &str {
-                    &self._kind
+                    &Self::KIND_NAME
                 }
                 fn start_byte(&self) -> usize {
                     self.start_byte
@@ -304,13 +302,13 @@ impl<'a> Node<'a> {
                     &self.buffer
                 }
                 fn kind_id(&self) -> u16 {
-                    self.kind_id
+                    #kind_id
                 }
                 fn is_error(&self) -> bool {
                     self.is_error
                 }
                 fn is_named(&self) -> bool {
-                    self.named
+                    #is_named
                 }
                 fn id(&self) -> CSTNodeId<'db> {
                     self.id

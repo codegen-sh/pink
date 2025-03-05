@@ -8,8 +8,8 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
 
         impl<'db> codegen_sdk_ast::Definitions<'db> for #language_struct_name<'db> {
             type Definitions = ();
-            fn definitions(self, _db: &'db dyn salsa::Database) -> Self::Definitions{
-                ()
+            fn definitions(self, _db: &'db dyn salsa::Database) -> &'db Self::Definitions{
+                &()
             }
         }
         };
@@ -18,7 +18,7 @@ fn get_definitions_impl(language: &Language) -> TokenStream {
         #[salsa::tracked]
         impl<'db> codegen_sdk_ast::Definitions<'db> for #language_struct_name<'db> {
             type Definitions = Definitions<'db>;
-            #[salsa::tracked]
+            #[salsa::tracked(return_ref)]
             fn definitions(self, db: &'db dyn salsa::Database) -> Self::Definitions {
                 if let Some(program) = self.node(db) {
                     return Definitions::visit(db, program);
@@ -35,8 +35,8 @@ fn get_references_impl(language: &Language) -> TokenStream {
         return quote! {
             impl<'db> codegen_sdk_ast::References<'db> for #language_struct_name<'db> {
                 type References = ();
-                fn references(self, _db: &'db dyn salsa::Database) -> Self::References {
-                    ()
+                fn references(self, _db: &'db dyn salsa::Database) -> &'db Self::References {
+                    &()
                 }
             }
         };
@@ -45,7 +45,7 @@ fn get_references_impl(language: &Language) -> TokenStream {
         #[salsa::tracked]
         impl<'db> codegen_sdk_ast::References<'db> for #language_struct_name<'db> {
             type References = References<'db>;
-            #[salsa::tracked]
+            #[salsa::tracked(return_ref)]
             fn references(self, db: &'db dyn salsa::Database) -> Self::References {
                 if let Some(program) = self.node(db) {
                     return References::visit(db, program);
@@ -65,6 +65,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     let content = quote! {
     #[salsa::tracked]
     pub struct #language_struct_name<'db> {
+        #[tracked]
         #[return_ref]
         pub node: Option<crate::cst::Parsed<'db>>,
         #[id]

@@ -104,7 +104,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
                 let parsed = #package_name::ast::parse(db, file);
                 return Parsed::new(
                     db,
-                    file.path(db),
+                    FileNodeId::new(db, file.path(db)),
                     Some(ParsedFile::#struct_name(parsed)),
                 );
             }
