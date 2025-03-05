@@ -2,7 +2,7 @@
 source: codegen-sdk-cst-generator/src/generator/state.rs
 expression: snapshot_tokens(&enum_tokens)
 ---
-#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
 #[delegate(CSTNode<'db1>)]
 pub enum NodeTypes<'db1> {
     Test(Test<'db1>),

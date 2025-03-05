@@ -1,11 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use codegen_sdk_common::{CSTNode, HasChildren, Language};
-use codegen_sdk_ts_query::cst as ts_query;
+use codegen_sdk_common::Language;
 use convert_case::{Case, Casing};
-use log::info;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
+use syn::parse_quote_spanned;
 
 use super::query::Query;
 use crate::query::HasQuery;
@@ -36,63 +35,71 @@ pub fn generate_visitor<'db>(
                 .push(query);
         }
     }
-    let mut methods = Vec::new();
+    let mut methods: Vec<syn::Arm> = Vec::new();
     for (variant, queries) in enter_methods {
         let mut matchers = TokenStream::new();
-        let enter = format_ident!("enter_{}", variant);
         let struct_name = format_ident!("{}", variant);
         for query in queries {
             matchers.extend_one(query.matcher(&variant));
-            let node = query.node();
-            for child in node.children() {
-                info!("child kind:{} source:{}", child.kind(), child.source());
-                if let ts_query::NamedNodeChildren::FieldDefinition(field_definition) = child {
-                    let field_name = &field_definition.name;
-                    let source = field_definition.source();
-                    let children = &field_definition.children();
-                    info!("source: {:?}", source);
-                    info!("field_name: {:?}", field_name);
-                    info!("children: {:?}", children);
-                }
-            }
         }
-        methods.push(quote! {
-            fn #enter(&mut self, node: &crate::cst::#struct_name<'db>) {
+        let span = Span::mixed_site();
+        methods.push(parse_quote_spanned! { span =>
+            crate::cst::NodeTypes::#struct_name(node) => {
                 #matchers
             }
         });
     }
-    let visitor = if variants.len() > 0 {
-        let first_query = raw_queries.values().flatten().next().unwrap();
-        let state = first_query.state.clone();
-        let mut nodes = BTreeSet::new();
-        nodes.extend(state.get_node_struct_names());
-        nodes.extend(state.get_subenum_struct_names());
-        nodes = nodes.difference(&variants).cloned().collect();
-        quote! {
-            #(#[visit(drive(&crate::cst::#nodes<'db>))])*
-            #(#[visit(drive(&crate::cst::#variants<'db>))])*
-            #(#[visit(drive(crate::cst::#nodes<'db>))])*
-            #[visit(drive(for<T> Box<T>))]
-            #[visit(drive(for<T> Vec<T>))]
-            #[visit(drive(for<T> Option<T>))]
-            #[visit(
-                #(enter(#variants:crate::cst::#variants<'db>)),*
-            )]
-        }
-    } else {
-        quote! {}
+    let maps = quote! {
+        #(
+            let mut #names: BTreeMap<String,Vec<indextree::NodeId>> = BTreeMap::new();
+        )*
+    };
+    let constructor = quote! {
+        Self::new(db, #(#names),*)
+
     };
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
+    let output_constructor = quote! {
+        pub fn visit(db: &'db dyn salsa::Database, root: &'db crate::cst::Parsed<'db>) -> Self {
+            #maps
+            let tree = root.tree(db);
+            for (node, id) in tree.descendants(&root.program(db)) {
+                match node {
+                    #(#methods,)*
+                    _ => {}
+                }
+            }
+            #constructor
+        }
+        pub fn default(db: &'db dyn salsa::Database) -> Self {
+            #maps
+            #constructor
+        }
+    };
+    let underscored_names = names
+        .iter()
+        .map(|name| format_ident!("_{}", name))
+        .collect::<Vec<_>>();
     quote! {
-        #[derive(Visitor, Visit, Debug, Clone, Eq, PartialEq, salsa::Update, Hash, Default)]
-        #visitor
+        // Three lifetimes:
+        // db: the lifetime of the database
+        // db1: the lifetime of the visitor executing per-node
+        // db2: the lifetime of the references held by the visitor
+        #[salsa::tracked]
         pub struct #name<'db> {
-            #(pub #names: BTreeMap<String, Vec<crate::cst::#types<'db>>>,)*
-            phantom: std::marker::PhantomData<&'db ()>,
+            #(
+                #[return_ref]
+                pub #underscored_names: BTreeMap<String, Vec<indextree::NodeId>>,
+            )*
         }
         impl<'db> #name<'db> {
-            #(#methods)*
+            #output_constructor
+            #(
+                pub fn #names(&self, db: &'db dyn salsa::Database, tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>) -> BTreeMap<String, Vec<&'db crate::cst::#types<'db>>> {
+                    self.#underscored_names(db).iter().map(|(k, v)|
+                    (k.clone(), v.iter().map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap()).collect())).collect()
+                }
+            )*
         }
     }
 }

@@ -8,11 +8,14 @@ use codegen_sdk_common::*;
 use subenum::subenum;
 use std::backtrace::Backtrace;
 use bytes::Bytes;
-use derive_generic_visitor::Drive;
 use ambassador::Delegate;
+use derive_more::Debug;
+use ambassador::delegate_to_methods;
 use codegen_sdk_cst::CSTLanguage;
+use crate::cst::tree::ParseContext;
+use std::path::PathBuf;
 #[subenum(Expression)]
-#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
 #[delegate(CSTNode<'db1>)]
 pub enum NodeTypes<'db1> {
     #[subenum(Expression)]
@@ -30,15 +33,15 @@ impl<'db3> From<UnaryExpression<'db3>> for NodeTypes<'db3> {
         Self::UnaryExpression(node)
     }
 }
-impl<'db4> FromNode<'db4> for Expression<'db4> {
+impl<'db4> FromNode<'db4, NodeTypes<'db4>> for Expression<'db4> {
     fn from_node(
-        db: &'db4 dyn salsa::Database,
+        context: &mut ParseContext<'db4, NodeTypes<'db4>>,
         node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         match node.kind_id() {
             0u16 => {
-                Ok(Self::UnaryExpression(UnaryExpression::from_node(db, node, buffer)?))
+                let (node, ids) = UnaryExpression::from_node(context, node)?;
+                Ok((Self::UnaryExpression(node), ids))
             }
             _ => {
                 Err(ParseError::UnexpectedNode {
@@ -49,54 +52,168 @@ impl<'db4> FromNode<'db4> for Expression<'db4> {
         }
     }
 }
-#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
-pub struct BinaryExpression<'db> {
-    #[drive(skip)]
-    start_byte: usize,
-    #[drive(skip)]
-    end_byte: usize,
-    #[drive(skip)]
-    _kind: std::string::String,
-    #[drive(skip)]
-    start_position: Point<'db>,
-    #[drive(skip)]
-    end_position: Point<'db>,
-    #[drive(skip)]
-    buffer: Arc<Bytes>,
-    #[drive(skip)]
-    kind_id: u16,
-    #[drive(skip)]
-    is_error: bool,
-    #[drive(skip)]
-    named: bool,
-    #[drive(skip)]
-    id: usize,
+#[subenum(ExpressionRef)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
+pub enum NodeTypesRef<'db1> {
+    #[subenum(ExpressionRef)]
+    BinaryExpression(&'db1 BinaryExpression<'db1>),
+    #[subenum(ExpressionRef)]
+    UnaryExpression(&'db1 UnaryExpression<'db1>),
 }
-impl<'db> FromNode<'db> for BinaryExpression<'db> {
-    fn from_node(
-        db: &'db dyn salsa::Database,
-        node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
-        let start_position = Point::from(db, node.start_position());
-        let end_position = Point::from(db, node.end_position());
-        Ok(Self {
-            start_byte: node.start_byte(),
-            end_byte: node.end_byte(),
-            _kind: node.kind().to_string(),
-            start_position: start_position,
-            end_position: end_position,
-            buffer: buffer.clone(),
-            kind_id: node.kind_id(),
-            is_error: node.is_error(),
-            named: node.is_named(),
-            id: node.id(),
-        })
+impl<'db3> From<&'db3 BinaryExpression<'db3>> for NodeTypesRef<'db3> {
+    fn from(node: &'db3 BinaryExpression<'db3>) -> Self {
+        Self::BinaryExpression(node)
     }
 }
+impl<'db3> From<&'db3 UnaryExpression<'db3>> for NodeTypesRef<'db3> {
+    fn from(node: &'db3 UnaryExpression<'db3>) -> Self {
+        Self::UnaryExpression(node)
+    }
+}
+impl<'db3> NodeTypes<'db3> {
+    pub fn as_ref(&'db3 self) -> NodeTypesRef<'db3> {
+        match self {
+            Self::BinaryExpression(data) => NodeTypesRef::BinaryExpression(data),
+            Self::UnaryExpression(data) => NodeTypesRef::UnaryExpression(data),
+        }
+    }
+}
+#[delegate_to_methods]
+#[delegate(CSTNode<'db3>, target_ref = "deref")]
+impl<'db3> NodeTypesRef<'db3> {
+    fn deref<'db2>(&'db2 self) -> &'db2 dyn CSTNode<'db3> {
+        match self {
+            Self::BinaryExpression(data) => *data,
+            Self::UnaryExpression(data) => *data,
+        }
+    }
+}
+impl<'db3> From<&'db3 NodeTypes<'db3>> for NodeTypesRef<'db3> {
+    fn from(node: &'db3 NodeTypes<'db3>) -> Self {
+        node.as_ref().into()
+    }
+}
+impl<'db3> TryFrom<NodeTypesRef<'db3>> for &'db3 BinaryExpression<'db3> {
+    type Error = codegen_sdk_cst::ConversionError;
+    fn try_from(node: NodeTypesRef<'db3>) -> Result<Self, Self::Error> {
+        if let NodeTypesRef::BinaryExpression(node) = node {
+            Ok(node)
+        } else {
+            Err(codegen_sdk_cst::ConversionError {
+                expected: "TODO".to_string(),
+                actual: node.kind_name().to_string(),
+                backtrace: Backtrace::capture(),
+            })
+        }
+    }
+}
+impl<'db3> TryFrom<NodeTypesRef<'db3>> for &'db3 UnaryExpression<'db3> {
+    type Error = codegen_sdk_cst::ConversionError;
+    fn try_from(node: NodeTypesRef<'db3>) -> Result<Self, Self::Error> {
+        if let NodeTypesRef::UnaryExpression(node) = node {
+            Ok(node)
+        } else {
+            Err(codegen_sdk_cst::ConversionError {
+                expected: "TODO".to_string(),
+                actual: node.kind_name().to_string(),
+                backtrace: Backtrace::capture(),
+            })
+        }
+    }
+}
+impl<'db3> Expression<'db3> {
+    pub fn as_ref(&'db3 self) -> ExpressionRef<'db3> {
+        match self {
+            Self::BinaryExpression(data) => ExpressionRef::BinaryExpression(data),
+            Self::UnaryExpression(data) => ExpressionRef::UnaryExpression(data),
+        }
+    }
+}
+#[delegate_to_methods]
+#[delegate(CSTNode<'db3>, target_ref = "deref")]
+impl<'db3> ExpressionRef<'db3> {
+    fn deref<'db2>(&'db2 self) -> &'db2 dyn CSTNode<'db3> {
+        match self {
+            Self::BinaryExpression(data) => *data,
+            Self::UnaryExpression(data) => *data,
+        }
+    }
+}
+impl<'db3> From<&'db3 Expression<'db3>> for NodeTypesRef<'db3> {
+    fn from(node: &'db3 Expression<'db3>) -> Self {
+        node.as_ref().into()
+    }
+}
+impl<'db3> TryFrom<ExpressionRef<'db3>> for &'db3 BinaryExpression<'db3> {
+    type Error = codegen_sdk_cst::ConversionError;
+    fn try_from(node: ExpressionRef<'db3>) -> Result<Self, Self::Error> {
+        if let ExpressionRef::BinaryExpression(node) = node {
+            Ok(node)
+        } else {
+            Err(codegen_sdk_cst::ConversionError {
+                expected: "TODO".to_string(),
+                actual: node.kind_name().to_string(),
+                backtrace: Backtrace::capture(),
+            })
+        }
+    }
+}
+impl<'db3> TryFrom<ExpressionRef<'db3>> for &'db3 UnaryExpression<'db3> {
+    type Error = codegen_sdk_cst::ConversionError;
+    fn try_from(node: ExpressionRef<'db3>) -> Result<Self, Self::Error> {
+        if let ExpressionRef::UnaryExpression(node) = node {
+            Ok(node)
+        } else {
+            Err(codegen_sdk_cst::ConversionError {
+                expected: "TODO".to_string(),
+                actual: node.kind_name().to_string(),
+                backtrace: Backtrace::capture(),
+            })
+        }
+    }
+}
+#[derive(Debug, Eq, PartialEq, Clone, salsa::Update)]
+pub struct BinaryExpression<'db> {
+    id: CSTNodeId<'db>,
+    file_id: FileNodeId<'db>,
+    start_byte: usize,
+    end_byte: usize,
+    start_position: Point<'db>,
+    end_position: Point<'db>,
+    #[debug(ignore)]
+    buffer: Arc<Bytes>,
+    is_error: bool,
+}
+impl<'db> FromNode<'db, NodeTypes<'db>> for BinaryExpression<'db> {
+    fn from_node(
+        context: &mut ParseContext<'db, NodeTypes<'db>>,
+        node: tree_sitter::Node,
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
+        let start_position = Point::from(context.db, node.start_position());
+        let end_position = Point::from(context.db, node.end_position());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let mut ids = Vec::new();
+        Ok((
+            Self {
+                start_byte: node.start_byte(),
+                end_byte: node.end_byte(),
+                start_position: start_position,
+                end_position: end_position,
+                buffer: context.buffer.clone(),
+                is_error: node.is_error(),
+                id,
+                file_id: context.file_id.clone(),
+            },
+            ids,
+        ))
+    }
+}
+impl<'db> BinaryExpression<'db> {
+    const KIND_NAME: &'static str = "binary_expression";
+}
 impl<'db> CSTNode<'db> for BinaryExpression<'db> {
-    fn kind(&self) -> &str {
-        &self._kind
+    fn kind_name(&self) -> &str {
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -114,29 +231,43 @@ impl<'db> CSTNode<'db> for BinaryExpression<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
-    fn id(&self) -> usize {
+    fn id(&self) -> CSTNodeId<'db> {
         self.id
     }
+    fn file_id(&self) -> FileNodeId<'db> {
+        self.file_id
+    }
 }
-impl<'db1> HasChildren<'db1> for BinaryExpression<'db1> {
-    type Child = Self;
-    fn children(&self) -> Vec<Self::Child> {
+impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for BinaryExpression<'db1> {
+    type Child<'db2> = BinaryExpression<'db2> where Self: 'db2;
+    fn children<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+    ) -> Vec<Self::Child<'db2>> {
         vec![]
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+    fn children_by_field_name<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_name: &str,
+    ) -> Vec<Self::Child<'db2>> {
         match field_name {
             _ => vec![],
         }
     }
-    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+    fn children_by_field_id<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_id: u16,
+    ) -> Vec<Self::Child<'db2>> {
         match field_id {
             _ => vec![],
         }
@@ -147,54 +278,63 @@ impl<'db> std::hash::Hash for BinaryExpression<'db> {
         self.id.hash(state);
     }
 }
-#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
-pub struct UnaryExpression<'db> {
-    #[drive(skip)]
-    start_byte: usize,
-    #[drive(skip)]
-    end_byte: usize,
-    #[drive(skip)]
-    _kind: std::string::String,
-    #[drive(skip)]
-    start_position: Point<'db>,
-    #[drive(skip)]
-    end_position: Point<'db>,
-    #[drive(skip)]
-    buffer: Arc<Bytes>,
-    #[drive(skip)]
-    kind_id: u16,
-    #[drive(skip)]
-    is_error: bool,
-    #[drive(skip)]
-    named: bool,
-    #[drive(skip)]
-    id: usize,
-}
-impl<'db> FromNode<'db> for UnaryExpression<'db> {
-    fn from_node(
-        db: &'db dyn salsa::Database,
-        node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
-        let start_position = Point::from(db, node.start_position());
-        let end_position = Point::from(db, node.end_position());
-        Ok(Self {
-            start_byte: node.start_byte(),
-            end_byte: node.end_byte(),
-            _kind: node.kind().to_string(),
-            start_position: start_position,
-            end_position: end_position,
-            buffer: buffer.clone(),
-            kind_id: node.kind_id(),
-            is_error: node.is_error(),
-            named: node.is_named(),
-            id: node.id(),
-        })
+impl<'db> PartialOrd for BinaryExpression<'db> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
+impl<'db> Ord for BinaryExpression<'db> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let res = self.start_byte().cmp(&other.start_byte());
+        if res == std::cmp::Ordering::Equal {
+            self.end_byte().cmp(&other.end_byte())
+        } else {
+            res
+        }
+    }
+}
+#[derive(Debug, Eq, PartialEq, Clone, salsa::Update)]
+pub struct UnaryExpression<'db> {
+    id: CSTNodeId<'db>,
+    file_id: FileNodeId<'db>,
+    start_byte: usize,
+    end_byte: usize,
+    start_position: Point<'db>,
+    end_position: Point<'db>,
+    #[debug(ignore)]
+    buffer: Arc<Bytes>,
+    is_error: bool,
+}
+impl<'db> FromNode<'db, NodeTypes<'db>> for UnaryExpression<'db> {
+    fn from_node(
+        context: &mut ParseContext<'db, NodeTypes<'db>>,
+        node: tree_sitter::Node,
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
+        let start_position = Point::from(context.db, node.start_position());
+        let end_position = Point::from(context.db, node.end_position());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let mut ids = Vec::new();
+        Ok((
+            Self {
+                start_byte: node.start_byte(),
+                end_byte: node.end_byte(),
+                start_position: start_position,
+                end_position: end_position,
+                buffer: context.buffer.clone(),
+                is_error: node.is_error(),
+                id,
+                file_id: context.file_id.clone(),
+            },
+            ids,
+        ))
+    }
+}
+impl<'db> UnaryExpression<'db> {
+    const KIND_NAME: &'static str = "unary_expression";
+}
 impl<'db> CSTNode<'db> for UnaryExpression<'db> {
-    fn kind(&self) -> &str {
-        &self._kind
+    fn kind_name(&self) -> &str {
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -212,29 +352,43 @@ impl<'db> CSTNode<'db> for UnaryExpression<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
-    fn id(&self) -> usize {
+    fn id(&self) -> CSTNodeId<'db> {
         self.id
     }
+    fn file_id(&self) -> FileNodeId<'db> {
+        self.file_id
+    }
 }
-impl<'db1> HasChildren<'db1> for UnaryExpression<'db1> {
-    type Child = Self;
-    fn children(&self) -> Vec<Self::Child> {
+impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for UnaryExpression<'db1> {
+    type Child<'db2> = UnaryExpression<'db2> where Self: 'db2;
+    fn children<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+    ) -> Vec<Self::Child<'db2>> {
         vec![]
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+    fn children_by_field_name<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_name: &str,
+    ) -> Vec<Self::Child<'db2>> {
         match field_name {
             _ => vec![],
         }
     }
-    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+    fn children_by_field_id<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_id: u16,
+    ) -> Vec<Self::Child<'db2>> {
         match field_id {
             _ => vec![],
         }
@@ -245,16 +399,37 @@ impl<'db> std::hash::Hash for UnaryExpression<'db> {
         self.id.hash(state);
     }
 }
+impl<'db> PartialOrd for UnaryExpression<'db> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<'db> Ord for UnaryExpression<'db> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let res = self.start_byte().cmp(&other.start_byte());
+        if res == std::cmp::Ordering::Equal {
+            self.end_byte().cmp(&other.end_byte())
+        } else {
+            res
+        }
+    }
+}
+impl<'db> TreeNode for NodeTypes<'db> {}
 #[salsa::tracked]
 pub struct Parsed<'db> {
+    #[id]
+    id: FileNodeId<'db>,
     #[tracked]
     #[return_ref]
-    pub program: Option<Program<'db>>,
+    #[no_clone]
+    pub tree: Tree<NodeTypes<'db>>,
+    pub program: indextree::NodeId,
 }
-pub fn parse_program_raw(
-    db: &dyn salsa::Database,
+pub fn parse_program_raw<'db>(
+    db: &'db dyn salsa::Database,
     input: codegen_sdk_cst::Input,
-) -> Option<Program<'_>> {
+    path: PathBuf,
+) -> Option<Parsed<'db>> {
     let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
     let tree = codegen_sdk_common::language::language::Language
         .parse_tree_sitter(&input.content(db));
@@ -264,15 +439,20 @@ pub fn parse_program_raw(
                 ParseError::SyntaxError.report(db);
                 None
             } else {
-                let buffer = Arc::new(buffer);
-                Program::from_node(db, tree.root_node(), &buffer)
+                let mut context = ParseContext::new(db, path, buffer);
+                let root_id = Program::orphaned(&mut context, tree.root_node())
                     .map_or_else(
                         |e| {
                             e.report(db);
                             None
                         },
                         |program| { Some(program) },
-                    )
+                    );
+                if let Some(program) = root_id {
+                    Some(Parsed::new(db, context.file_id, context.tree, program))
+                } else {
+                    None
+                }
             }
         }
         Err(e) => {
@@ -281,15 +461,21 @@ pub fn parse_program_raw(
         }
     }
 }
-#[salsa::tracked]
+#[salsa::tracked(return_ref)]
 pub fn parse_program(
     db: &dyn salsa::Database,
     input: codegen_sdk_cst::Input,
 ) -> Parsed<'_> {
-    Parsed::new(db, parse_program_raw(db, input))
+    let raw = parse_program_raw(db, input, std::path::PathBuf::new());
+    if let Some(parsed) = raw {
+        parsed
+    } else {
+        panic!("Failed to parse program");
+    }
 }
 pub struct Language;
 impl CSTLanguage for Language {
+    type Types<'db> = NodeTypes<'db>;
     type Program<'db> = Program<'db>;
     fn language() -> &'static codegen_sdk_common::language::Language {
         &codegen_sdk_common::language::language::Language
@@ -297,8 +483,12 @@ impl CSTLanguage for Language {
     fn parse<'db>(
         db: &'db dyn salsa::Database,
         content: std::string::String,
-    ) -> &'db Option<Self::Program<'db>> {
+    ) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)> {
         let input = codegen_sdk_cst::Input::new(db, content);
-        return parse_program(db, input).program(db);
+        let parsed = parse_program(db, input);
+        let program = parsed.program(db);
+        let tree = parsed.tree(db);
+        let program = tree.get(&program).unwrap().as_ref();
+        Some((program.try_into().unwrap(), tree))
     }
 }

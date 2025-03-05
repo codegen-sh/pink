@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![allow(unused, irrefutable_let_patterns)]
 pub mod cst {
     include!(concat!(env!("OUT_DIR"), "/json.rs"));
 }
@@ -19,9 +19,8 @@ mod tests {
         }
         ";
         let db = codegen_sdk_cst::CSTDatabase::default();
-        let module = crate::cst::JSON::parse(&db, content.to_string())
-            .as_ref()
-            .unwrap();
-        assert!(module.children().len() > 0);
+        let module = crate::cst::JSON::parse(&db, content.to_string()).unwrap();
+        let (root, tree) = module;
+        assert!(root.children(tree).len() > 0);
     }
 }

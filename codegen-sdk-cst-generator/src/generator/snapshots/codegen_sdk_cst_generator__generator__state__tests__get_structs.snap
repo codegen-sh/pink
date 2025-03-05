@@ -2,54 +2,48 @@
 source: codegen-sdk-cst-generator/src/generator/state.rs
 expression: snapshot_tokens(&struct_tokens)
 ---
-#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+#[derive(Debug, Eq, PartialEq, Clone, salsa::Update)]
 pub struct Test<'db> {
-    #[drive(skip)]
+    id: CSTNodeId<'db>,
+    file_id: FileNodeId<'db>,
     start_byte: usize,
-    #[drive(skip)]
     end_byte: usize,
-    #[drive(skip)]
-    _kind: std::string::String,
-    #[drive(skip)]
     start_position: Point<'db>,
-    #[drive(skip)]
     end_position: Point<'db>,
-    #[drive(skip)]
+    #[debug(ignore)]
     buffer: Arc<Bytes>,
-    #[drive(skip)]
-    kind_id: u16,
-    #[drive(skip)]
     is_error: bool,
-    #[drive(skip)]
-    named: bool,
-    #[drive(skip)]
-    id: usize,
 }
-impl<'db> FromNode<'db> for Test<'db> {
+impl<'db> FromNode<'db, NodeTypes<'db>> for Test<'db> {
     fn from_node(
-        db: &'db dyn salsa::Database,
+        context: &mut ParseContext<'db, NodeTypes<'db>>,
         node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
-        let start_position = Point::from(db, node.start_position());
-        let end_position = Point::from(db, node.end_position());
-        Ok(Self {
-            start_byte: node.start_byte(),
-            end_byte: node.end_byte(),
-            _kind: node.kind().to_string(),
-            start_position: start_position,
-            end_position: end_position,
-            buffer: buffer.clone(),
-            kind_id: node.kind_id(),
-            is_error: node.is_error(),
-            named: node.is_named(),
-            id: node.id(),
-        })
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
+        let start_position = Point::from(context.db, node.start_position());
+        let end_position = Point::from(context.db, node.end_position());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let mut ids = Vec::new();
+        Ok((
+            Self {
+                start_byte: node.start_byte(),
+                end_byte: node.end_byte(),
+                start_position: start_position,
+                end_position: end_position,
+                buffer: context.buffer.clone(),
+                is_error: node.is_error(),
+                id,
+                file_id: context.file_id.clone(),
+            },
+            ids,
+        ))
     }
 }
+impl<'db> Test<'db> {
+    const KIND_NAME: &'static str = "test";
+}
 impl<'db> CSTNode<'db> for Test<'db> {
-    fn kind(&self) -> &str {
-        &self._kind
+    fn kind_name(&self) -> &str {
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -67,29 +61,43 @@ impl<'db> CSTNode<'db> for Test<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
-    fn id(&self) -> usize {
+    fn id(&self) -> CSTNodeId<'db> {
         self.id
     }
+    fn file_id(&self) -> FileNodeId<'db> {
+        self.file_id
+    }
 }
-impl<'db1> HasChildren<'db1> for Test<'db1> {
-    type Child = Self;
-    fn children(&self) -> Vec<Self::Child> {
+impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for Test<'db1> {
+    type Child<'db2> = Test<'db2> where Self: 'db2;
+    fn children<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+    ) -> Vec<Self::Child<'db2>> {
         vec![]
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+    fn children_by_field_name<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_name: &str,
+    ) -> Vec<Self::Child<'db2>> {
         match field_name {
             _ => vec![],
         }
     }
-    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+    fn children_by_field_id<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_id: u16,
+    ) -> Vec<Self::Child<'db2>> {
         match field_id {
             _ => vec![],
         }
@@ -98,5 +106,20 @@ impl<'db1> HasChildren<'db1> for Test<'db1> {
 impl<'db> std::hash::Hash for Test<'db> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
+    }
+}
+impl<'db> PartialOrd for Test<'db> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<'db> Ord for Test<'db> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let res = self.start_byte().cmp(&other.start_byte());
+        if res == std::cmp::Ordering::Equal {
+            self.end_byte().cmp(&other.end_byte())
+        } else {
+            res
+        }
     }
 }

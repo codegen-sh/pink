@@ -1,10 +1,13 @@
 ---
 source: codegen-sdk-cst-generator/src/generator/node.rs
-expression: snapshot_tokens(&node.get_trait_implementations())
+expression: "snapshot_tokens(&node.get_trait_implementations(&HashSet::new()))"
 ---
+impl<'db> TestNode<'db> {
+    const KIND_NAME: &'static str = "test_node";
+}
 impl<'db> CSTNode<'db> for TestNode<'db> {
-    fn kind(&self) -> &str {
-        &self._kind
+    fn kind_name(&self) -> &str {
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -22,29 +25,43 @@ impl<'db> CSTNode<'db> for TestNode<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
-    fn id(&self) -> usize {
+    fn id(&self) -> CSTNodeId<'db> {
         self.id
     }
+    fn file_id(&self) -> FileNodeId<'db> {
+        self.file_id
+    }
 }
-impl<'db1> HasChildren<'db1> for TestNode<'db1> {
-    type Child = Self;
-    fn children(&self) -> Vec<Self::Child> {
+impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for TestNode<'db1> {
+    type Child<'db2> = TestNode<'db2> where Self: 'db2;
+    fn children<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+    ) -> Vec<Self::Child<'db2>> {
         vec![]
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+    fn children_by_field_name<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_name: &str,
+    ) -> Vec<Self::Child<'db2>> {
         match field_name {
             _ => vec![],
         }
     }
-    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+    fn children_by_field_id<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_id: u16,
+    ) -> Vec<Self::Child<'db2>> {
         match field_id {
             _ => vec![],
         }
@@ -53,5 +70,20 @@ impl<'db1> HasChildren<'db1> for TestNode<'db1> {
 impl<'db> std::hash::Hash for TestNode<'db> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
+    }
+}
+impl<'db> PartialOrd for TestNode<'db> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<'db> Ord for TestNode<'db> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let res = self.start_byte().cmp(&other.start_byte());
+        if res == std::cmp::Ordering::Equal {
+            self.end_byte().cmp(&other.end_byte())
+        } else {
+            res
+        }
     }
 }

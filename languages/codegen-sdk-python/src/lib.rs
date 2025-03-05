@@ -12,12 +12,13 @@ pub mod ast {
     impl<'db> Scope<'db> for PythonFile<'db> {
         type Type = crate::cst::FunctionDefinition<'db>;
         type ReferenceType = crate::cst::Call<'db>;
-        #[salsa::tracked]
+        #[salsa::tracked(return_ref)]
         fn resolve(self, db: &'db dyn salsa::Database, name: String) -> Vec<Self::Type> {
+            let tree = self.node(db).unwrap().tree(db);
             let mut results = Vec::new();
-            for (def_name, defs) in self.definitions(db).functions.iter() {
-                if def_name == &name {
-                    results.extend(defs.iter().cloned());
+            for (def_name, defs) in self.definitions(db).functions(db, &tree).into_iter() {
+                if def_name == name {
+                    results.extend(defs.into_iter().cloned());
                 }
             }
             results
@@ -25,8 +26,9 @@ pub mod ast {
         #[salsa::tracked]
         fn resolvables(self, db: &'db dyn salsa::Database) -> Vec<Self::ReferenceType> {
             let mut results = Vec::new();
-            for (_, refs) in self.references(db).calls.into_iter() {
-                results.extend(refs);
+            let tree = self.node(db).unwrap().tree(db);
+            for (_, refs) in self.references(db).calls(db, &tree).into_iter() {
+                results.extend(refs.into_iter().cloned());
             }
             results
         }
@@ -34,14 +36,15 @@ pub mod ast {
     #[salsa::tracked]
     impl<'db> ResolveType<'db, PythonFile<'db>> for crate::cst::Call<'db> {
         type Type = crate::cst::FunctionDefinition<'db>;
-        #[salsa::tracked]
+        #[salsa::tracked(return_ref)]
         fn resolve_type(
             self,
             db: &'db dyn salsa::Database,
             scope: PythonFile<'db>,
             _scopes: Vec<PythonFile<'db>>,
         ) -> Vec<Self::Type> {
-            scope.resolve(db, self.function.source())
+            let tree = scope.node(db).unwrap().tree(db);
+            scope.resolve(db, self.function(tree).source()).clone()
         }
     }
     #[salsa::tracked]

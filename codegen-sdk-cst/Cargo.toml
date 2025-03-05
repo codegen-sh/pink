@@ -12,6 +12,7 @@ rkyv = { workspace = true }
 log = { workspace = true }
 salsa = { workspace = true }
 dashmap = "6.1.0"
+thiserror = {workspace = true}
 [dev-dependencies]
 tempfile = { workspace = true }
 test-log = { workspace = true }

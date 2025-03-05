@@ -15,20 +15,10 @@ impl<T: File> Named for T {
 #[delegatable_trait]
 pub trait Definitions<'db> {
     type Definitions;
-    fn definitions(self, db: &'db dyn salsa::Database) -> Self::Definitions;
+    fn definitions(self, db: &'db dyn salsa::Database) -> &'db Self::Definitions;
 }
 #[delegatable_trait]
 pub trait References<'db> {
     type References;
-    fn references(self, db: &'db dyn salsa::Database) -> Self::References;
-}
-#[delegatable_trait]
-pub trait FileExt<'db>: References<'db> + Definitions<'db> + Clone {
-    fn precompute(self, db: &'db dyn salsa::Database)
-    where
-        Self: Sized,
-    {
-        self.clone().definitions(db);
-        self.references(db);
-    }
+    fn references(self, db: &'db dyn salsa::Database) -> &'db Self::References;
 }

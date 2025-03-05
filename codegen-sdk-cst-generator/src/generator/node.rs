@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 #[double]
 use codegen_sdk_common::language::Language;
@@ -70,22 +73,37 @@ impl<'a> Node<'a> {
             self.subenums.push(subenum);
         }
     }
-    pub fn get_enum_tokens(&self, subenum_name_map: &HashMap<String, String>) -> TokenStream {
+    pub fn get_enum_tokens(
+        &self,
+        subenum_name_map: &HashMap<String, String>,
+        is_ref: bool,
+    ) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
+        let value = if is_ref {
+            quote! { &'db1 #name }
+        } else {
+            quote! { #name }
+        };
         let subenum_names = &self
             .subenums
             .iter()
             .map(|s| subenum_name_map.get(s).unwrap_or(&s))
-            .map(|s| format_ident!("{}", s))
+            .map(|s| {
+                if is_ref {
+                    format_ident!("{}Ref", s)
+                } else {
+                    format_ident!("{}", s)
+                }
+            })
             .collect::<Vec<_>>();
         if subenum_names.is_empty() {
             quote! {
-                #name(#name<'db1>)
+                #name(#value<'db1>)
             }
         } else {
             quote! {
                 #[subenum(#(#subenum_names), *)]
-                #name(#name<'db1>)
+                #name(#value<'db1>)
             }
         }
     }
@@ -118,7 +136,6 @@ impl<'a> Node<'a> {
     }
     fn get_children_field(&self) -> TokenStream {
         if self.has_children() {
-            let children_type_name = format_ident!("{}", self.children_struct_name());
             let bounds = if self.config.serialize {
                 quote! {
                     #[rkyv(omit_bounds)]
@@ -128,14 +145,14 @@ impl<'a> Node<'a> {
             };
             quote! {
                 #bounds
-                pub _children: Vec<#children_type_name<'db>>,
+                pub _children: Vec<indextree::NodeId>,
             }
         } else {
             quote! {}
         }
     }
 
-    pub fn get_struct_tokens(&self) -> TokenStream {
+    pub fn get_struct_tokens(&self, subenums: &HashSet<&String>) -> TokenStream {
         let constructor = self.get_constructor();
         let struct_fields = self
             .fields
@@ -144,42 +161,31 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
         let children_field = self.get_children_field();
         let name = format_ident!("{}", self.normalize_name());
-        let trait_impls = self.get_trait_implementations();
+        let trait_impls = self.get_trait_implementations(subenums);
         let derives = if self.config.serialize {
             let serialize_bounds = get_serialize_bounds();
             quote! {
-                #[derive(Debug, Clone, Deserialize, Archive, Serialize, Drive, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Deserialize, Clone, Archive, Serialize, Eq, PartialEq, salsa::Update)]
                 #serialize_bounds
             }
         } else {
             quote! {
-                #[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Eq, PartialEq, Clone, salsa::Update)]
 
             }
         };
         quote! {
             #derives
             pub struct #name<'db> {
-                #[drive(skip)]
+                id: CSTNodeId<'db>,
+                file_id: FileNodeId<'db>,
                 start_byte: usize,
-                #[drive(skip)]
                 end_byte: usize,
-                #[drive(skip)]
-                _kind: std::string::String,
-                #[drive(skip)]
                 start_position: Point<'db>,
-                #[drive(skip)]
                 end_position: Point<'db>,
-                #[drive(skip)]
+                #[debug(ignore)]
                 buffer: Arc<Bytes>,
-                #[drive(skip)]
-                kind_id: u16,
-                #[drive(skip)]
                 is_error: bool,
-                #[drive(skip)]
-                named: bool,
-                #[drive(skip)]
-                id: usize,
                 #children_field
                 #(#struct_fields),*
             }
@@ -189,8 +195,12 @@ impl<'a> Node<'a> {
     }
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
+            let children_type_name = format_ident!("{}", self.children_struct_name());
             quote! {
-                _children: named_children_without_field_names(db, node, buffer)?
+                let _children = named_children_without_field_names::<NodeTypes<'db>, #children_type_name<'db>>(context, node)?;
+                for child in _children.iter().cloned() {
+                    ids.push(child);
+                }
             }
         } else {
             quote! {}
@@ -199,29 +209,35 @@ impl<'a> Node<'a> {
     pub fn get_constructor(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let mut constructor_fields = Vec::new();
+        let mut constructor_names = Vec::new();
         for field in &self.fields {
             constructor_fields.push(field.get_constructor_field());
+            constructor_names.push(format_ident!("{}", field.name()));
         }
         constructor_fields.push(self.get_children_constructor());
+        if self.has_children() {
+            constructor_names.push(format_ident!("_children"));
+        }
 
         quote! {
-            impl<'db> FromNode<'db> for #name<'db> {
-                fn from_node(db: &'db dyn salsa::Database, node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                    let start_position = Point::from(db, node.start_position());
-                    let end_position = Point::from(db, node.end_position());
-                    Ok(Self {
+            impl<'db> FromNode<'db, NodeTypes<'db>> for #name<'db> {
+                fn from_node(context: &mut ParseContext<'db, NodeTypes<'db>>, node: tree_sitter::Node) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
+                    let start_position = Point::from(context.db, node.start_position());
+                    let end_position = Point::from(context.db, node.end_position());
+                    let id = CSTNodeId::new(context.db, context.file_id, node.id());
+                    let mut ids = Vec::new();
+                    #(#constructor_fields)*
+                    Ok((Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
-                        _kind: node.kind().to_string(),
                         start_position: start_position,
                         end_position: end_position,
-                        buffer: buffer.clone(),
-                        kind_id: node.kind_id(),
+                        buffer: context.buffer.clone(),
                         is_error: node.is_error(),
-                        named: node.is_named(),
-                        id: node.id(),
-                        #(#constructor_fields),*
-                })
+                        id,
+                        file_id: context.file_id.clone(),
+                        #(#constructor_names),*
+                }, ids))
                 }
             }
         }
@@ -230,32 +246,45 @@ impl<'a> Node<'a> {
         let name = format_ident!("{}", self.normalize_name());
 
         let children_type_name = self.children_struct_name();
-        let children_type_ident = format_ident!("{}", children_type_name);
-        let mut children_type_generic = quote! {#children_type_ident};
+        let children_type_generic;
         if children_type_name != "Self" {
-            children_type_generic = quote! {#children_type_generic<'db1>};
+            let children_type_ident = format_ident!("{}Ref", children_type_name);
+            children_type_generic = quote! {#children_type_ident<'db2>};
+        } else {
+            children_type_generic = quote! {#name<'db2>};
         }
 
         let children_field = self.get_children_field_impl();
         let children_by_field_name = self.get_children_by_field_name_impl();
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
-            impl<'db1> HasChildren<'db1> for #name<'db1> {
-                type Child = #children_type_generic;
+            impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for #name<'db1> {
+                type Child<'db2> = #children_type_generic where Self: 'db2;
                 #children_field
                 #children_by_field_name
                 #children_by_field_id
             }
         }
     }
-    pub fn get_trait_implementations(&self) -> TokenStream {
+    pub fn get_trait_implementations(&self, subenums: &HashSet<&String>) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let children_impl = self.get_children_impl();
-
+        let getters = self
+            .fields
+            .iter()
+            .map(|f| f.get_field_getter(subenums))
+            .collect::<Vec<_>>();
+        let kind_name = &self.raw.type_name;
+        let is_named = self.raw.named;
+        let kind_id = self.kind_id();
         quote! {
+            impl<'db> #name<'db> {
+                const KIND_NAME: &'static str = #kind_name;
+                #(#getters)*
+            }
             impl<'db> CSTNode<'db> for #name<'db> {
-                fn kind(&self) -> &str {
-                    &self._kind
+                fn kind_name(&self) -> &str {
+                    &Self::KIND_NAME
                 }
                 fn start_byte(&self) -> usize {
                     self.start_byte
@@ -273,16 +302,19 @@ impl<'a> Node<'a> {
                     &self.buffer
                 }
                 fn kind_id(&self) -> u16 {
-                    self.kind_id
+                    #kind_id
                 }
                 fn is_error(&self) -> bool {
                     self.is_error
                 }
                 fn is_named(&self) -> bool {
-                    self.named
+                    #is_named
                 }
-                fn id(&self) -> usize {
+                fn id(&self) -> CSTNodeId<'db> {
                     self.id
+                }
+                fn file_id(&self) -> FileNodeId<'db> {
+                    self.file_id
                 }
             }
             #children_impl
@@ -291,6 +323,22 @@ impl<'a> Node<'a> {
                     self.id.hash(state);
                 }
             }
+            impl<'db> PartialOrd for #name<'db> {
+                fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                    Some(self.cmp(other))
+                }
+            }
+            impl<'db> Ord for #name<'db> {
+                fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+                    let res = self.start_byte().cmp(&other.start_byte());
+                    if res == std::cmp::Ordering::Equal {
+                        self.end_byte().cmp(&other.end_byte())
+                    } else {
+                        res
+                    }
+                }
+            }
+
         }
     }
     fn get_children_field_impl(&self) -> TokenStream {
@@ -298,7 +346,7 @@ impl<'a> Node<'a> {
         let num_children = self.get_children_names().len();
         if num_children == 0 {
             return quote! {
-                fn children(&self) -> Vec<Self::Child> {
+                fn children<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>) -> Vec<Self::Child<'db2>> {
                     vec![]
                 }
             };
@@ -310,7 +358,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self._children.iter().cloned().collect()
+                self._children.iter().map(|c| context.get(c).unwrap().as_ref().try_into().unwrap()).collect()
             }
         } else {
             quote! {
@@ -318,8 +366,8 @@ impl<'a> Node<'a> {
             }
         };
         quote! {
-            fn children(&self) -> Vec<Self::Child> {
-                let mut children: Vec<_> = #children_init;
+            fn children<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>) -> Vec<Self::Child<'db2>> {
+                let mut children: Vec<Self::Child<'db2>> = #children_init;
                 #(#children_fields;)*
                 children.sort_by_key(|c| c.start_byte());
                 children
@@ -335,7 +383,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+            fn children_by_field_name<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>, field_name: &str) -> Vec<Self::Child<'db2>> {
                 match field_name {
                     #(#field_matches,)*
                     _ => vec![],
@@ -352,7 +400,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+            fn children_by_field_id<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>, field_id: u16) -> Vec<Self::Child<'db2>> {
                 match field_id {
                     #(#field_matches,)*
                     _ => vec![],
@@ -434,11 +482,11 @@ mod tests {
         for subenum in &node.subenums {
             subenum_name_map.insert(subenum.clone(), normalize_type_name(subenum, true));
         }
-        let tokens = node.get_enum_tokens(&subenum_name_map);
+        let tokens = node.get_enum_tokens(&subenum_name_map, false);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
 
         node.add_subenum("subenum".to_string());
-        let tokens = node.get_enum_tokens(&subenum_name_map);
+        let tokens = node.get_enum_tokens(&subenum_name_map, false);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
     }
 
@@ -447,7 +495,7 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -468,7 +516,7 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -514,7 +562,7 @@ mod tests {
         let nodes = vec![raw_node.clone()];
         let language = get_language(nodes);
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test_log::test]
@@ -523,7 +571,7 @@ mod tests {
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -531,7 +579,7 @@ mod tests {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -539,7 +587,9 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_trait_implementations()));
+        insta::assert_debug_snapshot!(snapshot_tokens(
+            &node.get_trait_implementations(&HashSet::new())
+        ));
     }
 
     #[test]

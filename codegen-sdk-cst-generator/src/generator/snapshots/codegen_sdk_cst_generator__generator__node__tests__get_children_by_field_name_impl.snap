@@ -2,13 +2,14 @@
 source: codegen-sdk-cst-generator/src/generator/node.rs
 expression: snapshot_tokens(&node.get_children_by_field_name_impl())
 ---
-fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+fn children_by_field_name<'db2>(
+    &'db2 self,
+    context: &'db2 Tree<NodeTypes<'db2>>,
+    field_name: &str,
+) -> Vec<Self::Child<'db2>> {
     match field_name {
         "test_field" => {
-            vec![
-                Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone()))
-                .unwrap()
-            ]
+            vec![context.get(& self.test_field).unwrap().as_ref().try_into().unwrap()]
         }
         _ => vec![],
     }

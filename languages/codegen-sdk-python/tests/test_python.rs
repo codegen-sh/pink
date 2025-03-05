@@ -36,7 +36,8 @@ class Test:
     let content = codegen_sdk_cst::Input::new(&db, content.to_string());
     let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
     let file = codegen_sdk_python::ast::parse_query(&db, input);
-    assert_eq!(file.definitions(&db).classes.len(), 1);
+    let tree = file.tree(&db);
+    assert_eq!(file.definitions(&db).classes(&db, &tree).len(), 1);
 }
 #[test_log::test]
 fn test_python_ast_function() {
@@ -49,7 +50,8 @@ def test():
     let content = codegen_sdk_cst::Input::new(&db, content.to_string());
     let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
     let file = codegen_sdk_python::ast::parse_query(&db, input);
-    assert_eq!(file.definitions(&db).functions.len(), 1);
+    let tree = file.tree(&db);
+    assert_eq!(file.definitions(&db).functions(&db, &tree).len(), 1);
 }
 #[test_log::test]
 fn test_python_ast_function_usages() {
@@ -64,11 +66,15 @@ test()";
     let content = codegen_sdk_cst::Input::new(&db, content.to_string());
     let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
     let file = codegen_sdk_python::ast::parse_query(&db, input);
-    assert_eq!(file.references(&db).calls.len(), 1);
+    let tree = file.tree(&db);
+    assert_eq!(file.references(&db).calls(&db, &tree).len(), 1);
     let definitions = file.definitions(&db);
-    let function = definitions.functions.get("test").unwrap().first().unwrap();
+    let functions = definitions.functions(&db, &tree);
+    let function = functions.get("test").unwrap().first().unwrap();
     assert_eq!(
-        function.references_for_scopes(&db, vec![file], &file).len(),
+        function
+            .references_for_scopes(&db, vec![*file], &file)
+            .len(),
         1
     );
 }
