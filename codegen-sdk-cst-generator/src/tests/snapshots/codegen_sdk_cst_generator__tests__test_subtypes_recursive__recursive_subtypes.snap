@@ -324,14 +324,11 @@ pub struct BinaryExpression<'db> {
     file_id: FileNodeId<'db>,
     start_byte: usize,
     end_byte: usize,
-    _kind: std::string::String,
     start_position: Point<'db>,
     end_position: Point<'db>,
     #[debug(ignore)]
     buffer: Arc<Bytes>,
-    kind_id: u16,
     is_error: bool,
-    named: bool,
     pub left: indextree::NodeId,
     pub right: indextree::NodeId,
 }
@@ -358,13 +355,10 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for BinaryExpression<'db> {
             Self {
                 start_byte: node.start_byte(),
                 end_byte: node.end_byte(),
-                _kind: node.kind().to_string(),
                 start_position: start_position,
                 end_position: end_position,
                 buffer: context.buffer.clone(),
-                kind_id: node.kind_id(),
                 is_error: node.is_error(),
-                named: node.is_named(),
                 id,
                 file_id: context.file_id.clone(),
                 left,
@@ -375,6 +369,7 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for BinaryExpression<'db> {
     }
 }
 impl<'db> BinaryExpression<'db> {
+    const KIND_NAME: &'static str = "binary_expression";
     pub fn left(&self, tree: &'db Tree<NodeTypes<'db>>) -> ExpressionRef<'db> {
         tree.get(&self.left).unwrap().as_ref().try_into().unwrap()
     }
@@ -384,7 +379,7 @@ impl<'db> BinaryExpression<'db> {
 }
 impl<'db> CSTNode<'db> for BinaryExpression<'db> {
     fn kind_name(&self) -> &str {
-        &self._kind
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -402,13 +397,13 @@ impl<'db> CSTNode<'db> for BinaryExpression<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
     fn id(&self) -> CSTNodeId<'db> {
         self.id
@@ -482,14 +477,11 @@ pub struct CallExpression<'db> {
     file_id: FileNodeId<'db>,
     start_byte: usize,
     end_byte: usize,
-    _kind: std::string::String,
     start_position: Point<'db>,
     end_position: Point<'db>,
     #[debug(ignore)]
     buffer: Arc<Bytes>,
-    kind_id: u16,
     is_error: bool,
-    named: bool,
     pub _children: Vec<indextree::NodeId>,
     pub callee: indextree::NodeId,
 }
@@ -518,13 +510,10 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for CallExpression<'db> {
             Self {
                 start_byte: node.start_byte(),
                 end_byte: node.end_byte(),
-                _kind: node.kind().to_string(),
                 start_position: start_position,
                 end_position: end_position,
                 buffer: context.buffer.clone(),
-                kind_id: node.kind_id(),
                 is_error: node.is_error(),
-                named: node.is_named(),
                 id,
                 file_id: context.file_id.clone(),
                 callee,
@@ -535,13 +524,14 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for CallExpression<'db> {
     }
 }
 impl<'db> CallExpression<'db> {
+    const KIND_NAME: &'static str = "call_expression";
     pub fn callee(&self, tree: &'db Tree<NodeTypes<'db>>) -> ExpressionRef<'db> {
         tree.get(&self.callee).unwrap().as_ref().try_into().unwrap()
     }
 }
 impl<'db> CSTNode<'db> for CallExpression<'db> {
     fn kind_name(&self) -> &str {
-        &self._kind
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -559,13 +549,13 @@ impl<'db> CSTNode<'db> for CallExpression<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
     fn id(&self) -> CSTNodeId<'db> {
         self.id

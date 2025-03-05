@@ -350,14 +350,11 @@ pub struct ClassDeclaration<'db> {
     file_id: FileNodeId<'db>,
     start_byte: usize,
     end_byte: usize,
-    _kind: std::string::String,
     start_position: Point<'db>,
     end_position: Point<'db>,
     #[debug(ignore)]
     buffer: Arc<Bytes>,
-    kind_id: u16,
     is_error: bool,
-    named: bool,
 }
 impl<'db> FromNode<'db, NodeTypes<'db>> for ClassDeclaration<'db> {
     fn from_node(
@@ -372,13 +369,10 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for ClassDeclaration<'db> {
             Self {
                 start_byte: node.start_byte(),
                 end_byte: node.end_byte(),
-                _kind: node.kind().to_string(),
                 start_position: start_position,
                 end_position: end_position,
                 buffer: context.buffer.clone(),
-                kind_id: node.kind_id(),
                 is_error: node.is_error(),
-                named: node.is_named(),
                 id,
                 file_id: context.file_id.clone(),
             },
@@ -386,10 +380,12 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for ClassDeclaration<'db> {
         ))
     }
 }
-impl<'db> ClassDeclaration<'db> {}
+impl<'db> ClassDeclaration<'db> {
+    const KIND_NAME: &'static str = "class_declaration";
+}
 impl<'db> CSTNode<'db> for ClassDeclaration<'db> {
     fn kind_name(&self) -> &str {
-        &self._kind
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -407,13 +403,13 @@ impl<'db> CSTNode<'db> for ClassDeclaration<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
     fn id(&self) -> CSTNodeId<'db> {
         self.id
@@ -475,14 +471,11 @@ pub struct ExpressionStatement<'db> {
     file_id: FileNodeId<'db>,
     start_byte: usize,
     end_byte: usize,
-    _kind: std::string::String,
     start_position: Point<'db>,
     end_position: Point<'db>,
     #[debug(ignore)]
     buffer: Arc<Bytes>,
-    kind_id: u16,
     is_error: bool,
-    named: bool,
 }
 impl<'db> FromNode<'db, NodeTypes<'db>> for ExpressionStatement<'db> {
     fn from_node(
@@ -497,13 +490,10 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for ExpressionStatement<'db> {
             Self {
                 start_byte: node.start_byte(),
                 end_byte: node.end_byte(),
-                _kind: node.kind().to_string(),
                 start_position: start_position,
                 end_position: end_position,
                 buffer: context.buffer.clone(),
-                kind_id: node.kind_id(),
                 is_error: node.is_error(),
-                named: node.is_named(),
                 id,
                 file_id: context.file_id.clone(),
             },
@@ -511,10 +501,12 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for ExpressionStatement<'db> {
         ))
     }
 }
-impl<'db> ExpressionStatement<'db> {}
+impl<'db> ExpressionStatement<'db> {
+    const KIND_NAME: &'static str = "expression_statement";
+}
 impl<'db> CSTNode<'db> for ExpressionStatement<'db> {
     fn kind_name(&self) -> &str {
-        &self._kind
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -532,13 +524,13 @@ impl<'db> CSTNode<'db> for ExpressionStatement<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
     fn id(&self) -> CSTNodeId<'db> {
         self.id
@@ -600,14 +592,11 @@ pub struct MethodDeclaration<'db> {
     file_id: FileNodeId<'db>,
     start_byte: usize,
     end_byte: usize,
-    _kind: std::string::String,
     start_position: Point<'db>,
     end_position: Point<'db>,
     #[debug(ignore)]
     buffer: Arc<Bytes>,
-    kind_id: u16,
     is_error: bool,
-    named: bool,
 }
 impl<'db> FromNode<'db, NodeTypes<'db>> for MethodDeclaration<'db> {
     fn from_node(
@@ -622,13 +611,10 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for MethodDeclaration<'db> {
             Self {
                 start_byte: node.start_byte(),
                 end_byte: node.end_byte(),
-                _kind: node.kind().to_string(),
                 start_position: start_position,
                 end_position: end_position,
                 buffer: context.buffer.clone(),
-                kind_id: node.kind_id(),
                 is_error: node.is_error(),
-                named: node.is_named(),
                 id,
                 file_id: context.file_id.clone(),
             },
@@ -636,10 +622,12 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for MethodDeclaration<'db> {
         ))
     }
 }
-impl<'db> MethodDeclaration<'db> {}
+impl<'db> MethodDeclaration<'db> {
+    const KIND_NAME: &'static str = "method_declaration";
+}
 impl<'db> CSTNode<'db> for MethodDeclaration<'db> {
     fn kind_name(&self) -> &str {
-        &self._kind
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -657,13 +645,13 @@ impl<'db> CSTNode<'db> for MethodDeclaration<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
     fn id(&self) -> CSTNodeId<'db> {
         self.id

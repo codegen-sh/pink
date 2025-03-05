@@ -8,14 +8,11 @@ pub struct TestNode<'db> {
     file_id: FileNodeId<'db>,
     start_byte: usize,
     end_byte: usize,
-    _kind: std::string::String,
     start_position: Point<'db>,
     end_position: Point<'db>,
     #[debug(ignore)]
     buffer: Arc<Bytes>,
-    kind_id: u16,
     is_error: bool,
-    named: bool,
     pub _children: Vec<indextree::NodeId>,
 }
 impl<'db> FromNode<'db, NodeTypes<'db>> for TestNode<'db> {
@@ -38,13 +35,10 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for TestNode<'db> {
             Self {
                 start_byte: node.start_byte(),
                 end_byte: node.end_byte(),
-                _kind: node.kind().to_string(),
                 start_position: start_position,
                 end_position: end_position,
                 buffer: context.buffer.clone(),
-                kind_id: node.kind_id(),
                 is_error: node.is_error(),
-                named: node.is_named(),
                 id,
                 file_id: context.file_id.clone(),
                 _children,
@@ -53,10 +47,12 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for TestNode<'db> {
         ))
     }
 }
-impl<'db> TestNode<'db> {}
+impl<'db> TestNode<'db> {
+    const KIND_NAME: &'static str = "test_node";
+}
 impl<'db> CSTNode<'db> for TestNode<'db> {
     fn kind_name(&self) -> &str {
-        &self._kind
+        &Self::KIND_NAME
     }
     fn start_byte(&self) -> usize {
         self.start_byte
@@ -74,13 +70,13 @@ impl<'db> CSTNode<'db> for TestNode<'db> {
         &self.buffer
     }
     fn kind_id(&self) -> u16 {
-        self.kind_id
+        0u16
     }
     fn is_error(&self) -> bool {
         self.is_error
     }
     fn is_named(&self) -> bool {
-        self.named
+        true
     }
     fn id(&self) -> CSTNodeId<'db> {
         self.id
