@@ -87,12 +87,12 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     }
 
     impl<'db> #language_struct_name<'db> {
-        pub fn tree(&self, db: &'db dyn salsa::Database) -> &'db codegen_sdk_cst::Tree {
+        pub fn tree(&self, db: &'db dyn salsa::Database) -> &'db codegen_sdk_common::Tree<crate::cst::NodeTypes<'db>> {
             self.node(db).unwrap().tree(db)
         }
-        pub fn root(&self, db: &'db dyn salsa::Database) -> &'db codegen_sdk_cst::#root_node_name<'db> {
+        pub fn root(&self, db: &'db dyn salsa::Database) -> &'db crate::cst::#root_node_name<'db> {
             let tree = self.tree(db);
-            tree.get(self.node(db).unwrap().root(db)).unwrap().try_into().unwrap()
+            tree.get(&self.node(db).unwrap().program(db)).unwrap().as_ref().try_into().unwrap()
         }
     }
     #definitions_impl

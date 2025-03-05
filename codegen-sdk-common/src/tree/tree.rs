@@ -44,7 +44,7 @@ unsafe impl<T> Update for Tree<T>
 where
     T: TreeNode + Update,
 {
-    unsafe fn maybe_update(old_pointer: *mut Self, new_set: Self) -> bool {
+    unsafe fn maybe_update(_old_pointer: *mut Self, _new_set: Self) -> bool {
         todo!("Tree is not updateable");
     }
 }

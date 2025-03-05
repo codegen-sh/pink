@@ -2,4 +2,4 @@
 source: codegen-sdk-cst-generator/src/generator/field.rs
 expression: snapshot_tokens(&multiple_field.get_struct_field())
 ---
-pub test_field : Vec < TestType < 'db >>
+pub test_field : Vec < indextree :: NodeId >

@@ -1,69 +1,100 @@
 ---
 source: codegen-sdk-cst-generator/src/generator/node.rs
-expression: snapshot_tokens(&node.get_struct_tokens())
+expression: "snapshot_tokens(&node.get_struct_tokens(&HashSet::new()))"
 ---
-#[derive(Debug, Clone, Drive, Eq, PartialEq, salsa::Update)]
+#[derive(Debug, Eq, PartialEq, Clone, salsa::Update)]
 pub struct TestNode<'db> {
-    #[drive(skip)]
+    id: CSTNodeId<'db>,
+    file_id: FileNodeId<'db>,
     start_byte: usize,
-    #[drive(skip)]
     end_byte: usize,
-    #[drive(skip)]
     _kind: std::string::String,
-    #[drive(skip)]
     start_position: Point<'db>,
-    #[drive(skip)]
     end_position: Point<'db>,
-    #[drive(skip)]
+    #[debug(ignore)]
     buffer: Arc<Bytes>,
-    #[drive(skip)]
     kind_id: u16,
-    #[drive(skip)]
     is_error: bool,
-    #[drive(skip)]
     named: bool,
-    #[drive(skip)]
-    id: usize,
-    pub multiple_field: Vec<TestType<'db>>,
-    pub optional_field: Box<Option<TestType<'db>>>,
-    pub required_field: Box<TestType<'db>>,
+    pub multiple_field: Vec<indextree::NodeId>,
+    pub optional_field: Option<indextree::NodeId>,
+    pub required_field: indextree::NodeId,
 }
-impl<'db> FromNode<'db> for TestNode<'db> {
+impl<'db> FromNode<'db, NodeTypes<'db>> for TestNode<'db> {
     fn from_node(
-        db: &'db dyn salsa::Database,
+        context: &mut ParseContext<'db, NodeTypes<'db>>,
         node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
-        let start_position = Point::from(db, node.start_position());
-        let end_position = Point::from(db, node.end_position());
-        Ok(Self {
-            start_byte: node.start_byte(),
-            end_byte: node.end_byte(),
-            _kind: node.kind().to_string(),
-            start_position: start_position,
-            end_position: end_position,
-            buffer: buffer.clone(),
-            kind_id: node.kind_id(),
-            is_error: node.is_error(),
-            named: node.is_named(),
-            id: node.id(),
-            multiple_field: get_multiple_children_by_field_name(
-                db,
-                &node,
-                "multiple_field",
-                buffer,
-            )?,
-            optional_field: Box::new(
-                get_optional_child_by_field_name(db, &node, "optional_field", buffer)?,
-            ),
-            required_field: Box::new(
-                get_child_by_field_name(db, &node, "required_field", buffer)?,
-            ),
-        })
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
+        let start_position = Point::from(context.db, node.start_position());
+        let end_position = Point::from(context.db, node.end_position());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let mut ids = Vec::new();
+        let multiple_field = get_multiple_children_by_field_name::<
+            NodeTypes<'db>,
+            TestType<'db>,
+        >(context, &node, "multiple_field")?;
+        for child in multiple_field.iter().cloned() {
+            ids.push(child);
+        }
+        let optional_field = get_optional_child_by_field_name::<
+            NodeTypes<'db>,
+            TestType<'db>,
+        >(context, &node, "optional_field")?;
+        if let Some(child) = optional_field.clone() {
+            ids.push(child);
+        }
+        let required_field = get_child_by_field_name::<
+            NodeTypes<'db>,
+            TestType<'db>,
+        >(context, &node, "required_field")?;
+        ids.push(required_field.clone());
+        Ok((
+            Self {
+                start_byte: node.start_byte(),
+                end_byte: node.end_byte(),
+                _kind: node.kind().to_string(),
+                start_position: start_position,
+                end_position: end_position,
+                buffer: context.buffer.clone(),
+                kind_id: node.kind_id(),
+                is_error: node.is_error(),
+                named: node.is_named(),
+                id,
+                file_id: context.file_id.clone(),
+                multiple_field,
+                optional_field,
+                required_field,
+            },
+            ids,
+        ))
+    }
+}
+impl<'db> TestNode<'db> {
+    pub fn multiple_field(
+        &self,
+        tree: &'db Tree<NodeTypes<'db>>,
+    ) -> Vec<&TestType<'db>> {
+        self.multiple_field
+            .iter()
+            .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
+            .collect()
+    }
+    pub fn optional_field(
+        &self,
+        tree: &'db Tree<NodeTypes<'db>>,
+    ) -> Option<&TestType<'db>> {
+        if let Some(id) = self.optional_field {
+            Some(tree.get(&id).unwrap().as_ref().try_into().unwrap())
+        } else {
+            None
+        }
+    }
+    pub fn required_field(&self, tree: &'db Tree<NodeTypes<'db>>) -> &TestType<'db> {
+        tree.get(&self.required_field).unwrap().as_ref().try_into().unwrap()
     }
 }
 impl<'db> CSTNode<'db> for TestNode<'db> {
-    fn kind(&self) -> &str {
+    fn kind_name(&self) -> &str {
         &self._kind
     }
     fn start_byte(&self) -> usize {
@@ -90,44 +121,50 @@ impl<'db> CSTNode<'db> for TestNode<'db> {
     fn is_named(&self) -> bool {
         self.named
     }
-    fn id(&self) -> usize {
+    fn id(&self) -> CSTNodeId<'db> {
         self.id
     }
+    fn file_id(&self) -> FileNodeId<'db> {
+        self.file_id
+    }
 }
-impl<'db1> HasChildren<'db1> for TestNode<'db1> {
-    type Child = TestNodeChildren<'db1>;
-    fn children(&self) -> Vec<Self::Child> {
-        let mut children: Vec<_> = vec![];
+impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for TestNode<'db1> {
+    type Child<'db2> = TestNodeChildrenRef<'db2> where Self: 'db2;
+    fn children<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+    ) -> Vec<Self::Child<'db2>> {
+        let mut children: Vec<Self::Child<'db2>> = vec![];
         children
             .extend(
                 self
                     .multiple_field
                     .iter()
                     .map(|child| {
-                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                        context.get(child).unwrap().as_ref().try_into().unwrap()
                     }),
             );
         if let Some(child) = self.optional_field.as_ref() {
-            children
-                .push(Self::Child::try_from(NodeTypes::from(child.clone())).unwrap());
+            children.push(context.get(child).unwrap().as_ref().try_into().unwrap());
         }
         children
             .push(
-                Self::Child::try_from(
-                        NodeTypes::from(self.required_field.as_ref().clone()),
-                    )
-                    .unwrap(),
+                context.get(&self.required_field).unwrap().as_ref().try_into().unwrap(),
             );
         children.sort_by_key(|c| c.start_byte());
         children
     }
-    fn children_by_field_name(&self, field_name: &str) -> Vec<Self::Child> {
+    fn children_by_field_name<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_name: &str,
+    ) -> Vec<Self::Child<'db2>> {
         match field_name {
             "multiple_field" => {
                 self.multiple_field
                     .iter()
                     .map(|child| {
-                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                        context.get(child).unwrap().as_ref().try_into().unwrap()
                     })
                     .collect()
             }
@@ -136,26 +173,30 @@ impl<'db1> HasChildren<'db1> for TestNode<'db1> {
                     .as_ref()
                     .iter()
                     .map(|child| {
-                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                        context.get(child).unwrap().as_ref().try_into().unwrap()
                     })
                     .collect()
             }
             "required_field" => {
                 vec![
-                    Self::Child::try_from(NodeTypes::from(self.required_field.as_ref()
-                    .clone())).unwrap()
+                    context.get(& self.required_field).unwrap().as_ref().try_into()
+                    .unwrap()
                 ]
             }
             _ => vec![],
         }
     }
-    fn children_by_field_id(&self, field_id: u16) -> Vec<Self::Child> {
+    fn children_by_field_id<'db2>(
+        &'db2 self,
+        context: &'db2 Tree<NodeTypes<'db2>>,
+        field_id: u16,
+    ) -> Vec<Self::Child<'db2>> {
         match field_id {
             1u16 => {
                 self.multiple_field
                     .iter()
                     .map(|child| {
-                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                        context.get(child).unwrap().as_ref().try_into().unwrap()
                     })
                     .collect()
             }
@@ -164,14 +205,14 @@ impl<'db1> HasChildren<'db1> for TestNode<'db1> {
                     .as_ref()
                     .iter()
                     .map(|child| {
-                        Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()
+                        context.get(child).unwrap().as_ref().try_into().unwrap()
                     })
                     .collect()
             }
             1u16 => {
                 vec![
-                    Self::Child::try_from(NodeTypes::from(self.required_field.as_ref()
-                    .clone())).unwrap()
+                    context.get(& self.required_field).unwrap().as_ref().try_into()
+                    .unwrap()
                 ]
             }
             _ => vec![],
@@ -181,5 +222,20 @@ impl<'db1> HasChildren<'db1> for TestNode<'db1> {
 impl<'db> std::hash::Hash for TestNode<'db> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
+    }
+}
+impl<'db> PartialOrd for TestNode<'db> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<'db> Ord for TestNode<'db> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let res = self.start_byte().cmp(&other.start_byte());
+        if res == std::cmp::Ordering::Equal {
+            self.end_byte().cmp(&other.end_byte())
+        } else {
+            res
+        }
     }
 }

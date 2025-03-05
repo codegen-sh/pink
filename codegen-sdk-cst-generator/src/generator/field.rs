@@ -424,7 +424,7 @@ mod tests {
 
         assert_eq!(
             field.get_children_field(true).to_string(),
-            quote!(children.push(Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap());).to_string()
+            quote!(children.push(context.get(&self.test_field).unwrap().as_ref().try_into().unwrap());).to_string()
         );
 
         // Test optional field
@@ -440,7 +440,7 @@ mod tests {
         assert_eq!(
             optional_field.get_children_field(true).to_string(),
             quote!(if let Some(child) = self.test_field.as_ref() {
-                children.push(Self::Child::try_from(NodeTypes::from(child.clone())).unwrap());
+                children.push(context.get(child).unwrap().as_ref().try_into().unwrap());
             })
             .to_string()
         );
@@ -457,7 +457,7 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_children_field(true).to_string(),
-            quote!(children.extend(self.test_field.iter().map(|child| Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()));).to_string()
+            quote!(children.extend(self.test_field.iter().map(|child| context.get(child).unwrap().as_ref().try_into().unwrap()));).to_string()
         );
     }
 
@@ -475,7 +475,7 @@ mod tests {
 
         assert_eq!(
             field.get_children_by_field_name_field(true).to_string(),
-            quote!("test_field" => vec![Self::Child::try_from(NodeTypes::from(self.test_field.as_ref().clone())).unwrap()]).to_string()
+            quote!("test_field" => vec![context.get(&self.test_field).unwrap().as_ref().try_into().unwrap()]).to_string()
         );
 
         // Test optional field
@@ -490,7 +490,7 @@ mod tests {
 
         assert_eq!(
             optional_field.get_children_by_field_name_field(true).to_string(),
-            quote!("test_field" => self.test_field.as_ref().iter().map(|child| Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()).collect()).to_string()
+            quote!("test_field" => self.test_field.as_ref().iter().map(|child| context.get(child).unwrap().as_ref().try_into().unwrap()).collect()).to_string()
         );
 
         // Test multiple field
@@ -505,7 +505,7 @@ mod tests {
 
         assert_eq!(
             multiple_field.get_children_by_field_name_field(true).to_string(),
-            quote!("test_field" => self.test_field.iter().map(|child| Self::Child::try_from(NodeTypes::from(child.clone())).unwrap()).collect()).to_string()
+            quote!("test_field" => self.test_field.iter().map(|child| context.get(child).unwrap().as_ref().try_into().unwrap()).collect()).to_string()
         );
     }
 }

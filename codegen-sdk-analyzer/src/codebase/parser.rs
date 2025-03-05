@@ -1,7 +1,6 @@
 use codegen_sdk_ast::{Definitions, References, input::File};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
-use codegen_sdk_resolution::References as _;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use super::discovery::{FilesToParse, log_languages};

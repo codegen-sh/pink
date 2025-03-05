@@ -3,7 +3,7 @@ source: codegen-sdk-cst-generator/src/generator/state.rs
 expression: snapshot_tokens(&enum_tokens)
 ---
 #[subenum(NodeCChildren, NodeCField)]
-#[derive(Debug, Clone, Eq, PartialEq, Drive, Hash, salsa::Update, Delegate)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
 #[delegate(CSTNode<'db1>)]
 pub enum NodeTypes<'db1> {
     #[subenum(NodeCChildren, NodeCField)]
@@ -27,15 +27,15 @@ impl<'db3> From<NodeC<'db3>> for NodeTypes<'db3> {
         Self::NodeC(node)
     }
 }
-impl<'db4> FromNode<'db4> for NodeCChildren<'db4> {
+impl<'db4> FromNode<'db4, NodeTypes<'db4>> for NodeCChildren<'db4> {
     fn from_node(
-        db: &'db4 dyn salsa::Database,
+        context: &mut ParseContext<'db4, NodeTypes<'db4>>,
         node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         match node.kind_id() {
             0u16 => {
-                Ok(Self::AnonymousNodeA(AnonymousNodeA::from_node(db, node, buffer)?))
+                let (node, ids) = AnonymousNodeA::from_node(context, node)?;
+                Ok((Self::AnonymousNodeA(node), ids))
             }
             _ => {
                 Err(ParseError::UnexpectedNode {
@@ -46,14 +46,16 @@ impl<'db4> FromNode<'db4> for NodeCChildren<'db4> {
         }
     }
 }
-impl<'db4> FromNode<'db4> for NodeCField<'db4> {
+impl<'db4> FromNode<'db4, NodeTypes<'db4>> for NodeCField<'db4> {
     fn from_node(
-        db: &'db4 dyn salsa::Database,
+        context: &mut ParseContext<'db4, NodeTypes<'db4>>,
         node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
-    ) -> Result<Self, ParseError> {
+    ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         match node.kind_id() {
-            0u16 => Ok(Self::NodeB(NodeB::from_node(db, node, buffer)?)),
+            0u16 => {
+                let (node, ids) = NodeB::from_node(context, node)?;
+                Ok((Self::NodeB(node), ids))
+            }
             _ => {
                 Err(ParseError::UnexpectedNode {
                     node_type: node.kind().to_string(),

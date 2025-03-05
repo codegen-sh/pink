@@ -2,4 +2,4 @@
 source: codegen-sdk-cst-generator/src/generator/field.rs
 expression: snapshot_tokens(&field.get_constructor_field())
 ---
-test_field : Box :: new (get_child_by_field_name (db , & node , "test_field" , buffer) ?)
+let test_field = get_child_by_field_name :: < NodeTypes < 'db > , TestType < 'db >> (context , & node , "test_field") ? ; ids . push (test_field . clone ()) ;

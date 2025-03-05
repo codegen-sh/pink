@@ -497,7 +497,7 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -518,7 +518,7 @@ mod tests {
         );
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -564,7 +564,7 @@ mod tests {
         let nodes = vec![raw_node.clone()];
         let language = get_language(nodes);
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test_log::test]
@@ -573,7 +573,7 @@ mod tests {
             create_test_node_with_children("test_node", vec!["child_type_a", "child_type_b"]);
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -581,7 +581,7 @@ mod tests {
         let raw_node = create_test_node_with_children("test_node", vec!["child_type"]);
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens()));
+        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_struct_tokens(&HashSet::new())));
     }
 
     #[test]
@@ -589,7 +589,9 @@ mod tests {
         let raw_node = create_test_node("test_node");
         let language = get_language_no_nodes();
         let node = Node::new(Arc::new(raw_node), &language, Config::default());
-        insta::assert_debug_snapshot!(snapshot_tokens(&node.get_trait_implementations()));
+        insta::assert_debug_snapshot!(snapshot_tokens(
+            &node.get_trait_implementations(&HashSet::new())
+        ));
     }
 
     #[test]

@@ -426,7 +426,7 @@ mod tests {
         let nodes = vec![definition, class, function];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-        let enum_tokens = state.get_enum();
+        let enum_tokens = state.get_enum(false);
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
@@ -514,7 +514,7 @@ mod tests {
         let nodes = vec![node_a, node_c];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-        let enum_tokens = state.get_enum();
+        let enum_tokens = state.get_enum(false);
         let struct_tokens = state.get_structs();
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
         insta::assert_debug_snapshot!(snapshot_tokens(&struct_tokens));

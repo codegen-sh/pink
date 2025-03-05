@@ -1,5 +1,5 @@
 #![recursion_limit = "2048"]
-#![allow(unused)]
+#![allow(unused, irrefutable_let_patterns)]
 pub mod cst {
     include!(concat!(env!("OUT_DIR"), "/markdown.rs"));
 }
