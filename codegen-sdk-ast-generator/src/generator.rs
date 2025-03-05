@@ -61,6 +61,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     let language_name_str = language.name();
     let definitions_impl = get_definitions_impl(language);
     let references_impl = get_references_impl(language);
+    let root_node_name = format_ident!("{}", language.root_node());
     let content = quote! {
     #[salsa::tracked]
     pub struct #language_struct_name<'db> {
@@ -85,7 +86,15 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
         parse(db, input)
     }
 
-
+    impl<'db> #language_struct_name<'db> {
+        pub fn tree(&self, db: &'db dyn salsa::Database) -> &'db codegen_sdk_cst::Tree {
+            self.node(db).unwrap().tree(db)
+        }
+        pub fn root(&self, db: &'db dyn salsa::Database) -> &'db codegen_sdk_cst::#root_node_name<'db> {
+            let tree = self.tree(db);
+            tree.get(self.node(db).unwrap().root(db)).unwrap().try_into().unwrap()
+        }
+    }
     #definitions_impl
     #references_impl
     // impl<'db> HasNode for {language_struct_name}File<'db> {

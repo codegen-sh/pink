@@ -21,7 +21,7 @@ pub trait References<
         let mut results = Vec::new();
         for reference in scope.clone().resolvables(db) {
             let resolved = reference.clone().resolve_type(db, scope.clone(), scopes.clone());
-                if resolved.iter().any(|result| *result == self) {
+                if resolved.iter().any(|result| *result == *self) {
                     results.push(reference);
                 }
         }

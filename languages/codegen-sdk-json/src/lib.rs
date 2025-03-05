@@ -22,6 +22,7 @@ mod tests {
         let module = crate::cst::JSON::parse(&db, content.to_string())
             .as_ref()
             .unwrap();
-        assert!(module.children().len() > 0);
+        let (root, tree) = module;
+        assert!(tree.get(root).unwrap().children(tree).len() > 0);
     }
 }

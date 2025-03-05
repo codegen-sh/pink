@@ -33,5 +33,6 @@ fn test_typescript_ast_interface() {
     let content = codegen_sdk_cst::Input::new(&db, content.to_string());
     let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
     let file = codegen_sdk_typescript::ast::parse_query(&db, input);
-    assert_eq!(file.definitions(&db).interfaces.len(), 1);
+    let tree = file.node(&db).unwrap().tree(&db);
+    assert_eq!(file.definitions(&db).interfaces(db, &tree).len(), 1);
 }

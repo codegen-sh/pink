@@ -20,24 +20,23 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(file) = parsed {
                 let definitions = file.definitions(codebase.db());
-                let tree = file
-                    .node(codebase.db())
-                    .as_ref()
-                    .unwrap()
-                    .tree(codebase.db());
-                return (
-                    definitions.classes(codebase.db(), &tree).len(),
-                    definitions.functions(codebase.db(), &tree).len(),
-                    definitions.interfaces(codebase.db(), &tree).len(),
-                    definitions.methods(codebase.db(), &tree).len(),
-                    definitions.modules(codebase.db(), &tree).len(),
-                    0,
-                );
+                if let Some(node) = file.node(codebase.db()) {
+                    let tree = node.tree(codebase.db());
+                    return (
+                        definitions.classes(codebase.db(), &tree).len(),
+                        definitions.functions(codebase.db(), &tree).len(),
+                        definitions.interfaces(codebase.db(), &tree).len(),
+                        definitions.methods(codebase.db(), &tree).len(),
+                        definitions.modules(codebase.db(), &tree).len(),
+                        0,
+                    );
+                }
             }
             #[cfg(feature = "python")]
             if let ParsedFile::Python(file) = parsed {
                 let definitions = file.definitions(codebase.db());
-                let functions = definitions.functions;
+                let tree = file.node(codebase.db()).unwrap().tree(codebase.db());
+                let functions = definitions.functions(codebase.db(), &tree);
                 let mut total_references = 0;
                 let total_functions = functions.len();
                 for function in functions
@@ -50,7 +49,7 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                         .len();
                 }
                 return (
-                    definitions.classes.len(),
+                    definitions.classes(codebase.db(), &tree).len(),
                     total_functions,
                     0,
                     0,

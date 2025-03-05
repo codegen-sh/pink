@@ -256,7 +256,7 @@ impl<'a> State<'a> {
             }
         } else {
             quote! {
-            #[derive(Debug, Eq, PartialEq, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
+            #[derive(Debug, Eq, PartialEq,Clone, Hash, salsa::Update, Delegate, Ord, PartialOrd)]
             #[delegate(
                 CSTNode<'db1>
             )]
@@ -333,7 +333,7 @@ mod tests {
         let nodes = vec![node];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-        let enum_tokens = state.get_enum();
+        let enum_tokens = state.get_enum(false);
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
@@ -378,7 +378,7 @@ mod tests {
         let nodes = vec![child, child_two, node];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-        let enum_tokens = state.get_enum();
+        let enum_tokens = state.get_enum(false);
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]
@@ -474,7 +474,7 @@ mod tests {
         let nodes = vec![node_a, node_b, node_c];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-        let enum_tokens = state.get_enum();
+        let enum_tokens = state.get_enum(false);
         insta::assert_debug_snapshot!(snapshot_tokens(&enum_tokens));
     }
     #[test_log::test]

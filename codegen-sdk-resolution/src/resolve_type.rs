@@ -8,5 +8,5 @@ pub trait ResolveType<'db, T: Scope<'db>> {
         db: &'db dyn salsa::Database,
         scope: T,
         scopes: Vec<T>,
-    ) -> Vec<&'db Self::Type>;
+    ) -> &'db Vec<Self::Type>;
 }

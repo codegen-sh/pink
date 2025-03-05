@@ -165,18 +165,20 @@ impl<'a> Node<'a> {
         let derives = if self.config.serialize {
             let serialize_bounds = get_serialize_bounds();
             quote! {
-                #[derive(Debug, Deserialize, Archive, Serialize, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Deserialize, Clone, Archive, Serialize, Eq, PartialEq, salsa::Update)]
                 #serialize_bounds
             }
         } else {
             quote! {
-                #[derive(Debug, Eq, PartialEq, salsa::Update)]
+                #[derive(Debug, Eq, PartialEq, Clone, salsa::Update)]
 
             }
         };
         quote! {
             #derives
             pub struct #name<'db> {
+                id: CSTNodeId<'db>,
+                file_id: FileNodeId<'db>,
                 start_byte: usize,
                 end_byte: usize,
                 _kind: std::string::String,
@@ -187,8 +189,6 @@ impl<'a> Node<'a> {
                 kind_id: u16,
                 is_error: bool,
                 named: bool,
-                id: CSTNodeId<'db>,
-                file_id: FileNodeId<'db>,
                 #children_field
                 #(#struct_fields),*
             }
@@ -484,11 +484,11 @@ mod tests {
         for subenum in &node.subenums {
             subenum_name_map.insert(subenum.clone(), normalize_type_name(subenum, true));
         }
-        let tokens = node.get_enum_tokens(&subenum_name_map);
+        let tokens = node.get_enum_tokens(&subenum_name_map, false);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
 
         node.add_subenum("subenum".to_string());
-        let tokens = node.get_enum_tokens(&subenum_name_map);
+        let tokens = node.get_enum_tokens(&subenum_name_map, false);
         insta::assert_debug_snapshot!(snapshot_tokens(&tokens));
     }
 
