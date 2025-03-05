@@ -21,8 +21,10 @@ pub trait FromNode<'db, Types: TreeNode>: Sized {
     ) -> Result<NodeId, ParseError>
     where
         Self: Into<Types>,
+        Types: CSTNode<'db>,
     {
-        let (raw, children) = Self::from_node(context, node)?;
+        let (raw, mut children) = Self::from_node(context, node)?;
+        children.sort_by_key(|id| context.tree.get(id).unwrap().start_byte());
         let id = context.tree.insert_with_children(raw.into(), children);
         Ok(id)
     }

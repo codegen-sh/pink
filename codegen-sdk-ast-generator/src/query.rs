@@ -238,14 +238,12 @@ impl<'a> Query<'a> {
                     // );
                     if !field.is_optional() {
                         return quote! {
-                            let id = #current_node.#field_name;
                             let #field_name = #current_node.#field_name(tree);
                             #wrapped
                         };
                     } else {
                         return quote! {
                             if let Some(#field_name) = #current_node.#field_name(tree) {
-                                let id = #current_node.#field_name.unwrap();
                                 #wrapped
                             }
                         };
@@ -332,8 +330,7 @@ impl<'a> Query<'a> {
                     let children = format_ident!("{}Children", target_name);
                     let variant = format_ident!("{}Ref", variant);
                     matchers.extend_one(quote! {
-
-                        if let crate::cst::NodeTypes::#variant(#current_node) = #current_node {
+                        if let crate::cst::#children::#variant(#current_node) = #current_node {
                             #result
                         }
                     });
@@ -348,7 +345,7 @@ impl<'a> Query<'a> {
             quote! {}
         } else {
             quote! {
-                for (child, id) in tree.children(&id) {
+                for child in #current_node.children(tree) {
                     #matchers
                     break;
                 }
@@ -369,9 +366,13 @@ impl<'a> Query<'a> {
         if struct_name == target_name {
             return base_matcher;
         } else {
+            let mut children = format_ident!("{}Ref", struct_name);
+            if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
+                children = format_ident!("{}Ref", node.children_struct_name());
+            }
             let variant = format_ident!("{}", target_name);
             return quote! {
-                if let crate::cst::NodeTypes::#variant(#current_node) = #current_node {
+                if let crate::cst::#children::#variant(#current_node) = #current_node {
                     #base_matcher
                 }
             };
@@ -516,29 +517,29 @@ impl<'a> Query<'a> {
     ) -> TokenStream {
         // We have 2 nodes, the parent node and the identifier node
         let to_append = self.get_default_matcher(name_value);
-        let children;
         // Case 1: The identifier is the same as the struct name (IE: we know this is the corrent node)
         if normalize_type_name(&identifier.source(), true) == struct_name {
             return to_append;
         }
         // Case 2: We have a node for the parent struct
         if let Some(node) = self.state.get_node_for_struct_name(struct_name) {
-            children = format_ident!("{}Children", struct_name);
+            let mut children = format_ident!("{}Children", struct_name);
             // When there is only 1 possible child, we can use the default matcher
             if node.children_struct_name() != children.to_string() {
                 return to_append;
+            }
+            children = format_ident!("{}ChildrenRef", struct_name);
+            let struct_name = format_ident!("{}", normalize_type_name(&identifier.source(), true));
+            quote! {
+                if let crate::cst::#children::#struct_name(child) = #current_node {
+                    #to_append
+                }
+
             }
         } else {
             // Case 3: This is a subenum
             // If this is a field, we may be dealing with multiple types and can't operate over all of them
             return to_append; // TODO: Handle this case
-        }
-        let struct_name = format_ident!("{}", normalize_type_name(&identifier.source(), true));
-        quote! {
-            if let crate::cst::NodeTypes::#struct_name(child) = #current_node {
-                #to_append
-            }
-
         }
     }
     fn get_matcher_for_definition(

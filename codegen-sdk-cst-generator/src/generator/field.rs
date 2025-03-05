@@ -85,15 +85,22 @@ impl<'a> Field<'a> {
         let converted_type_name = format_ident!("{}", self.type_name());
         if self.raw.multiple {
             quote! {
-                #field_name_ident: get_multiple_children_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?
+                let #field_name_ident= get_multiple_children_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?;
+                for child in #field_name_ident.iter().cloned() {
+                    ids.push(child);
+                }
             }
         } else if !self.raw.required {
             quote! {
-                #field_name_ident: get_optional_child_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?
+                let #field_name_ident = get_optional_child_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?;
+                if let Some(child) = #field_name_ident.clone() {
+                    ids.push(child);
+                }
             }
         } else {
             quote! {
-                #field_name_ident: get_child_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?
+                let #field_name_ident = get_child_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?;
+                ids.push(#field_name_ident.clone());
             }
         }
     }

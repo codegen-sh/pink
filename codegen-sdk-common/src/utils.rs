@@ -5,12 +5,12 @@ use tree_sitter::{self};
 
 use crate::{
     ParseError,
-    traits::FromNode,
+    traits::{CSTNode, FromNode},
     tree::{ParseContext, TreeNode},
 };
 pub fn named_children_without_field_names<
     'db,
-    Types: From<T> + TreeNode,
+    Types: From<T> + TreeNode + CSTNode<'db>,
     T: FromNode<'db, Types>,
 >(
     context: &mut ParseContext<'db, Types>,
@@ -25,7 +25,11 @@ pub fn named_children_without_field_names<
     Ok(children)
 }
 
-pub fn get_optional_child_by_field_name<'db, Types: From<T> + TreeNode, T: FromNode<'db, Types>>(
+pub fn get_optional_child_by_field_name<
+    'db,
+    Types: From<T> + TreeNode + CSTNode<'db>,
+    T: FromNode<'db, Types>,
+>(
     context: &mut ParseContext<'db, Types>,
     node: &tree_sitter::Node,
     field_name: &str,
@@ -35,7 +39,11 @@ pub fn get_optional_child_by_field_name<'db, Types: From<T> + TreeNode, T: FromN
     }
     Ok(None)
 }
-pub fn get_child_by_field_name<'db, Types: From<T> + TreeNode, T: FromNode<'db, Types>>(
+pub fn get_child_by_field_name<
+    'db,
+    Types: From<T> + TreeNode + CSTNode<'db>,
+    T: FromNode<'db, Types>,
+>(
     context: &mut ParseContext<'db, Types>,
     node: &tree_sitter::Node,
     field_name: &str,
@@ -52,7 +60,7 @@ pub fn get_child_by_field_name<'db, Types: From<T> + TreeNode, T: FromNode<'db, 
 
 pub fn get_multiple_children_by_field_name<
     'db,
-    Types: From<T> + TreeNode,
+    Types: From<T> + TreeNode + CSTNode<'db>,
     T: FromNode<'db, Types>,
 >(
     context: &mut ParseContext<'db, Types>,

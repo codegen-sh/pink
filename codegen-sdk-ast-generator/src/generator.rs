@@ -65,7 +65,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     #[salsa::tracked]
     pub struct #language_struct_name<'db> {
         #[return_ref]
-        node: Option<crate::cst::Parsed<'db>>,
+        pub node: Option<crate::cst::Parsed<'db>>,
         #[id]
         pub id: codegen_sdk_common::FileNodeId<'db>,
     }

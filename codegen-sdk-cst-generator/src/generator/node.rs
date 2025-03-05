@@ -200,7 +200,10 @@ impl<'a> Node<'a> {
         if self.has_children() {
             let children_type_name = format_ident!("{}", self.children_struct_name());
             quote! {
-                _children: named_children_without_field_names::<NodeTypes<'db>, #children_type_name<'db>>(context, node)?
+                let _children = named_children_without_field_names::<NodeTypes<'db>, #children_type_name<'db>>(context, node)?;
+                for child in _children.iter().cloned() {
+                    ids.push(child);
+                }
             }
         } else {
             quote! {}
@@ -209,10 +212,15 @@ impl<'a> Node<'a> {
     pub fn get_constructor(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let mut constructor_fields = Vec::new();
+        let mut constructor_names = Vec::new();
         for field in &self.fields {
             constructor_fields.push(field.get_constructor_field());
+            constructor_names.push(format_ident!("{}", field.name()));
         }
         constructor_fields.push(self.get_children_constructor());
+        if self.has_children() {
+            constructor_names.push(format_ident!("_children"));
+        }
 
         quote! {
             impl<'db> FromNode<'db, NodeTypes<'db>> for #name<'db> {
@@ -221,6 +229,7 @@ impl<'a> Node<'a> {
                     let end_position = Point::from(context.db, node.end_position());
                     let id = CSTNodeId::new(context.db, context.file_id, node.id());
                     let mut ids = Vec::new();
+                    #(#constructor_fields)*
                     Ok((Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
@@ -233,7 +242,7 @@ impl<'a> Node<'a> {
                         named: node.is_named(),
                         id,
                         file_id: context.file_id.clone(),
-                        #(#constructor_fields),*
+                        #(#constructor_names),*
                 }, ids))
                 }
             }

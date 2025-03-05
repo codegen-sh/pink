@@ -95,7 +95,7 @@ pub fn generate_visitor<'db>(
         impl<'db> #name<'db> {
             #output_constructor
             #(
-                fn #names(&self, db: &'db dyn salsa::Database, tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>) -> BTreeMap<String, Vec<&'db crate::cst::#types<'db>>> {
+                pub fn #names(&self, db: &'db dyn salsa::Database, tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>) -> BTreeMap<String, Vec<&'db crate::cst::#types<'db>>> {
                     self.#underscored_names(db).iter().map(|(k, v)|
                     (k.clone(), v.iter().map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap()).collect())).collect()
                 }

@@ -20,12 +20,17 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(file) = parsed {
                 let definitions = file.definitions(codebase.db());
+                let tree = file
+                    .node(codebase.db())
+                    .as_ref()
+                    .unwrap()
+                    .tree(codebase.db());
                 return (
-                    definitions.classes.len(),
-                    definitions.functions.len(),
-                    definitions.interfaces.len(),
-                    definitions.methods.len(),
-                    definitions.modules.len(),
+                    definitions.classes(codebase.db(), &tree).len(),
+                    definitions.functions(codebase.db(), &tree).len(),
+                    definitions.interfaces(codebase.db(), &tree).len(),
+                    definitions.methods(codebase.db(), &tree).len(),
+                    definitions.modules(codebase.db(), &tree).len(),
                     0,
                 );
             }

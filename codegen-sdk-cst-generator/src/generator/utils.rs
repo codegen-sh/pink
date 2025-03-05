@@ -42,6 +42,7 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
     let name = format_ident!("{}", enum_name);
     let name_ref = format_ident!("{}Ref", enum_name);
     let node_types_ref = format_ident!("{}", TYPE_NAME_REF);
+
     quote! {
         impl<'db3> #name<'db3> {
             pub fn as_ref(&'db3 self) -> #name_ref<'db3> {
@@ -66,12 +67,16 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
         }
         #(
             impl<'db3> TryFrom<#name_ref<'db3>> for &'db3 #variant_names<'db3> {
-                type Error = ();
+                type Error = codegen_sdk_cst::ConversionError;
                 fn try_from(node: #name_ref<'db3>) -> Result<Self, Self::Error> {
                     if let #name_ref::#variant_names(node) = node {
                         Ok(node)
                     } else {
-                        Err(())
+                        Err(codegen_sdk_cst::ConversionError {
+                            expected: "TODO".to_string(),
+                            actual: node.kind_name().to_string(),
+                            backtrace: Backtrace::capture(),
+                        })
                     }
                 }
             }
