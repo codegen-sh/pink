@@ -61,15 +61,15 @@ impl<'a> Field<'a> {
         let original_name = &self.name;
         if self.raw.multiple {
             quote! {
-                #field_name_ident: get_multiple_children_by_field_name(db, &node, #original_name, buffer)?
+                #field_name_ident: get_multiple_children_by_field_name(context, &node, #original_name)?
             }
         } else if !self.raw.required {
             quote! {
-                #field_name_ident: Box::new(get_optional_child_by_field_name(db, &node, #original_name, buffer)?)
+                #field_name_ident: Box::new(get_optional_child_by_field_name(context, &node, #original_name)?)
             }
         } else {
             quote! {
-                #field_name_ident: Box::new(get_child_by_field_name(db,&node, #original_name, buffer)?)
+                #field_name_ident: Box::new(get_child_by_field_name(context, &node, #original_name)?)
             }
         }
     }

@@ -175,7 +175,7 @@ impl<'a> State<'a> {
                 variant_map.insert(
                     node.kind_id(),
                     quote! {
-                        Ok(Self::#variant_name(#variant_name::from_node(db, node, buffer)?))
+                        Ok(Self::#variant_name(#variant_name::from_node(context, node)?))
                     },
                 );
             }

@@ -29,6 +29,8 @@ fn get_imports(config: &Config) -> TokenStream {
         use ambassador::Delegate;
         use ambassador::delegate_to_methods;
         use codegen_sdk_cst::CSTLanguage;
+        use crate::cst::tree::ParseContext;
+        use std::path::PathBuf;
     };
     if config.serialize {
         imports.extend_one(quote! {
@@ -49,7 +51,7 @@ fn get_parser(language: &Language) -> TokenStream {
             #[return_ref]
             pub program: Option<#program_id<'db>>,
         }
-        pub fn parse_program_raw(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Option<#program_id<'_>> {
+        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::Input, path: PathBuf) -> Option<#program_id<'db>> {
             let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
             let tree = codegen_sdk_common::language::#language_name::#language_struct_name.parse_tree_sitter(&input.content(db));
             match tree {
@@ -58,8 +60,8 @@ fn get_parser(language: &Language) -> TokenStream {
                         ParseError::SyntaxError.report(db);
                         None
                     } else {
-                        let buffer = Arc::new(buffer);
-                        #program_id::from_node(db, tree.root_node(), &buffer)
+                        let context = ParseContext::new(db, path, buffer);
+                        #program_id::from_node(&context, tree.root_node())
                         .map_or_else(|e| {
                             e.report(db);
                             None
@@ -76,10 +78,11 @@ fn get_parser(language: &Language) -> TokenStream {
         }
         #[salsa::tracked]
         pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
-            Parsed::new(db, parse_program_raw(db, input))
+            Parsed::new(db, parse_program_raw(db, input, std::path::PathBuf::new()))
         }
         pub struct #language_struct_name;
         impl CSTLanguage for #language_struct_name {
+            type Types<'db> = NodeTypes<'db>;
             type Program<'db> = #root_node<'db>;
             fn language() -> &'static codegen_sdk_common::language::Language {
                 &codegen_sdk_common::language::#language_name::#language_struct_name

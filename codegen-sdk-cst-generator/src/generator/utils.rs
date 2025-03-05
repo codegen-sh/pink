@@ -82,8 +82,8 @@ pub fn get_from_node(
         values.push(value);
     }
     quote! {
-        impl<'db4> FromNode<'db4> for #node<'db4> {
-            fn from_node(db: &'db4 dyn salsa::Database, node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
+        impl<'db4> FromNode<'db4, NodeTypes<'db4>> for #node<'db4> {
+            fn from_node(context: &ParseContext<'db4, NodeTypes<'db4>>, node: tree_sitter::Node) -> Result<Self, ParseError> {
                 match node.kind_id() {
                     #(#keys => #values,)*
                     _ => Err(ParseError::UnexpectedNode {

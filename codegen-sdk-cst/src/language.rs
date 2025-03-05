@@ -8,7 +8,8 @@ use codegen_sdk_common::{
 };
 
 pub trait CSTLanguage {
-    type Program<'db1>: CSTNode<'db1> + FromNode<'db1> + Send;
+    type Types<'db>;
+    type Program<'db1>: CSTNode<'db1> + FromNode<'db1, Self::Types<'db1>> + Send;
     fn language() -> &'static Language;
     fn parse<'db>(db: &'db dyn salsa::Database, content: String)
     -> &'db Option<Self::Program<'db>>;

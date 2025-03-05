@@ -194,7 +194,9 @@ impl<'a> Node<'a> {
                 #[drive(skip)]
                 named: bool,
                 #[drive(skip)]
-                id: usize,
+                id: CSTNodeId<'db>,
+                #[drive(skip)]
+                file_id: FileNodeId<'db>,
                 #children_field
                 #(#struct_fields),*
             }
@@ -205,7 +207,7 @@ impl<'a> Node<'a> {
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
             quote! {
-                _children: named_children_without_field_names(db, node, buffer)?
+                _children: named_children_without_field_names(context, node)?
             }
         } else {
             quote! {}
@@ -220,21 +222,23 @@ impl<'a> Node<'a> {
         constructor_fields.push(self.get_children_constructor());
 
         quote! {
-            impl<'db> FromNode<'db> for #name<'db> {
-                fn from_node(db: &'db dyn salsa::Database, node: tree_sitter::Node, buffer: &Arc<Bytes>) -> Result<Self, ParseError> {
-                    let start_position = Point::from(db, node.start_position());
-                    let end_position = Point::from(db, node.end_position());
+            impl<'db> FromNode<'db, NodeTypes<'db>> for #name<'db> {
+                fn from_node(context: &ParseContext<'db, NodeTypes<'db>>, node: tree_sitter::Node) -> Result<Self, ParseError> {
+                    let start_position = Point::from(context.db, node.start_position());
+                    let end_position = Point::from(context.db, node.end_position());
+                    let id = CSTNodeId::new(context.db, context.file_id, node.id());
                     Ok(Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
                         _kind: node.kind().to_string(),
                         start_position: start_position,
                         end_position: end_position,
-                        buffer: buffer.clone(),
+                        buffer: context.buffer.clone(),
                         kind_id: node.kind_id(),
                         is_error: node.is_error(),
                         named: node.is_named(),
-                        id: node.id(),
+                        id,
+                        file_id: context.file_id.clone(),
                         #(#constructor_fields),*
                 })
                 }
@@ -298,8 +302,11 @@ impl<'a> Node<'a> {
                 fn is_named(&self) -> bool {
                     self.named
                 }
-                fn id(&self) -> usize {
+                fn id(&self) -> CSTNodeId<'db> {
                     self.id
+                }
+                fn file_id(&self) -> FileNodeId<'db> {
+                    self.file_id
                 }
             }
             #children_impl

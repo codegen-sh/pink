@@ -68,7 +68,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
         #[return_ref]
         node: Option<crate::cst::#program_id<'db>>,
         #[id]
-        pub path: PathBuf,
+        pub id: codegen_sdk_common::FileNodeId<'db>,
     }
     // impl<'db> File for {language_struct_name}File<'db> {{
     //     fn path(&self) -> &PathBuf {{
@@ -77,8 +77,9 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     // }}
     pub fn parse(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
         log::debug!("Parsing {} file: {}", input.path(db).display(), #language_name_str);
-        let ast = crate::cst::parse_program_raw(db, input.contents(db));
-        #language_struct_name::new(db, ast, input.path(db).clone())
+        let ast = crate::cst::parse_program_raw(db, input.contents(db), input.path(db).clone());
+        let file_id = codegen_sdk_common::FileNodeId::new(db, input.path(db).clone());
+        #language_struct_name::new(db, ast, file_id)
     }
     #[salsa::tracked]
     pub fn parse_query(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {

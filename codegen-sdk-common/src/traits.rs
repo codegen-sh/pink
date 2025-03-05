@@ -1,15 +1,18 @@
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
 use ambassador::delegatable_trait;
 use bytes::Bytes;
 use tree_sitter::{self};
 
-use crate::{Point, errors::ParseError, tree::Range};
-pub trait FromNode<'db>: Sized {
+use crate::{
+    Point,
+    errors::ParseError,
+    tree::{CSTNodeId, FileNodeId, ParseContext, Range},
+};
+pub trait FromNode<'db, Types>: Sized {
     fn from_node(
-        db: &'db dyn salsa::Database,
+        context: &ParseContext<'db, Types>,
         node: tree_sitter::Node,
-        buffer: &Arc<Bytes>,
     ) -> Result<Self, ParseError>;
 }
 #[delegatable_trait]
@@ -69,7 +72,8 @@ where
     fn is_extra(&self) -> bool {
         unimplemented!("is_extra not implemented")
     }
-    fn id(&self) -> usize;
+    fn id(&self) -> CSTNodeId<'db>;
+    fn file_id(&self) -> FileNodeId<'db>;
 }
 
 pub trait CSTNodeExt<'db>: CSTNode<'db> {
