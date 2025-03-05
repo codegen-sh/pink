@@ -1,23 +1,26 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{hash::Hash, path::PathBuf, sync::Arc};
 
 use bytes::Bytes;
 use codegen_sdk_common::{
-    ParseError,
+    ParseError, Tree,
     language::Language,
     traits::{CSTNode, FromNode},
+    tree::TreeNode,
 };
 
 pub trait CSTLanguage {
-    type Types<'db>;
+    type Types<'db>: TreeNode;
     type Program<'db1>: CSTNode<'db1> + FromNode<'db1, Self::Types<'db1>> + Send;
     fn language() -> &'static Language;
-    fn parse<'db>(db: &'db dyn salsa::Database, content: String)
-    -> &'db Option<Self::Program<'db>>;
+    fn parse<'db>(
+        db: &'db dyn salsa::Database,
+        content: String,
+    ) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)>;
     fn parse_file_from_cache<'db>(
         db: &'db dyn salsa::Database,
         file_path: &PathBuf,
         #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
-    ) -> Result<&'db Option<Self::Program<'db>>, ParseError> {
+    ) -> Result<Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)>, ParseError> {
         #[cfg(feature = "serialization")]
         {
             let serialized_path = cache.get_path(file_path);
@@ -26,24 +29,24 @@ pub trait CSTLanguage {
                 return Ok(Some(parsed));
             }
         }
-        Ok(&None)
+        Ok(None)
     }
     fn parse_file<'db>(
         db: &'db dyn salsa::Database,
         file_path: &PathBuf,
         #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
-    ) -> Result<&'db Self::Program<'db>, ParseError> {
+    ) -> Result<Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)>, ParseError> {
         if let Some(parsed) = Self::parse_file_from_cache(
             db,
             file_path,
             #[cfg(feature = "serialization")]
             cache,
         )? {
-            return Ok(parsed);
+            return Ok(Some(parsed));
         }
         let content = std::fs::read_to_string(file_path)?;
         if let Some(parsed) = Self::parse(db, content) {
-            return Ok(parsed);
+            return Ok(Some(parsed));
         }
         Err(ParseError::SyntaxError)
     }

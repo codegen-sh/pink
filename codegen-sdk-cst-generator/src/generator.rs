@@ -45,13 +45,18 @@ fn get_parser(language: &Language) -> TokenStream {
     let language_struct_name = format_ident!("{}", language.struct_name());
     let root_node = format_ident!("{}", language.root_node());
     quote! {
+        impl<'db> TreeNode for NodeTypes<'db> {}
         #[salsa::tracked]
         pub struct Parsed<'db> {
+            #[id]
+            id: FileNodeId<'db>,
             #[tracked]
             #[return_ref]
-            pub program: Option<#program_id<'db>>,
+            #[no_clone]
+            pub tree: Tree<NodeTypes<'db>>,
+            pub program: indextree::NodeId,
         }
-        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::Input, path: PathBuf) -> Option<#program_id<'db>> {
+        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::Input, path: PathBuf) -> Option<Parsed<'db>> {
             let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
             let tree = codegen_sdk_common::language::#language_name::#language_struct_name.parse_tree_sitter(&input.content(db));
             match tree {
@@ -60,14 +65,19 @@ fn get_parser(language: &Language) -> TokenStream {
                         ParseError::SyntaxError.report(db);
                         None
                     } else {
-                        let context = ParseContext::new(db, path, buffer);
-                        #program_id::from_node(&context, tree.root_node())
+                        let mut context = ParseContext::new(db, path, buffer);
+                        let root_id = #program_id::orphaned(&mut context, tree.root_node())
                         .map_or_else(|e| {
                             e.report(db);
                             None
                         }, |program| {
                             Some(program)
-                        })
+                        });
+                        if let Some(program) = root_id {
+                            Some(Parsed::new(db, context.file_id, context.tree, program))
+                        } else {
+                            None
+                        }
                     }
                 }
                 Err(e) => {
@@ -76,9 +86,14 @@ fn get_parser(language: &Language) -> TokenStream {
                 }
             }
         }
-        #[salsa::tracked]
+        #[salsa::tracked(return_ref)]
         pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
-            Parsed::new(db, parse_program_raw(db, input, std::path::PathBuf::new()))
+            let raw = parse_program_raw(db, input, std::path::PathBuf::new());
+            if let Some(parsed) = raw {
+                parsed
+            } else {
+                panic!("Failed to parse program");
+            }
         }
         pub struct #language_struct_name;
         impl CSTLanguage for #language_struct_name {
@@ -87,9 +102,13 @@ fn get_parser(language: &Language) -> TokenStream {
             fn language() -> &'static codegen_sdk_common::language::Language {
                 &codegen_sdk_common::language::#language_name::#language_struct_name
             }
-            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> &'db Option<Self::Program<'db>> {
+            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)> {
                 let input = codegen_sdk_cst::Input::new(db, content);
-                return parse_program(db, input).program(db);
+                let parsed = parse_program(db, input);
+                let program = parsed.program(db);
+                let tree = parsed.tree(db);
+                let program = tree.get(&program).unwrap().as_ref();
+                Some((program.try_into().unwrap(), tree))
             }
         }
     }

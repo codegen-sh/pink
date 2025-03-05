@@ -7,6 +7,7 @@ use codegen_sdk_common::{
 use mockall_double::double;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::{parse_quote, token::Token};
 
 use super::constants::TYPE_NAME_REF;
 use crate::Config;
@@ -56,45 +57,57 @@ impl<'a> Field<'a> {
             format!("{}{}", self.node_name, self.normalized_name())
         }
     }
+    pub fn type_name_ref(&self) -> TokenStream {
+        let types = self.types();
+        if types.len() == 1 {
+            let ident = format_ident!(
+                "{}",
+                normalize_type_name(&types[0].type_name, types[0].named)
+            );
+            quote! {
+                &#ident
+            }
+        } else {
+            let ident = format_ident!("{}{}Ref", self.node_name, self.normalized_name());
+            quote! {
+                #ident
+            }
+        }
+    }
+
     pub fn get_constructor_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
         let original_name = &self.name;
+        let converted_type_name = format_ident!("{}", self.type_name());
         if self.raw.multiple {
             quote! {
-                #field_name_ident: get_multiple_children_by_field_name(context, &node, #original_name)?
+                #field_name_ident: get_multiple_children_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?
             }
         } else if !self.raw.required {
             quote! {
-                #field_name_ident: Box::new(get_optional_child_by_field_name(context, &node, #original_name)?)
+                #field_name_ident: get_optional_child_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?
             }
         } else {
             quote! {
-                #field_name_ident: Box::new(get_child_by_field_name(context, &node, #original_name)?)
+                #field_name_ident: get_child_by_field_name::<NodeTypes<'db>, #converted_type_name<'db>>(context, &node, #original_name)?
             }
         }
     }
     pub fn get_convert_child(&self, convert_children: bool) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
         let types = format_ident!("{}", TYPE_NAME_REF);
-        let as_ref = if self.raw.types.len() > 1 {
-            quote! {
-                .as_ref()
-            }
-        } else {
-            quote! {}
-        };
         if convert_children {
             if self.raw.multiple {
                 quote! {
-                    Self::Child::try_from(#types::from(child #as_ref)).unwrap()
+                    context.get(child).unwrap().as_ref().try_into().unwrap()
                 }
             } else if !self.raw.required {
                 quote! {
-                    Self::Child::try_from(#types::from(child #as_ref)).unwrap()
+                    context.get(child).unwrap().as_ref().try_into().unwrap()
                 }
             } else {
                 quote! {
-                    Self::Child::try_from(#types::from(self.#field_name_ident.as_ref()#as_ref)).unwrap()
+                    context.get(&self.#field_name_ident).unwrap().as_ref().try_into().unwrap()
                 }
             }
         } else if self.raw.multiple || !self.raw.required {
@@ -167,7 +180,6 @@ impl<'a> Field<'a> {
     }
     pub fn get_struct_field(&self) -> TokenStream {
         let field_name_ident = format_ident!("{}", self.name());
-        let converted_type_name = format_ident!("{}", self.type_name());
         let bounds = if self.config.serialize {
             quote! {
                 #[rkyv(omit_bounds)]
@@ -178,20 +190,55 @@ impl<'a> Field<'a> {
         if self.raw.multiple {
             quote! {
                 #bounds
-                pub #field_name_ident: Vec<#converted_type_name<'db>>
+                pub #field_name_ident: Vec<indextree::NodeId>
             }
         } else if !self.raw.required {
             quote! {
                 #bounds
-                pub #field_name_ident: Box<Option<#converted_type_name<'db>>>
+                pub #field_name_ident: Option<indextree::NodeId>
             }
         } else {
             quote! {
                 #bounds
-                pub #field_name_ident: Box<#converted_type_name<'db>>
+                pub #field_name_ident: indextree::NodeId
             }
         }
     }
+    pub fn get_field_getter(&self) -> syn::ImplItemFn {
+        let field_name_ident = format_ident!("{}", self.name());
+        let converted_type_name = self.type_name_ref();
+        let as_ref = if self.types().len() > 1 {
+            quote! {
+                .as_ref()
+            }
+        } else {
+            quote! {}
+        };
+        if self.raw.multiple {
+            parse_quote! {
+                pub fn #field_name_ident(&self, tree: &'db Tree<NodeTypes<'db>>) -> Vec<#converted_type_name<'db>> {
+                    self.#field_name_ident.iter().map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap()).collect()
+                }
+            }
+        } else if !self.raw.required {
+            parse_quote! {
+                pub fn #field_name_ident(&self, tree: &'db Tree<NodeTypes<'db>>) -> Option<#converted_type_name<'db>> {
+                    if let Some(id) = self.#field_name_ident {
+                        Some(tree.get(&id).unwrap().as_ref().try_into().unwrap())
+                    } else {
+                        None
+                    }
+                }
+            }
+        } else {
+            parse_quote! {
+                pub fn #field_name_ident(&self, tree: &'db Tree<NodeTypes<'db>>) -> #converted_type_name<'db> {
+                    tree.get(&self.#field_name_ident).unwrap().as_ref().try_into().unwrap()
+                }
+            }
+        }
+    }
+
     pub fn is_optional(&self) -> bool {
         !self.raw.required
     }

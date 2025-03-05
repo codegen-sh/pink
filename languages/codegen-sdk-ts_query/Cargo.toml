@@ -13,6 +13,7 @@ derive_generic_visitor = { workspace = true }
 subenum = {workspace = true}
 bytes = { workspace = true }
 codegen-sdk-cst = { workspace = true }
+indextree = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { workspace = true }
 codegen-sdk-common = { workspace = true, features = ["ts_query"] }

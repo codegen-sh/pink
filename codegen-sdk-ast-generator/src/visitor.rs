@@ -43,18 +43,6 @@ pub fn generate_visitor<'db>(
         let struct_name = format_ident!("{}", variant);
         for query in queries {
             matchers.extend_one(query.matcher(&variant));
-            let node = query.node();
-            for child in node.children() {
-                info!("child kind:{} source:{}", child.kind(), child.source());
-                if let ts_query::NamedNodeChildrenRef::FieldDefinition(field_definition) = child {
-                    let field_name = &field_definition.name;
-                    let source = field_definition.source();
-                    let children = &field_definition.children();
-                    info!("source: {:?}", source);
-                    info!("field_name: {:?}", field_name);
-                    info!("children: {:?}", children);
-                }
-            }
         }
         methods.push(quote! {
             fn #enter<'db2>(&self, node: &'db2 crate::cst::#struct_name<'db>) where 'db2: 'db {

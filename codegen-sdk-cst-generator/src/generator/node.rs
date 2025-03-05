@@ -143,7 +143,7 @@ impl<'a> Node<'a> {
             };
             quote! {
                 #bounds
-                pub _children: Vec<#children_type_name<'db>>,
+                pub _children: Vec<indextree::NodeId>,
             }
         } else {
             quote! {}
@@ -206,8 +206,9 @@ impl<'a> Node<'a> {
     }
     fn get_children_constructor(&self) -> TokenStream {
         if self.has_children() {
+            let children_type_name = format_ident!("{}", self.children_struct_name());
             quote! {
-                _children: named_children_without_field_names(context, node)?
+                _children: named_children_without_field_names::<NodeTypes<'db>, #children_type_name<'db>>(context, node)?
             }
         } else {
             quote! {}
@@ -223,11 +224,12 @@ impl<'a> Node<'a> {
 
         quote! {
             impl<'db> FromNode<'db, NodeTypes<'db>> for #name<'db> {
-                fn from_node(context: &ParseContext<'db, NodeTypes<'db>>, node: tree_sitter::Node) -> Result<Self, ParseError> {
+                fn from_node(context: &mut ParseContext<'db, NodeTypes<'db>>, node: tree_sitter::Node) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
                     let start_position = Point::from(context.db, node.start_position());
                     let end_position = Point::from(context.db, node.end_position());
                     let id = CSTNodeId::new(context.db, context.file_id, node.id());
-                    Ok(Self {
+                    let mut ids = Vec::new();
+                    Ok((Self {
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
                         _kind: node.kind().to_string(),
@@ -240,7 +242,7 @@ impl<'a> Node<'a> {
                         id,
                         file_id: context.file_id.clone(),
                         #(#constructor_fields),*
-                })
+                }, ids))
                 }
             }
         }
@@ -261,7 +263,7 @@ impl<'a> Node<'a> {
         let children_by_field_name = self.get_children_by_field_name_impl();
         let children_by_field_id = self.get_children_by_field_id_impl();
         quote! {
-            impl<'db1> HasChildren<'db1> for #name<'db1> {
+            impl<'db1> HasChildren<'db1, NodeTypes<'db1>> for #name<'db1> {
                 type Child<'db2> = #children_type_generic where Self: 'db2;
                 #children_field
                 #children_by_field_name
@@ -272,8 +274,15 @@ impl<'a> Node<'a> {
     pub fn get_trait_implementations(&self) -> TokenStream {
         let name = format_ident!("{}", self.normalize_name());
         let children_impl = self.get_children_impl();
-
+        let getters = self
+            .fields
+            .iter()
+            .map(|f| f.get_field_getter())
+            .collect::<Vec<_>>();
         quote! {
+            impl<'db> #name<'db> {
+                #(#getters)*
+            }
             impl<'db> CSTNode<'db> for #name<'db> {
                 fn kind(&self) -> &str {
                     &self._kind
@@ -338,7 +347,7 @@ impl<'a> Node<'a> {
         let num_children = self.get_children_names().len();
         if num_children == 0 {
             return quote! {
-                fn children<'db2>(&'db2 self) -> Vec<Self::Child<'db2>> {
+                fn children<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>) -> Vec<Self::Child<'db2>> {
                     vec![]
                 }
             };
@@ -350,7 +359,7 @@ impl<'a> Node<'a> {
 
         let children_init = if self.has_children() {
             quote! {
-                self._children.iter().map(|c| c.as_ref().into()).collect()
+                self._children.iter().map(|c| context.get(c).unwrap().as_ref().try_into().unwrap()).collect()
             }
         } else {
             quote! {
@@ -358,7 +367,7 @@ impl<'a> Node<'a> {
             }
         };
         quote! {
-            fn children<'db2>(&'db2 self) -> Vec<Self::Child<'db2>> {
+            fn children<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>) -> Vec<Self::Child<'db2>> {
                 let mut children: Vec<Self::Child<'db2>> = #children_init;
                 #(#children_fields;)*
                 children.sort_by_key(|c| c.start_byte());
@@ -375,7 +384,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_name<'db2>(&'db2 self, field_name: &str) -> Vec<Self::Child<'db2>> {
+            fn children_by_field_name<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>, field_name: &str) -> Vec<Self::Child<'db2>> {
                 match field_name {
                     #(#field_matches,)*
                     _ => vec![],
@@ -392,7 +401,7 @@ impl<'a> Node<'a> {
             .collect::<Vec<_>>();
 
         quote! {
-            fn children_by_field_id<'db2>(&'db2 self, field_id: u16) -> Vec<Self::Child<'db2>> {
+            fn children_by_field_id<'db2>(&'db2 self, context: &'db2 Tree< NodeTypes<'db2>>, field_id: u16) -> Vec<Self::Child<'db2>> {
                 match field_id {
                     #(#field_matches,)*
                     _ => vec![],

@@ -42,7 +42,6 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
     let name = format_ident!("{}", enum_name);
     let name_ref = format_ident!("{}Ref", enum_name);
     let node_types_ref = format_ident!("{}", TYPE_NAME_REF);
-
     quote! {
         impl<'db3> #name<'db3> {
             pub fn as_ref(&'db3 self) -> #name_ref<'db3> {
@@ -65,7 +64,18 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
                 node.as_ref().into()
             }
         }
-
+        #(
+            impl<'db3> TryInto<&'db3 #variant_names<'db3>> for #name_ref<'db3> {
+                type Error = ();
+                fn try_into(self) -> Result<&'db3 #variant_names<'db3>, Self::Error> {
+                    if let Self::#variant_names(node) = self {
+                        Ok(node)
+                    } else {
+                        Err(())
+                    }
+                }
+            }
+        )*
     }
 }
 
@@ -83,7 +93,7 @@ pub fn get_from_node(
     }
     quote! {
         impl<'db4> FromNode<'db4, NodeTypes<'db4>> for #node<'db4> {
-            fn from_node(context: &ParseContext<'db4, NodeTypes<'db4>>, node: tree_sitter::Node) -> Result<Self, ParseError> {
+            fn from_node(context: &mut ParseContext<'db4, NodeTypes<'db4>>, node: tree_sitter::Node) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
                 match node.kind_id() {
                     #(#keys => #values,)*
                     _ => Err(ParseError::UnexpectedNode {

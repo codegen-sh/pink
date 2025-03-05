@@ -38,6 +38,7 @@ mockall = { workspace = true }
 syn = { workspace = true }
 prettyplease = { workspace = true }
 salsa = { workspace = true }
+indextree = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 [features]
