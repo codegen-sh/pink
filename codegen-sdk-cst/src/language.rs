@@ -15,12 +15,23 @@ pub trait CSTLanguage {
     fn parse<'db>(
         db: &'db dyn salsa::Database,
         content: String,
-    ) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)>;
+    ) -> Option<(
+        &'db Self::Program<'db>,
+        &'db Tree<Self::Types<'db>>,
+        indextree::NodeId,
+    )>;
     fn parse_file_from_cache<'db>(
         db: &'db dyn salsa::Database,
         file_path: &PathBuf,
         #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
-    ) -> Result<Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)>, ParseError> {
+    ) -> Result<
+        Option<(
+            &'db Self::Program<'db>,
+            &'db Tree<Self::Types<'db>>,
+            indextree::NodeId,
+        )>,
+        ParseError,
+    > {
         #[cfg(feature = "serialization")]
         {
             let serialized_path = cache.get_path(file_path);
@@ -35,7 +46,14 @@ pub trait CSTLanguage {
         db: &'db dyn salsa::Database,
         file_path: &PathBuf,
         #[cfg(feature = "serialization")] cache: &'db codegen_sdk_common::serialize::Cache,
-    ) -> Result<Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)>, ParseError> {
+    ) -> Result<
+        Option<(
+            &'db Self::Program<'db>,
+            &'db Tree<Self::Types<'db>>,
+            indextree::NodeId,
+        )>,
+        ParseError,
+    > {
         if let Some(parsed) = Self::parse_file_from_cache(
             db,
             file_path,

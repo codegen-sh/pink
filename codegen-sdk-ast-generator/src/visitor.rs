@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use codegen_sdk_common::Language;
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 use syn::parse_quote_spanned;
 
 use super::query::Query;
@@ -24,9 +24,11 @@ pub fn generate_visitor<'db>(
     let mut types = Vec::new();
     let mut variants = BTreeSet::new();
     let mut enter_methods = BTreeMap::new();
+    let mut symbol_names = Vec::new();
     for query in queries {
         names.push(query.executor_id());
         types.push(format_ident!("{}", query.struct_name()));
+        symbol_names.push(query.symbol_name());
         for variant in query.struct_variants() {
             variants.insert(format_ident!("{}", variant));
             enter_methods
@@ -36,7 +38,7 @@ pub fn generate_visitor<'db>(
         }
     }
     let mut methods: Vec<syn::Arm> = Vec::new();
-    for (variant, queries) in enter_methods {
+    for (variant, queries) in enter_methods.iter() {
         let mut matchers = TokenStream::new();
         let struct_name = format_ident!("{}", variant);
         for query in queries {
@@ -49,14 +51,53 @@ pub fn generate_visitor<'db>(
             }
         });
     }
+
+    let symbol_name = if name == "definition" {
+        format_ident!("Symbol")
+    } else {
+        format_ident!("Reference")
+    };
     let maps = quote! {
         #(
-            let mut #names: BTreeMap<String,Vec<indextree::NodeId>> = BTreeMap::new();
+            let mut #names: BTreeMap<String,Vec<#symbol_names<'db>>> = BTreeMap::new();
         )*
     };
     let constructor = quote! {
         Self::new(db, #(#names),*)
 
+    };
+    let mut defs = Vec::new();
+    for (variant, type_name) in symbol_names.iter().zip(types.iter()) {
+        let query = enter_methods
+            .get(&type_name.to_string())
+            .unwrap()
+            .first()
+            .unwrap();
+        let fields = query.struct_fields();
+        let span = Span::mixed_site();
+        defs.push(quote_spanned! {
+            span =>
+            #[salsa::tracked]
+            pub struct #variant<'db> {
+                #[id]
+                node_id: indextree::NodeId,
+                #[tracked]
+                #[return_ref]
+                pub node: crate::cst::#type_name<'db>,
+                #(#fields),*
+            }
+        });
+    }
+    let symbol = quote! {
+        #(
+            #defs
+        )*
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+        pub enum #symbol_name<'db> {
+            #(
+                #symbol_names(#symbol_names<'db>),
+            )*
+        }
     };
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
     let output_constructor = quote! {
@@ -76,11 +117,9 @@ pub fn generate_visitor<'db>(
             #constructor
         }
     };
-    let underscored_names = names
-        .iter()
-        .map(|name| format_ident!("_{}", name))
-        .collect::<Vec<_>>();
+
     quote! {
+        #symbol
         // Three lifetimes:
         // db: the lifetime of the database
         // db1: the lifetime of the visitor executing per-node
@@ -89,17 +128,11 @@ pub fn generate_visitor<'db>(
         pub struct #name<'db> {
             #(
                 #[return_ref]
-                pub #underscored_names: BTreeMap<String, Vec<indextree::NodeId>>,
+                pub #names: BTreeMap<String, Vec<#symbol_names<'db>>>,
             )*
         }
         impl<'db> #name<'db> {
             #output_constructor
-            #(
-                pub fn #names(&self, db: &'db dyn salsa::Database, tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>) -> BTreeMap<String, Vec<&'db crate::cst::#types<'db>>> {
-                    self.#underscored_names(db).iter().map(|(k, v)|
-                    (k.clone(), v.iter().map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap()).collect())).collect()
-                }
-            )*
         }
     }
 }

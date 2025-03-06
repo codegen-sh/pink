@@ -3,55 +3,119 @@ source: codegen-sdk-ast-generator/src/visitor.rs
 expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_string()).unwrap()"
 ---
 #[salsa::tracked]
+pub struct Class<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::AbstractClassDeclaration<'db>,
+    pub name: crate::cst::TypeIdentifier<'db>,
+}
+#[salsa::tracked]
+pub struct Function<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::FunctionSignature<'db>,
+    pub name: crate::cst::Identifier<'db>,
+}
+#[salsa::tracked]
+pub struct Interface<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::InterfaceDeclaration<'db>,
+    pub name: crate::cst::TypeIdentifier<'db>,
+}
+#[salsa::tracked]
+pub struct Method<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::AbstractMethodSignature<'db>,
+    pub name: crate::cst::PropertyIdentifier<'db>,
+}
+#[salsa::tracked]
+pub struct Module<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::Module<'db>,
+    pub name: crate::cst::Identifier<'db>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+pub enum Symbol<'db> {
+    Class(Class<'db>),
+    Function(Function<'db>),
+    Interface(Interface<'db>),
+    Method(Method<'db>),
+    Module(Module<'db>),
+}
+#[salsa::tracked]
 pub struct Definitions<'db> {
     #[return_ref]
-    pub _classes: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub classes: BTreeMap<String, Vec<Class<'db>>>,
     #[return_ref]
-    pub _functions: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub functions: BTreeMap<String, Vec<Function<'db>>>,
     #[return_ref]
-    pub _interfaces: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub interfaces: BTreeMap<String, Vec<Interface<'db>>>,
     #[return_ref]
-    pub _methods: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub methods: BTreeMap<String, Vec<Method<'db>>>,
     #[return_ref]
-    pub _modules: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub modules: BTreeMap<String, Vec<Module<'db>>>,
 }
 impl<'db> Definitions<'db> {
     pub fn visit(
         db: &'db dyn salsa::Database,
         root: &'db crate::cst::Parsed<'db>,
     ) -> Self {
-        let mut classes: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut functions: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut interfaces: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut methods: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut modules: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
+        let mut classes: BTreeMap<String, Vec<Class<'db>>> = BTreeMap::new();
+        let mut functions: BTreeMap<String, Vec<Function<'db>>> = BTreeMap::new();
+        let mut interfaces: BTreeMap<String, Vec<Interface<'db>>> = BTreeMap::new();
+        let mut methods: BTreeMap<String, Vec<Method<'db>>> = BTreeMap::new();
+        let mut modules: BTreeMap<String, Vec<Module<'db>>> = BTreeMap::new();
         let tree = root.tree(db);
         for (node, id) in tree.descendants(&root.program(db)) {
             match node {
                 crate::cst::NodeTypes::AbstractClassDeclaration(node) => {
                     ///Code for query: (abstract_class_declaration   name: (type_identifier) @name) @definition.class
                     let name = node.name(tree);
-                    classes.entry(name.source()).or_default().push(id);
+                    let symbol = Class::new(db, id, node.clone(), name.clone());
+                    classes.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::AbstractMethodSignature(node) => {
                     ///Code for query: (abstract_method_signature   name: (property_identifier) @name) @definition.method
                     let name = node.name(tree);
-                    methods.entry(name.source()).or_default().push(id);
+                    if let crate::cst::AbstractMethodSignatureNameRef::PropertyIdentifier(
+                        name,
+                    ) = name {
+                        let symbol = Method::new(db, id, node.clone(), name.clone());
+                        methods.entry(name.source()).or_default().push(symbol);
+                    }
                 }
                 crate::cst::NodeTypes::FunctionSignature(node) => {
                     ///Code for query: (function_signature   name: (identifier) @name) @definition.function
                     let name = node.name(tree);
-                    functions.entry(name.source()).or_default().push(id);
+                    let symbol = Function::new(db, id, node.clone(), name.clone());
+                    functions.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::InterfaceDeclaration(node) => {
                     ///Code for query: (interface_declaration   name: (type_identifier) @name) @definition.interface
                     let name = node.name(tree);
-                    interfaces.entry(name.source()).or_default().push(id);
+                    let symbol = Interface::new(db, id, node.clone(), name.clone());
+                    interfaces.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::Module(node) => {
                     ///Code for query: (module   name: (identifier) @name) @definition.module
                     let name = node.name(tree);
-                    modules.entry(name.source()).or_default().push(id);
+                    if let crate::cst::ModuleNameRef::Identifier(name) = name {
+                        let symbol = Module::new(db, id, node.clone(), name.clone());
+                        modules.entry(name.source()).or_default().push(symbol);
+                    }
                 }
                 _ => {}
             }
@@ -59,91 +123,11 @@ impl<'db> Definitions<'db> {
         Self::new(db, classes, functions, interfaces, methods, modules)
     }
     pub fn default(db: &'db dyn salsa::Database) -> Self {
-        let mut classes: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut functions: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut interfaces: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut methods: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut modules: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
+        let mut classes: BTreeMap<String, Vec<Class<'db>>> = BTreeMap::new();
+        let mut functions: BTreeMap<String, Vec<Function<'db>>> = BTreeMap::new();
+        let mut interfaces: BTreeMap<String, Vec<Interface<'db>>> = BTreeMap::new();
+        let mut methods: BTreeMap<String, Vec<Method<'db>>> = BTreeMap::new();
+        let mut modules: BTreeMap<String, Vec<Module<'db>>> = BTreeMap::new();
         Self::new(db, classes, functions, interfaces, methods, modules)
-    }
-    pub fn classes(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::AbstractClassDeclaration<'db>>> {
-        self._classes(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
-    }
-    pub fn functions(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::FunctionSignature<'db>>> {
-        self._functions(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
-    }
-    pub fn interfaces(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::InterfaceDeclaration<'db>>> {
-        self._interfaces(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
-    }
-    pub fn methods(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::AbstractMethodSignature<'db>>> {
-        self._methods(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
-    }
-    pub fn modules(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::Module<'db>>> {
-        self._modules(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
     }
 }

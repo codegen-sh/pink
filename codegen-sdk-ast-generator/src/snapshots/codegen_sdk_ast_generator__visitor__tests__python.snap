@@ -3,34 +3,97 @@ source: codegen-sdk-ast-generator/src/visitor.rs
 expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_string()).unwrap()"
 ---
 #[salsa::tracked]
+pub struct Class<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::ClassDefinition<'db>,
+    pub name: crate::cst::Identifier<'db>,
+}
+#[salsa::tracked]
+pub struct Constant<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::Module<'db>,
+    pub name: crate::cst::Identifier<'db>,
+}
+#[salsa::tracked]
+pub struct Function<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::FunctionDefinition<'db>,
+    pub name: crate::cst::Identifier<'db>,
+}
+#[salsa::tracked]
+pub struct Import<'db> {
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
+    pub node: crate::cst::ImportFromStatement<'db>,
+    pub module: crate::cst::NodeTypes<'db>,
+    pub name: crate::cst::NodeTypes<'db>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+pub enum Symbol<'db> {
+    Class(Class<'db>),
+    Constant(Constant<'db>),
+    Function(Function<'db>),
+    Import(Import<'db>),
+}
+#[salsa::tracked]
 pub struct Definitions<'db> {
     #[return_ref]
-    pub _classes: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub classes: BTreeMap<String, Vec<Class<'db>>>,
     #[return_ref]
-    pub _constants: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub constants: BTreeMap<String, Vec<Constant<'db>>>,
     #[return_ref]
-    pub _functions: BTreeMap<String, Vec<indextree::NodeId>>,
+    pub functions: BTreeMap<String, Vec<Function<'db>>>,
+    #[return_ref]
+    pub imports: BTreeMap<String, Vec<Import<'db>>>,
 }
 impl<'db> Definitions<'db> {
     pub fn visit(
         db: &'db dyn salsa::Database,
         root: &'db crate::cst::Parsed<'db>,
     ) -> Self {
-        let mut classes: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut constants: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut functions: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
+        let mut classes: BTreeMap<String, Vec<Class<'db>>> = BTreeMap::new();
+        let mut constants: BTreeMap<String, Vec<Constant<'db>>> = BTreeMap::new();
+        let mut functions: BTreeMap<String, Vec<Function<'db>>> = BTreeMap::new();
+        let mut imports: BTreeMap<String, Vec<Import<'db>>> = BTreeMap::new();
         let tree = root.tree(db);
         for (node, id) in tree.descendants(&root.program(db)) {
             match node {
                 crate::cst::NodeTypes::ClassDefinition(node) => {
                     ///Code for query: (class_definition   name: (identifier) @name) @definition.class
                     let name = node.name(tree);
-                    classes.entry(name.source()).or_default().push(id);
+                    let symbol = Class::new(db, id, node.clone(), name.clone());
+                    classes.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::FunctionDefinition(node) => {
                     ///Code for query: (function_definition   name: (identifier) @name) @definition.function
                     let name = node.name(tree);
-                    functions.entry(name.source()).or_default().push(id);
+                    let symbol = Function::new(db, id, node.clone(), name.clone());
+                    functions.entry(name.source()).or_default().push(symbol);
+                }
+                crate::cst::NodeTypes::ImportFromStatement(node) => {
+                    ///Code for query: (import_from_statement module_name: (_) @module name: (_) @name) @definition.import
+                    let module_name = node.module_name(tree);
+                    for name in node.name(tree) {
+                        let symbol = Import::new(
+                            db,
+                            id,
+                            node.clone(),
+                            module_name.clone(),
+                            name.clone(),
+                        );
+                        imports.entry(name.source()).or_default().push(symbol);
+                    }
                 }
                 crate::cst::NodeTypes::Module(node) => {
                     ///Code for query: (module (expression_statement (assignment left: (identifier) @name) @definition.constant))
@@ -45,7 +108,15 @@ impl<'db> Definitions<'db> {
                                 ) = child {
                                     ///Code for query: (module (expression_statement (assignment left: (identifier) @name) @definition.constant))
                                     let left = child.left(tree);
-                                    constants.entry(left.source()).or_default().push(id);
+                                    if let crate::cst::AssignmentLeftRef::Identifier(left) = left {
+                                        let symbol = Constant::new(
+                                            db,
+                                            id,
+                                            node.clone(),
+                                            left.clone(),
+                                        );
+                                        constants.entry(left.source()).or_default().push(symbol);
+                                    }
                                 }
                                 break;
                             }
@@ -56,60 +127,13 @@ impl<'db> Definitions<'db> {
                 _ => {}
             }
         }
-        Self::new(db, classes, constants, functions)
+        Self::new(db, classes, constants, functions, imports)
     }
     pub fn default(db: &'db dyn salsa::Database) -> Self {
-        let mut classes: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut constants: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        let mut functions: BTreeMap<String, Vec<indextree::NodeId>> = BTreeMap::new();
-        Self::new(db, classes, constants, functions)
-    }
-    pub fn classes(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::ClassDefinition<'db>>> {
-        self._classes(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
-    }
-    pub fn constants(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::Module<'db>>> {
-        self._constants(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
-    }
-    pub fn functions(
-        &self,
-        db: &'db dyn salsa::Database,
-        tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>,
-    ) -> BTreeMap<String, Vec<&'db crate::cst::FunctionDefinition<'db>>> {
-        self._functions(db)
-            .iter()
-            .map(|(k, v)| (
-                k.clone(),
-                v
-                    .iter()
-                    .map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap())
-                    .collect(),
-            ))
-            .collect()
+        let mut classes: BTreeMap<String, Vec<Class<'db>>> = BTreeMap::new();
+        let mut constants: BTreeMap<String, Vec<Constant<'db>>> = BTreeMap::new();
+        let mut functions: BTreeMap<String, Vec<Function<'db>>> = BTreeMap::new();
+        let mut imports: BTreeMap<String, Vec<Import<'db>>> = BTreeMap::new();
+        Self::new(db, classes, constants, functions, imports)
     }
 }

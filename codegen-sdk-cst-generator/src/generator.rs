@@ -102,13 +102,13 @@ fn get_parser(language: &Language) -> TokenStream {
             fn language() -> &'static codegen_sdk_common::language::Language {
                 &codegen_sdk_common::language::#language_name::#language_struct_name
             }
-            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)> {
+            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>, indextree::NodeId)> {
                 let input = codegen_sdk_cst::Input::new(db, content);
                 let parsed = parse_program(db, input);
-                let program = parsed.program(db);
+                let program_id = parsed.program(db);
                 let tree = parsed.tree(db);
-                let program = tree.get(&program).unwrap().as_ref();
-                Some((program.try_into().unwrap(), tree))
+                let program = tree.get(&program_id).unwrap().as_ref();
+                Some((program.try_into().unwrap(), tree, program_id))
             }
         }
     }
