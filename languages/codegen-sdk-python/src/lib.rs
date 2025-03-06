@@ -13,7 +13,13 @@ pub mod ast {
         type Type = crate::ast::Symbol<'db>;
         type ReferenceType = crate::ast::Call<'db>;
         #[salsa::tracked(return_ref)]
-        fn resolve(self, db: &'db dyn salsa::Database, name: String) -> Vec<Self::Type> {
+        fn resolve(
+            self,
+            db: &'db dyn salsa::Database,
+            name: String,
+            root_path: PathBuf,
+            scopes: Vec<PythonFile<'db>>,
+        ) -> Vec<Self::Type> {
             let tree = self.node(db).unwrap().tree(db);
             let mut results = Vec::new();
             for (def_name, defs) in self.definitions(db).functions(db).into_iter() {
@@ -27,11 +33,14 @@ pub mod ast {
             }
             for (def_name, defs) in self.definitions(db).imports(db).into_iter() {
                 if *def_name == name {
-                    results.extend(
-                        defs.into_iter()
-                            .cloned()
-                            .map(|def| crate::ast::Symbol::Import(def)),
-                    );
+                    for def in defs {
+                        results.push(crate::ast::Symbol::Import(def.clone()));
+                        for resolved in
+                            def.resolve_type(db, self, root_path.clone(), scopes.clone())
+                        {
+                            results.push(resolved.clone());
+                        }
+                    }
                 }
             }
             results
@@ -46,6 +55,30 @@ pub mod ast {
         }
     }
     #[salsa::tracked]
+    impl<'db> ResolveType<'db, PythonFile<'db>> for crate::ast::Import<'db> {
+        type Type = crate::ast::Symbol<'db>;
+        #[salsa::tracked(return_ref)]
+        fn resolve_type(
+            self,
+            db: &'db dyn salsa::Database,
+            scope: PythonFile<'db>,
+            root_path: PathBuf,
+            scopes: Vec<PythonFile<'db>>,
+        ) -> Vec<Self::Type> {
+            let module = self.module(db).source().replace(".", "/");
+            let target_path = FileNodeId::new(db, root_path.join(module).with_extension("py"));
+            log::info!("Target path: {:?}", target_path);
+            let name = self.name(db).source();
+            for scope in &scopes {
+                log::info!("Checking scope {:?}", scope.id(db));
+                if scope.id(db) == target_path {
+                    return scope.resolve(db, name, root_path, scopes).to_vec();
+                }
+            }
+            Vec::new()
+        }
+    }
+    #[salsa::tracked]
     impl<'db> ResolveType<'db, PythonFile<'db>> for crate::ast::Call<'db> {
         type Type = crate::ast::Symbol<'db>;
         #[salsa::tracked(return_ref)]
@@ -53,11 +86,13 @@ pub mod ast {
             self,
             db: &'db dyn salsa::Database,
             scope: PythonFile<'db>,
-            _scopes: Vec<PythonFile<'db>>,
+            root_path: PathBuf,
+            scopes: Vec<PythonFile<'db>>,
         ) -> Vec<Self::Type> {
+            log::info!("Resolving call with {:?} scopes", scopes.len());
             let tree = scope.node(db).unwrap().tree(db);
             scope
-                .resolve(db, self.node(db).function(tree).source())
+                .resolve(db, self.node(db).function(tree).source(), root_path, scopes)
                 .clone()
         }
     }

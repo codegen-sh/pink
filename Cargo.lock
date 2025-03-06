@@ -633,6 +633,7 @@ dependencies = [
 name = "codegen-sdk-resolution"
 version = "0.1.0"
 dependencies = [
+ "log",
  "salsa",
 ]
 

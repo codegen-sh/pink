@@ -6,3 +6,4 @@ edition = "2024"
 
 [dependencies]
 salsa = { workspace = true }
+log = {workspace = true}

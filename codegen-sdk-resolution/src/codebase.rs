@@ -10,4 +10,5 @@ pub trait CodebaseContext {
     fn files<'a>(&'a self) -> Vec<&'a Self::File<'a>>;
     fn db(&self) -> &dyn Database;
     fn get_file<'a>(&'a self, path: PathBuf) -> Option<&'a Self::File<'a>>;
+    fn root_path(&self) -> PathBuf;
 }

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::{CodebaseContext, ResolveType};
 
 pub trait References<
@@ -12,15 +14,16 @@ pub trait References<
         for<'b> T: CodebaseContext<File<'db> = F> + 'static,
     {
         let scopes: Vec<Scope> = codebase.files().into_iter().filter_map(|file| file.clone().try_into().ok()).collect();
-        return self.references_for_scopes(codebase.db(), scopes, scope);
+        return self.references_for_scopes(codebase.db(), codebase.root_path(), scopes, scope);
     }
-    fn references_for_scopes(&self, db: &'db dyn salsa::Database, scopes: Vec<Scope>, scope: &Scope) -> Vec<ReferenceType>
+    fn references_for_scopes(&self, db: &'db dyn salsa::Database, root_path: PathBuf, scopes: Vec<Scope>, scope: &Scope) -> Vec<ReferenceType>
     where
         Self: Sized + 'db,
     {
+        log::info!("Finding references across {:?} scopes", scopes.len());
         let mut results = Vec::new();
         for reference in scope.clone().resolvables(db) {
-            let resolved = reference.clone().resolve_type(db, scope.clone(), scopes.clone());
+            let resolved = reference.clone().resolve_type(db, scope.clone(), root_path.clone(), scopes.clone());
                 if resolved.iter().any(|result| *result == *self) {
                     results.push(reference);
                 }
