@@ -16,9 +16,9 @@ pub trait References<
         log::info!("Finding references across {:?} files", files.len());
         let mut results = Vec::new();
         for input in files {
-            if !self.filter(db, &input) {
-                continue;
-            }
+            // if !self.filter(db, &input) {
+            //     continue;
+            // }
             let file = Scope::parse(db, input, root_path.clone());
             for reference in file.clone().resolvables(db) {
                 if reference.clone().resolve_type(db).iter().any(|result| *result == *self) {

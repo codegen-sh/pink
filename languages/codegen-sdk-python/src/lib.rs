@@ -11,12 +11,12 @@ pub mod ast {
     #[salsa::tracked]
     impl<'db> Import<'db> {
         #[salsa::tracked]
-        fn resolve_import(self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+        fn resolve_import(self, db: &'db dyn codegen_sdk_resolution::Db) -> Option<PathBuf> {
             let root_path = self.root_path(db);
             let module = self.module(db).source().replace(".", "/");
             let target_path = root_path.join(module).with_extension("py");
             log::info!(target: "resolution", "Resolving import to path: {:?}", target_path);
-            target_path
+            target_path.canonicalize().ok()
         }
     }
     #[salsa::tracked]
@@ -63,10 +63,12 @@ pub mod ast {
         #[salsa::tracked(return_ref)]
         fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Type> {
             let target_path = self.resolve_import(db);
-            if let Ok(input) = db.input(target_path) {
-                return PythonFile::parse(db, input, self.root_path(db))
-                    .resolve(db, self.name(db).source())
-                    .to_vec();
+            if let Some(target_path) = target_path {
+                if let Some(input) = db.get_file(target_path) {
+                    return PythonFile::parse(db, input, self.root_path(db))
+                        .resolve(db, self.name(db).source())
+                        .to_vec();
+                }
             }
             Vec::new()
         }
@@ -92,14 +94,14 @@ pub mod ast {
             db: &'db dyn codegen_sdk_resolution::Db,
             input: &codegen_sdk_ast::input::File,
         ) -> bool {
-            input.path(db).extension().unwrap() == "py"
-                && match self {
-                    crate::ast::Symbol::Function(function) => input
-                        .contents(db)
-                        .content(db)
-                        .contains(&function.name(db).source()),
-                    _ => false,
+            match self {
+                crate::ast::Symbol::Function(function) => {
+                    let content = input.contents(db).content(db);
+                    let target = function.name(db).text();
+                    memchr::memmem::find(&content.as_bytes(), &target).is_some()
                 }
+                _ => true,
+            }
         }
     }
 }

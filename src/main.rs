@@ -2,7 +2,7 @@
 use std::{path::PathBuf, time::Instant};
 
 use clap::Parser;
-use codegen_sdk_analyzer::{Codebase, ParsedFile};
+use codegen_sdk_analyzer::{Codebase, ParsedFile, parse_file};
 use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
@@ -13,29 +13,27 @@ struct Args {
     input: String,
 }
 fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize, usize, usize)> {
-    codebase
-        .files()
-        .into_iter()
-        .map(|parsed| {
+    codebase.execute_op_with_progress("Getting Usages", |db, file, root| {
+        if let Some(parsed) = parse_file(db, file, root).file(db) {
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(file) = parsed {
-                let definitions = file.definitions(codebase.db());
-                if let Some(node) = file.node(codebase.db()) {
-                    let tree = node.tree(codebase.db());
+                let definitions = file.definitions(db);
+                if let Some(node) = file.node(db) {
+                    let tree = node.tree(db);
                     return (
-                        definitions.classes(codebase.db(), &tree).len(),
-                        definitions.functions(codebase.db(), &tree).len(),
-                        definitions.interfaces(codebase.db(), &tree).len(),
-                        definitions.methods(codebase.db(), &tree).len(),
-                        definitions.modules(codebase.db(), &tree).len(),
+                        definitions.classes(db, &tree).len(),
+                        definitions.functions(db, &tree).len(),
+                        definitions.interfaces(db, &tree).len(),
+                        definitions.methods(db, &tree).len(),
+                        definitions.modules(db, &tree).len(),
                         0,
                     );
                 }
             }
             #[cfg(feature = "python")]
             if let ParsedFile::Python(file) = parsed {
-                let definitions = file.definitions(codebase.db());
-                let functions = definitions.functions(codebase.db());
+                let definitions = file.definitions(db);
+                let functions = definitions.functions(db);
                 let mut total_references = 0;
                 let total_functions = functions.len();
                 for function in functions
@@ -44,10 +42,10 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                     .flatten()
                     .map(|function| codegen_sdk_python::ast::Symbol::Function(function.clone()))
                 {
-                    total_references += function.references(codebase.db()).len();
+                    total_references += function.references(db).len();
                 }
                 return (
-                    definitions.classes(codebase.db()).len(),
+                    definitions.classes(db).len(),
                     total_functions,
                     0,
                     0,
@@ -55,9 +53,9 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                     total_references,
                 );
             }
-            (0, 0, 0, 0, 0, 0)
-        })
-        .collect()
+        }
+        (0, 0, 0, 0, 0, 0)
+    })
 }
 fn print_definitions(codebase: &Codebase) {
     let mut total_classes = 0;

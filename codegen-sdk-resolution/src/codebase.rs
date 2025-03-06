@@ -19,7 +19,11 @@ pub trait CodebaseContext {
         self.get_raw_file(id.path(self.db()))
     }
     fn get_raw_file<'a>(&'a self, path: PathBuf) -> Option<codegen_sdk_ast::input::File> {
-        self.db().input(path).ok()
+        if let Ok(path) = path.canonicalize() {
+            self.db().get_file(path)
+        } else {
+            None
+        }
     }
     fn root_path(&self) -> PathBuf;
 }

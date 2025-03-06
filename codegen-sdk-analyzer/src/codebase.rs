@@ -1,17 +1,19 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use codegen_sdk_ast::Input;
+use codegen_sdk_ast::{Input, input::File};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialization::Cache;
 use codegen_sdk_resolution::{CodebaseContext, Db};
 use discovery::FilesToParse;
 use notify_debouncer_mini::DebounceEventResult;
-use salsa::Setter;
+use salsa::{AsDynDatabase, Database, Setter};
 
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
 mod discovery;
 mod parser;
+use parser::execute_op_with_progress;
+
 pub struct Codebase {
     db: CodegenDatabase,
     root: PathBuf,
@@ -80,6 +82,16 @@ impl Codebase {
             files,
         )
     }
+    fn _db(&self) -> &dyn Db {
+        &self.db
+    }
+    pub fn execute_op_with_progress<T: Send + Sync>(
+        &self,
+        name: &str,
+        op: fn(&dyn Db, File, PathBuf) -> T,
+    ) -> Vec<T> {
+        execute_op_with_progress(self._db(), self.discover(), name, op)
+    }
 }
 impl CodebaseContext for Codebase {
     type File<'a> = ParsedFile<'a>;
@@ -99,11 +111,13 @@ impl CodebaseContext for Codebase {
         &self.db
     }
     fn get_file<'a>(&'a self, path: PathBuf) -> Option<&'a Self::File<'a>> {
-        let file = self.db.files.get(&path);
-        if let Some(file) = file {
-            return parse_file(&self.db, file.clone(), self.root.clone())
-                .file(&self.db)
-                .as_ref();
+        if let Ok(path) = path.canonicalize() {
+            let file = self.db.files.get(&path);
+            if let Some(file) = file {
+                return parse_file(&self.db, file.clone(), self.root.clone())
+                    .file(&self.db)
+                    .as_ref();
+            }
         }
         None
     }

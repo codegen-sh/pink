@@ -8,7 +8,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use super::discovery::{FilesToParse, log_languages};
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
-fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>(
+pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>(
     db: &Database,
     files: FilesToParse,
     name: &str,
