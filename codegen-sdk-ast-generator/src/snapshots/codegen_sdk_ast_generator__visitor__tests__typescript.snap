@@ -83,12 +83,14 @@ impl<'db> Definitions<'db> {
             match node {
                 crate::cst::NodeTypes::AbstractClassDeclaration(node) => {
                     ///Code for query: (abstract_class_declaration   name: (type_identifier) @name) @definition.class
+                    ///Code for field: name: (type_identifier) @name
                     let name = node.name(tree);
                     let symbol = Class::new(db, id, node.clone(), name.clone());
                     classes.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::AbstractMethodSignature(node) => {
                     ///Code for query: (abstract_method_signature   name: (property_identifier) @name) @definition.method
+                    ///Code for field: name: (property_identifier) @name
                     let name = node.name(tree);
                     if let crate::cst::AbstractMethodSignatureNameRef::PropertyIdentifier(
                         name,
@@ -99,18 +101,21 @@ impl<'db> Definitions<'db> {
                 }
                 crate::cst::NodeTypes::FunctionSignature(node) => {
                     ///Code for query: (function_signature   name: (identifier) @name) @definition.function
+                    ///Code for field: name: (identifier) @name
                     let name = node.name(tree);
                     let symbol = Function::new(db, id, node.clone(), name.clone());
                     functions.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::InterfaceDeclaration(node) => {
                     ///Code for query: (interface_declaration   name: (type_identifier) @name) @definition.interface
+                    ///Code for field: name: (type_identifier) @name
                     let name = node.name(tree);
                     let symbol = Interface::new(db, id, node.clone(), name.clone());
                     interfaces.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::Module(node) => {
                     ///Code for query: (module   name: (identifier) @name) @definition.module
+                    ///Code for field: name: (identifier) @name
                     let name = node.name(tree);
                     if let crate::cst::ModuleNameRef::Identifier(name) = name {
                         let symbol = Module::new(db, id, node.clone(), name.clone());

@@ -286,6 +286,7 @@ impl<'a> Query<'a> {
         field: &ts_query::FieldDefinition,
         struct_name: &str,
         current_node: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let other_child: ts_query::NodeTypesRef = field
@@ -297,6 +298,7 @@ impl<'a> Query<'a> {
             .into();
         for name in &field.name(self.tree) {
             if let ts_query::FieldDefinitionNameRef::Identifier(identifier) = name {
+                let doc = format!("Code for field: {}", field.source());
                 let name = normalize_field_name(&identifier.source());
                 if let Some(field) = self.get_field_for_field_name(&name, struct_name) {
                     let field_name = format_ident!("{}", name);
@@ -305,6 +307,7 @@ impl<'a> Query<'a> {
                         &normalized_struct_name,
                         other_child.clone(),
                         &field_name,
+                        existing,
                         query_values,
                     );
                     // assert!(
@@ -316,17 +319,20 @@ impl<'a> Query<'a> {
                     // );
                     if field.is_multiple() {
                         return quote! {
+                            #[doc = #doc]
                             for #field_name in #current_node.#field_name(tree) {
                                 #wrapped
                             }
                         };
                     } else if !field.is_optional() {
                         return quote! {
+                            #[doc = #doc]
                             let #field_name = #current_node.#field_name(tree);
                             #wrapped
                         };
                     } else {
                         return quote! {
+                            #[doc = #doc]
                             if let Some(#field_name) = #current_node.#field_name(tree) {
                                 #wrapped
                             }
@@ -354,6 +360,7 @@ impl<'a> Query<'a> {
         node: &ts_query::Grouping,
         struct_name: &str,
         current_node: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
@@ -362,6 +369,7 @@ impl<'a> Query<'a> {
                 struct_name,
                 group.into(),
                 current_node,
+                existing,
                 query_values,
             );
             matchers.extend_one(result);
@@ -378,7 +386,7 @@ impl<'a> Query<'a> {
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
-        let mut field_matchers = TokenStream::new();
+        let mut field_matchers = Vec::new();
         let mut comment_variant = None;
         let variants = self
             .state
@@ -395,18 +403,14 @@ impl<'a> Query<'a> {
         }
 
         for child in remaining_nodes {
-            if child.kind_name() == "field_definition" {
-                field_matchers.extend_one(self.get_matcher_for_definition(
-                    &target_name,
-                    child.into(),
-                    current_node,
-                    query_values,
-                ));
+            if let ts_query::NamedNodeChildrenRef::FieldDefinition(_) = child {
+                field_matchers.push((child.into(), target_name, current_node));
             } else {
                 let result = self.get_matcher_for_definition(
                     &target_name,
                     child.into(),
                     &format_ident!("child"),
+                    &mut Vec::new(),
                     query_values,
                 );
 
@@ -439,6 +443,17 @@ impl<'a> Query<'a> {
             "Code for query: {}",
             &self.node().source().replace("\n", " ") // Newlines mess with quote's doc comments
         );
+        let field_matchers = if let Some(prev) = field_matchers.pop() {
+            self.get_matcher_for_definition(
+                &prev.1,
+                prev.0,
+                &prev.2,
+                &mut field_matchers,
+                query_values,
+            )
+        } else {
+            quote! {}
+        };
         if matchers.is_empty() && field_matchers.is_empty() {
             return quote! {};
         }
@@ -471,7 +486,11 @@ impl<'a> Query<'a> {
     ) -> Vec<ts_query::NamedNodeChildrenRef<'b>> {
         let mut prev = first_node.clone();
         let mut remaining_nodes = Vec::new();
-        log::info!("Grouping children for: {:#?}", node.source());
+        log::info!(
+            "Grouping children for: {:#?} of kind: {:#?}",
+            node.source(),
+            node.kind_name()
+        );
         for child in node.children(self.tree).into_iter().skip(1) {
             if child.kind_name() == "capture" {
                 let capture_name = name_for_capture(child.try_into().unwrap());
@@ -541,6 +560,7 @@ impl<'a> Query<'a> {
         node: &ts_query::NamedNode,
         struct_name: &str,
         current_node: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
@@ -552,6 +572,7 @@ impl<'a> Query<'a> {
                 struct_name,
                 first_node.into(),
                 current_node,
+                existing,
                 query_values,
             );
         }
@@ -594,7 +615,26 @@ impl<'a> Query<'a> {
             #matchers
         }
     }
-    fn get_default_matcher(&self, query_values: &mut HashMap<String, TokenStream>) -> TokenStream {
+    fn get_default_matcher(
+        &self,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        query_values: &mut HashMap<String, TokenStream>,
+    ) -> TokenStream {
+        if let Some(prev) = existing.pop() {
+            log::info!(
+                "Executing previous matcher on: {:#?} with {:#?}",
+                prev.0.source(),
+                query_values
+            );
+            return self.get_matcher_for_definition(
+                &prev.1,
+                prev.0,
+                &prev.2,
+                existing,
+                query_values,
+            );
+        }
+
         let to_append = self.executor_id();
         let mut args = Vec::new();
         for target in self.target_capture_names() {
@@ -624,10 +664,11 @@ impl<'a> Query<'a> {
         identifier: &ts_query::Identifier,
         struct_name: &str,
         current_node: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         // We have 2 nodes, the parent node and the identifier node
-        let to_append = self.get_default_matcher(query_values);
+        let to_append = self.get_default_matcher(existing, query_values);
         // Case 1: The identifier is the same as the struct name (IE: we know this is the corrent node)
         let target_name = normalize_type_name(&identifier.source(), true);
         if target_name == struct_name {
@@ -665,22 +706,31 @@ impl<'a> Query<'a> {
         struct_name: &str,
         node: ts_query::NodeTypesRef,
         current_node: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         if !node.is_named() {
-            return self.get_default_matcher(query_values);
+            return self.get_default_matcher(existing, query_values);
         }
         match node {
-            ts_query::NodeTypesRef::FieldDefinition(field) => {
-                self.get_matcher_for_field(&field, struct_name, current_node, query_values)
-            }
+            ts_query::NodeTypesRef::FieldDefinition(field) => self.get_matcher_for_field(
+                &field,
+                struct_name,
+                current_node,
+                existing,
+                query_values,
+            ),
             ts_query::NodeTypesRef::Capture(named) => {
                 info!("Capture: {:#?}", named.source());
                 quote! {}
             }
-            ts_query::NodeTypesRef::NamedNode(named) => {
-                self.get_matcher_for_named_node(&named, struct_name, current_node, query_values)
-            }
+            ts_query::NodeTypesRef::NamedNode(named) => self.get_matcher_for_named_node(
+                &named,
+                struct_name,
+                current_node,
+                existing,
+                query_values,
+            ),
             ts_query::NodeTypesRef::Comment(_) => {
                 quote! {}
             }
@@ -690,6 +740,7 @@ impl<'a> Query<'a> {
                         struct_name,
                         child.into(),
                         current_node,
+                        existing,
                         query_values,
                     );
                     // Currently just returns the first child
@@ -697,13 +748,18 @@ impl<'a> Query<'a> {
                 }
                 quote! {}
             }
-            ts_query::NodeTypesRef::Grouping(grouping) => {
-                self.get_matchers_for_grouping(&grouping, struct_name, current_node, query_values)
-            }
+            ts_query::NodeTypesRef::Grouping(grouping) => self.get_matchers_for_grouping(
+                &grouping,
+                struct_name,
+                current_node,
+                existing,
+                query_values,
+            ),
             ts_query::NodeTypesRef::Identifier(identifier) => self.get_matcher_for_identifier(
                 &identifier,
                 struct_name,
                 current_node,
+                existing,
                 query_values,
             ),
             unhandled => {
@@ -713,7 +769,7 @@ impl<'a> Query<'a> {
                     unhandled.kind_name(),
                     unhandled.source()
                 );
-                self.get_default_matcher(query_values)
+                self.get_default_matcher(existing, query_values)
             }
         }
     }
