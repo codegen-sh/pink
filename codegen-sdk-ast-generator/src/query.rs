@@ -661,7 +661,7 @@ impl<'a> Query<'a> {
         });
         let symbol_name = self.symbol_name();
         return quote! {
-            let symbol = #symbol_name::new(db, id, node.clone(), #(#args.clone()),*);
+            let symbol = #symbol_name::new(db, id, node.clone(), #(#args.clone().into()),*);
             #to_append.entry(#name.source()).or_default().push(symbol);
         };
     }
@@ -820,6 +820,31 @@ impl<'a> Query<'a> {
             .map(|c| name_for_capture(c))
             .collect()
     }
+    fn get_type_for_field(
+        &self,
+        parent: &ts_query::NamedNode,
+        field: &ts_query::FieldDefinition,
+    ) -> String {
+        let parent_name = normalize_type_name(&parent.name(self.tree).source(), true);
+        let field_name = normalize_field_name(
+            &field
+                .name(self.tree)
+                .into_iter()
+                .filter(|n| n.is_named())
+                .next()
+                .unwrap()
+                .source(),
+        );
+        let parsed_field = self.get_field_for_field_name(&field_name, &parent_name);
+        if let Some(parsed_field) = parsed_field {
+            parsed_field.type_name()
+        } else {
+            panic!(
+                "No field found for: {:#?}, {:#?}, {:#?}",
+                field, field_name, parent_name
+            );
+        }
+    }
     pub fn struct_fields(&self) -> Vec<syn::Field> {
         let mut fields = Vec::new();
         for capture in self.target_captures() {
@@ -848,6 +873,32 @@ impl<'a> Query<'a> {
                                         break;
                                     }
                                     ts_query::NodeTypesRef::AnonymousUnderscore(_) => {
+                                        let mut ancestors = id.ancestors(self.tree.arena()).skip(2);
+                                        if let Some(field) = ancestors.next() {
+                                            if let Some(parent) = ancestors.next() {
+                                                // Field definitions (example)
+                                                // (new_expression\n  constructor: (_) @name) @reference.class
+                                                let parent: &ts_query::NamedNode = self
+                                                    .tree
+                                                    .get(&parent)
+                                                    .unwrap()
+                                                    .as_ref()
+                                                    .try_into()
+                                                    .unwrap();
+
+                                                let field: &ts_query::FieldDefinition = self
+                                                    .tree
+                                                    .get(&field)
+                                                    .unwrap()
+                                                    .as_ref()
+                                                    .try_into()
+                                                    .unwrap();
+                                                type_name = format_ident!(
+                                                    "{}",
+                                                    self.get_type_for_field(parent, field)
+                                                );
+                                            }
+                                        }
                                         break; // Could be any type
                                     }
                                     _ => {

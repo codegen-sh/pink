@@ -35,21 +35,21 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
             #[cfg(feature = "python")]
             if let ParsedFile::Python(file) = parsed {
                 let definitions = file.definitions(codebase.db());
-                let tree = file.node(codebase.db()).unwrap().tree(codebase.db());
-                let functions = definitions.functions(codebase.db(), &tree);
+                let functions = definitions.functions(codebase.db());
                 let mut total_references = 0;
                 let total_functions = functions.len();
                 for function in functions
                     .into_iter()
                     .map(|(_, functions)| functions)
                     .flatten()
+                    .map(|function| codegen_sdk_python::ast::Symbol::Function(function.clone()))
                 {
                     total_references += function
                         .references_for_scopes(codebase.db(), vec![*file], &file)
                         .len();
                 }
                 return (
-                    definitions.classes(codebase.db(), &tree).len(),
+                    definitions.classes(codebase.db()).len(),
                     total_functions,
                     0,
                     0,

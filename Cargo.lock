@@ -426,6 +426,7 @@ dependencies = [
  "codegen-sdk-analyzer",
  "codegen-sdk-ast",
  "codegen-sdk-common",
+ "codegen-sdk-python",
  "codegen-sdk-resolution",
  "codegen-sdk-typescript",
  "criterion",
