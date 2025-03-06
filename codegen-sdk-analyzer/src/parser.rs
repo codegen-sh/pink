@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use codegen_sdk_common::FileNodeId;
 use codegen_sdk_cst::CSTLanguage;
 use codegen_sdk_macros::{languages_ast, parse_language};
@@ -12,7 +14,11 @@ pub struct Parsed<'db> {
     pub file: Option<ParsedFile<'db>>,
 }
 #[salsa::tracked(return_ref)]
-pub fn parse_file(db: &dyn salsa::Database, file: codegen_sdk_ast::input::File) -> Parsed<'_> {
+pub fn parse_file(
+    db: &dyn salsa::Database,
+    file: codegen_sdk_ast::input::File,
+    root: PathBuf,
+) -> Parsed<'_> {
     parse_language!();
     Parsed::new(db, FileNodeId::new(db, file.path(db)), None)
 }

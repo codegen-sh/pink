@@ -1,33 +1,32 @@
-use std::path::PathBuf;
-
-use crate::{CodebaseContext, ResolveType};
+use crate::{Db, HasFile, Parse, ResolveType};
 
 pub trait References<
     'db,
-    ReferenceType: ResolveType<'db, Scope, Type = Self> + Clone, // References must resolve to this type
-    Scope: crate::Scope<'db, Type = Self, ReferenceType = ReferenceType> + Clone,
->: Eq + PartialEq where Self:'db
+    ReferenceType: ResolveType<'db, Type = Self> + Clone, // References must resolve to this type
+    Scope: crate::Scope<'db, Type = Self, ReferenceType = ReferenceType> + Clone + 'db,
+>: Eq + PartialEq + HasFile<'db, File<'db> = Scope> + 'db where Self:'db
 {
-    fn references<F: TryInto<Scope> + Clone + 'db, T>(&self, codebase: &'db T, scope: &Scope) -> Vec<ReferenceType>
+    fn references(&self, db: &'db dyn Db) -> Vec<ReferenceType>
     where
         Self: Sized,
-        for<'b> T: CodebaseContext<File<'db> = F> + 'static,
+        Scope: Parse<'db>,
     {
-        let scopes: Vec<Scope> = codebase.files().into_iter().filter_map(|file| file.clone().try_into().ok()).collect();
-        return self.references_for_scopes(codebase.db(), codebase.root_path(), scopes, scope);
-    }
-    fn references_for_scopes(&self, db: &'db dyn salsa::Database, root_path: PathBuf, scopes: Vec<Scope>, scope: &Scope) -> Vec<ReferenceType>
-    where
-        Self: Sized + 'db,
-    {
-        log::info!("Finding references across {:?} scopes", scopes.len());
+        let files = db.files();
+        let root_path = self.root_path(db);
+        log::info!("Finding references across {:?} files", files.len());
         let mut results = Vec::new();
-        for reference in scope.clone().resolvables(db) {
-            let resolved = reference.clone().resolve_type(db, scope.clone(), root_path.clone(), scopes.clone());
-                if resolved.iter().any(|result| *result == *self) {
+        for input in files {
+            if !self.filter(db, &input) {
+                continue;
+            }
+            let file = Scope::parse(db, input, root_path.clone());
+            for reference in file.clone().resolvables(db) {
+                if reference.clone().resolve_type(db).iter().any(|result| *result == *self) {
                     results.push(reference);
                 }
+            }
         }
         results
     }
+    fn filter(&self, db: &'db dyn Db, input: &codegen_sdk_ast::input::File) -> bool;
 }

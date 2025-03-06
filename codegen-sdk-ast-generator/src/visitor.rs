@@ -67,6 +67,7 @@ pub fn generate_visitor<'db>(
 
     };
     let mut defs = Vec::new();
+    let language_struct = format_ident!("{}File", language.struct_name());
     for (variant, type_name) in symbol_names.iter().zip(types.iter()) {
         let query = enter_methods
             .get(&type_name.to_string())
@@ -86,6 +87,18 @@ pub fn generate_visitor<'db>(
                 pub node: crate::cst::#type_name<'db>,
                 #(#fields),*
             }
+            impl<'db> codegen_sdk_resolution::HasFile<'db> for #variant<'db> {
+                type File<'db1> = #language_struct<'db1>;
+                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+                    let path = self.node(db).id().file(db).path(db);
+                    let root = self.root_path(db);
+                    let input = db.input(path).unwrap();
+                    parse_query(db, input, root)
+                }
+                fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
+                    self.node(db).id().root(db).path(db)
+                }
+            }
         });
     }
     let symbol = if defs.len() > 0 {
@@ -98,6 +111,19 @@ pub fn generate_visitor<'db>(
                 #(
                     #symbol_names(#symbol_names<'db>),
                 )*
+            }
+            impl<'db> codegen_sdk_resolution::HasFile<'db> for #symbol_name<'db> {
+                type File<'db1> = #language_struct<'db1>;
+                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.file(db),)*
+                    }
+                }
+                fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
+                    }
+                }
             }
         }
     } else {

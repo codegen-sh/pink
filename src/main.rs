@@ -44,9 +44,7 @@ fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize
                     .flatten()
                     .map(|function| codegen_sdk_python::ast::Symbol::Function(function.clone()))
                 {
-                    total_references += function
-                        .references_for_scopes(codebase.db(), vec![*file], &file)
-                        .len();
+                    total_references += function.references(codebase.db()).len();
                 }
                 return (
                     definitions.classes(codebase.db()).len(),

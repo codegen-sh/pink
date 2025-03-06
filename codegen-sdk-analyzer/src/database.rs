@@ -7,6 +7,7 @@ use std::{
 use anyhow::Context;
 use codegen_sdk_ast::input::File;
 use codegen_sdk_cst::Input;
+use codegen_sdk_resolution::Db;
 use dashmap::{DashMap, mapref::entry::Entry};
 use indicatif::MultiProgress;
 use notify_debouncer_mini::{
@@ -15,12 +16,6 @@ use notify_debouncer_mini::{
 };
 
 use crate::progress::get_multi_progress;
-#[salsa::db]
-pub trait Db: salsa::Database + Send {
-    fn input(&self, path: PathBuf) -> anyhow::Result<File>;
-    fn multi_progress(&self) -> &MultiProgress;
-    fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()>;
-}
 #[salsa::db]
 #[derive(Clone)]
 // Basic Database implementation for Query generation. This is not used for anything else.
@@ -76,6 +71,12 @@ impl salsa::Database for CodegenDatabase {
 }
 #[salsa::db]
 impl Db for CodegenDatabase {
+    fn files(&self) -> Vec<codegen_sdk_ast::input::File> {
+        self.files
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
+    }
     fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()> {
         let path = path.canonicalize()?;
         let watcher = &mut *self.file_watcher.lock().unwrap();

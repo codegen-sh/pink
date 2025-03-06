@@ -2,11 +2,12 @@ use std::path::PathBuf;
 
 #[salsa::interned]
 pub struct FileNodeId<'db> {
-    file_path: PathBuf,
+    pub path: PathBuf,
 }
 #[salsa::interned]
 pub struct CSTNodeId<'db> {
-    file_id: FileNodeId<'db>,
+    pub file: FileNodeId<'db>,
     node_id: usize,
+    pub root: FileNodeId<'db>,
     // TODO: add a marker for tree-sitter generation
 }
