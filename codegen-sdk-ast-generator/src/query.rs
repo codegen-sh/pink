@@ -263,7 +263,13 @@ impl<'a> Query<'a> {
     pub fn symbol_name(&self) -> Ident {
         let raw_name = self.name();
         let name = raw_name.split(".").last().unwrap();
-        format_ident!("{}", normalize_type_name(name, true))
+        let symbol = format_ident!("{}", normalize_type_name(name, true));
+        // References can produce duplicate names. We can be reasonably sure that there is no @definition.call.
+        if raw_name.starts_with("reference") && !["call"].contains(&name) {
+            format_ident!("{}Ref", symbol)
+        } else {
+            symbol
+        }
     }
     fn get_field_for_field_name(&self, field_name: &str, struct_name: &str) -> Option<&Field> {
         debug!(

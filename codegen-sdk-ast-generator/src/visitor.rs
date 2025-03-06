@@ -88,15 +88,24 @@ pub fn generate_visitor<'db>(
             }
         });
     }
-    let symbol = quote! {
-        #(
-            #defs
-        )*
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
-        pub enum #symbol_name<'db> {
-            #(
-                #symbol_names(#symbol_names<'db>),
-            )*
+    let symbol = if defs.len() > 0 {
+        quote! {
+                #(
+                    #defs
+                )*
+            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            pub enum #symbol_name<'db> {
+                #(
+                    #symbol_names(#symbol_names<'db>),
+                )*
+            }
+        }
+    } else {
+        quote! {
+            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            pub enum #symbol_name<'db> {
+                _Phantom(std::marker::PhantomData<&'db ()>)
+            }
         }
     };
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
