@@ -81,6 +81,8 @@ pub fn generate_visitor<'db>(
             #[salsa::tracked]
             pub struct #variant<'db> {
                 #[id]
+                _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+                #[id]
                 node_id: indextree::NodeId,
                 #[tracked]
                 #[return_ref]
@@ -91,11 +93,16 @@ pub fn generate_visitor<'db>(
                 type File<'db1> = #language_struct<'db1>;
                 fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
                     let path = self.node(db).id().file(db).path(db);
-                    let input = db.input(path).unwrap();
-                    parse_query(db, input)
+                    let input = db.get_file(path).unwrap();
+                    parse(db, input)
                 }
                 fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
                     self.node(db).id().root(db).path(db)
+                }
+            }
+            impl<'db> codegen_sdk_resolution::HasId<'db> for #variant<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn codegen_sdk_resolution::Db) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                    self._fully_qualified_name(db)
                 }
             }
         });
@@ -121,6 +128,13 @@ pub fn generate_visitor<'db>(
                 fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
+                    }
+                }
+            }
+            impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn codegen_sdk_resolution::Db) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
                     }
                 }
             }

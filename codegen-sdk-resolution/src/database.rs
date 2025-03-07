@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use codegen_sdk_ast::input::File;
+use codegen_sdk_cst::File;
 use indicatif::MultiProgress;
 #[salsa::db]
 pub trait Db: salsa::Database + Send {
@@ -8,5 +8,9 @@ pub trait Db: salsa::Database + Send {
     fn get_file(&self, path: PathBuf) -> Option<File>;
     fn multi_progress(&self) -> &MultiProgress;
     fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()>;
-    fn files(&self) -> Vec<File>;
+    fn files(&self) -> indexmap::IndexSet<File>;
+}
+#[salsa::tracked]
+pub fn files(db: &dyn Db) -> indexmap::IndexSet<codegen_sdk_cst::File> {
+    db.files()
 }

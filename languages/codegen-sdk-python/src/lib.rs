@@ -20,8 +20,44 @@ pub mod ast {
         }
     }
     #[salsa::tracked]
+    pub struct PythonDependencies<'db> {
+        #[id]
+        id: codegen_sdk_common::FileNodeId<'db>,
+        #[return_ref]
+        #[tracked]
+        dependencies: codegen_sdk_resolution::indexmap::IndexMap<
+            codegen_sdk_resolution::FullyQualifiedName<'db>,
+            codegen_sdk_resolution::indexmap::IndexSet<crate::ast::Call<'db>>,
+        >,
+    }
+    impl<'db>
+        codegen_sdk_resolution::Dependencies<
+            'db,
+            codegen_sdk_resolution::FullyQualifiedName<'db>,
+            crate::ast::Call<'db>,
+        > for PythonDependencies<'db>
+    {
+        fn get(
+            &'db self,
+            db: &'db dyn codegen_sdk_resolution::Db,
+            key: &codegen_sdk_resolution::FullyQualifiedName<'db>,
+        ) -> Option<&'db codegen_sdk_resolution::indexmap::IndexSet<crate::ast::Call<'db>>>
+        {
+            self.dependencies(db).get(key)
+        }
+    }
+    #[salsa::tracked(return_ref)]
+    pub fn dependencies(
+        db: &dyn codegen_sdk_resolution::Db,
+        input: codegen_sdk_cst::File,
+    ) -> PythonDependencies<'_> {
+        let file = parse(db, input);
+        PythonDependencies::new(db, file.id(db), file.compute_dependencies(db))
+    }
+    #[salsa::tracked]
     impl<'db> Scope<'db> for PythonFile<'db> {
         type Type = crate::ast::Symbol<'db>;
+        type Dependencies = PythonDependencies<'db>;
         type ReferenceType = crate::ast::Call<'db>;
         #[salsa::tracked(return_ref)]
         fn resolve(self, db: &'db dyn codegen_sdk_resolution::Db, name: String) -> Vec<Self::Type> {
@@ -56,13 +92,38 @@ pub mod ast {
             }
             results
         }
+        fn compute_dependencies(
+            self,
+            db: &'db dyn codegen_sdk_resolution::Db,
+        ) -> codegen_sdk_resolution::indexmap::IndexMap<
+            codegen_sdk_resolution::FullyQualifiedName<'db>,
+            codegen_sdk_resolution::indexmap::IndexSet<Self::ReferenceType>,
+        >
+        where
+            Self: 'db,
+        {
+            let mut dependencies: codegen_sdk_resolution::indexmap::IndexMap<
+                codegen_sdk_resolution::FullyQualifiedName<'db>,
+                codegen_sdk_resolution::indexmap::IndexSet<Self::ReferenceType>,
+            > = codegen_sdk_resolution::indexmap::IndexMap::new();
+            for reference in self.resolvables(db) {
+                let resolved = reference.clone().resolve_type(db);
+                for resolved in resolved {
+                    dependencies
+                        .entry(resolved.fully_qualified_name(db))
+                        .or_default()
+                        .insert(reference.clone());
+                }
+            }
+            dependencies
+        }
+
         #[salsa::tracked(return_ref)]
         fn compute_dependencies_query(
             self,
             db: &'db dyn codegen_sdk_resolution::Db,
-        ) -> codegen_sdk_resolution::indexmap::IndexMap<Self::Type, Vec<Self::ReferenceType>>
-        {
-            self.compute_dependencies(db)
+        ) -> PythonDependencies<'db> {
+            PythonDependencies::new(db, self.id(db), self.compute_dependencies(db))
         }
     }
     #[salsa::tracked]
@@ -93,18 +154,40 @@ pub mod ast {
                 .clone()
         }
     }
+    use codegen_sdk_resolution::{Db, Dependencies, HasId};
     #[salsa::tracked]
-    impl<'db> codegen_sdk_resolution::References<'db, crate::ast::Call<'db>, PythonFile<'db>>
-        for crate::ast::Symbol<'db>
+    impl<'db>
+        codegen_sdk_resolution::References<
+            'db,
+            PythonDependencies<'db>,
+            crate::ast::Call<'db>,
+            PythonFile<'db>,
+        > for crate::ast::Symbol<'db>
     {
+        fn references(&self, db: &'db dyn Db) -> Vec<crate::ast::Call<'db>> {
+            let files = codegen_sdk_resolution::files(db);
+            log::info!(target: "resolution", "Finding references across {:?} files", files.len());
+            let mut results = Vec::new();
+            let name = self.fully_qualified_name(db);
+            for input in files {
+                // if !self.filter(db, &input) {
+                //     continue;
+                // }
+                let dependencies = dependencies(db, input.clone());
+                if let Some(references) = dependencies.get(db, &name) {
+                    results.extend(references.iter().cloned());
+                }
+            }
+            results
+        }
         fn filter(
             &self,
             db: &'db dyn codegen_sdk_resolution::Db,
-            input: &codegen_sdk_ast::input::File,
+            input: &codegen_sdk_cst::File,
         ) -> bool {
             match self {
                 crate::ast::Symbol::Function(function) => {
-                    let content = input.contents(db).content(db);
+                    let content = input.content(db);
                     let target = function.name(db).text();
                     memchr::memmem::find(&content.as_bytes(), &target).is_some()
                 }

@@ -5,8 +5,7 @@ use std::{
 };
 
 use anyhow::Context;
-use codegen_sdk_ast::input::File;
-use codegen_sdk_cst::Input;
+use codegen_sdk_cst::File;
 use codegen_sdk_resolution::Db;
 use dashmap::{DashMap, mapref::entry::Entry};
 use indicatif::MultiProgress;
@@ -63,17 +62,17 @@ impl CodegenDatabase {
 }
 #[salsa::db]
 impl salsa::Database for CodegenDatabase {
-    fn salsa_event(&self, event: &dyn Fn() -> salsa::Event) {
+    fn salsa_event(&self, _event: &dyn Fn() -> salsa::Event) {
         // don't log boring events
-        let event = event();
-        if let salsa::EventKind::WillExecute { .. } = event.kind {
-            log::debug!("{:?}", event);
-        }
+        // let event = event();
+        // if let salsa::EventKind::WillExecute { .. } = event.kind {
+        //     log::debug!("{:?}", event);
+        // }
     }
 }
 #[salsa::db]
 impl Db for CodegenDatabase {
-    fn files(&self) -> Vec<codegen_sdk_ast::input::File> {
+    fn files(&self) -> indexmap::IndexSet<codegen_sdk_cst::File> {
         self.files
             .iter()
             .map(|entry| entry.value().clone())
@@ -93,6 +92,7 @@ impl Db for CodegenDatabase {
         self.files.get(&path).map(|entry| entry.value().clone())
     }
     fn input(&self, path: PathBuf) -> anyhow::Result<File> {
+        let path = path.canonicalize()?;
         Ok(match self.files.entry(path.clone()) {
             // If the file already exists in our cache then just return it.
             Entry::Occupied(entry) => *entry.get(),
@@ -104,8 +104,11 @@ impl Db for CodegenDatabase {
                 self._watch_file(&path)?;
                 let contents = std::fs::read_to_string(&path)
                     .with_context(|| format!("Failed to read {}", path.display()))?;
-                let input = Input::new(self, contents, self.root.clone());
-                *entry.insert(File::new(self, path, input))
+                *entry.insert(
+                    File::builder(path, contents, self.root.clone())
+                        .root_durability(salsa::Durability::HIGH)
+                        .new(self),
+                )
             }
         })
     }

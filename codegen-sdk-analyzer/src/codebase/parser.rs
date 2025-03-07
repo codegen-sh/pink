@@ -1,16 +1,16 @@
-use std::path::PathBuf;
-
-use codegen_sdk_ast::{Definitions, References, input::File};
+use codegen_sdk_ast::{Definitions, References};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
+use codegen_sdk_cst::File;
 use codegen_sdk_resolution::{Db, Scope};
+use indexmap::IndexSet;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use super::discovery::{FilesToParse, log_languages};
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
 pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>(
     db: &Database,
-    files: FilesToParse,
+    files: IndexSet<File>,
     name: &str,
     op: fn(&Database, File) -> T,
 ) -> Vec<T> {
@@ -20,12 +20,11 @@ pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>
     )
     .unwrap();
     let pg = multi.add(
-        ProgressBar::new(files.files(db).len() as u64)
+        ProgressBar::new(files.len() as u64)
             .with_style(style)
             .with_message(name.to_string()),
     );
     let inputs = files
-        .files(db)
         .into_iter()
         .map(|file| (&pg, file, op))
         .collect::<Vec<_>>();
@@ -52,8 +51,8 @@ pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>
 // }
 #[salsa::tracked]
 fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
-    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file| {
-        let file = parse_file(db, file);
+    let _: Vec<_> = execute_op_with_progress(db, files.files(db), "Parsing Files", |db, input| {
+        let file = parse_file(db, input.clone());
         if let Some(parsed) = file.file(db) {
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(parsed) = parsed {
@@ -64,7 +63,7 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
             if let ParsedFile::Python(parsed) = parsed {
                 parsed.definitions(db);
                 parsed.references(db);
-                parsed.compute_dependencies_query(db);
+                codegen_sdk_python::ast::dependencies(db, input);
             }
         }
         ()

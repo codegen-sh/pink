@@ -14,7 +14,6 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     use std::path::PathBuf;
     use codegen_sdk_cst::CSTLanguage;
     use std::collections::BTreeMap;
-    use std::sync::mpsc::Sender;
     use codegen_sdk_resolution::HasFile;
     use codegen_sdk_resolution::Parse;
     };

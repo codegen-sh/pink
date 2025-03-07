@@ -11,12 +11,16 @@ mod codebase;
 pub use codebase::CodebaseContext;
 mod database;
 mod parse;
-pub use database::Db;
+pub use database::{Db, files};
 pub use parse::Parse;
+pub use scope::Dependencies;
+mod name;
+pub use name::{FullyQualifiedName, HasId};
 #[delegatable_trait]
 pub trait HasFile<'db> {
     type File<'db1>;
     fn file(&self, db: &'db dyn Db) -> &'db Self::File<'db>;
     fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf;
 }
+
 pub use indexmap;

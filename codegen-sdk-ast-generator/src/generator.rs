@@ -72,8 +72,8 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
         pub id: codegen_sdk_common::FileNodeId<'db>,
     }
     impl<'db> codegen_sdk_resolution::Parse<'db> for #language_struct_name<'db> {
-        fn parse(db: &'db dyn salsa::Database, input: codegen_sdk_ast::input::File) -> &'db Self {
-            parse_query(db, input)
+        fn parse(db: &'db dyn salsa::Database, input: codegen_sdk_cst::File) -> &'db Self {
+            parse(db, input)
         }
     }
     // impl<'db> File for {language_struct_name}File<'db> {{
@@ -81,17 +81,13 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     //         &self.path(db)
     //     }}
     // }}
-    pub fn parse(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
+    #[salsa::tracked(return_ref)]
+    pub fn parse(db: &dyn salsa::Database, input: codegen_sdk_cst::File) -> #language_struct_name<'_> {
         log::debug!("Parsing {} file: {}", input.path(db).display(), #language_name_str);
-        let ast = crate::cst::parse_program_raw(db, input.contents(db), input.path(db).clone());
+        let ast = crate::cst::parse_program_raw(db, input);
         let file_id = codegen_sdk_common::FileNodeId::new(db, input.path(db).clone());
         #language_struct_name::new(db, ast, file_id)
     }
-    #[salsa::tracked(return_ref)]
-    pub fn parse_query(db: &dyn salsa::Database, input: codegen_sdk_ast::input::File) -> #language_struct_name<'_> {
-        parse(db, input)
-    }
-
     impl<'db> #language_struct_name<'db> {
         pub fn tree(&self, db: &'db dyn salsa::Database) -> &'db codegen_sdk_common::Tree<crate::cst::NodeTypes<'db>> {
             self.node(db).unwrap().tree(db)

@@ -12,4 +12,5 @@ codegen-sdk-common = { workspace = true }
 anyhow = { workspace = true }
 indicatif = { workspace = true }
 ambassador = { workspace = true }
+codegen-sdk-cst = { workspace = true }
 indexmap = "2"

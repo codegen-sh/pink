@@ -101,7 +101,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
         let variant: proc_macro2::TokenStream = quote! {
             #[cfg(feature = #name)]
             if #package_name::cst::#struct_name::should_parse(&file.path(db)).unwrap_or(false) {
-                let parsed = #package_name::ast::parse_query(db, file).clone();
+                let parsed = #package_name::ast::parse(db, file).clone();
                 return Parsed::new(
                     db,
                     FileNodeId::new(db, file.path(db)),

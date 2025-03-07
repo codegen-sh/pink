@@ -40,9 +40,9 @@ class Test:
     pass";
     let file_path = write_to_temp_file(content, &temp_dir);
     let db = codegen_sdk_cst::CSTDatabase::default();
-    let content = codegen_sdk_cst::Input::new(&db, content.to_string());
-    let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
-    let file = codegen_sdk_python::ast::parse_query(&db, input);
+    let root_path = temp_dir.path().to_path_buf();
+    let input = codegen_sdk_cst::File::new(&db, file_path, content, root_path);
+    let file = codegen_sdk_python::ast::parse(&db, input);
     assert_eq!(file.definitions(&db).classes(&db).len(), 1);
 }
 #[test_log::test]
@@ -54,7 +54,7 @@ def test():
     let file_path = write_to_temp_file(content, &temp_dir);
     let db = codegen_sdk_cst::CSTDatabase::default();
     let content = codegen_sdk_cst::Input::new(&db, content.to_string());
-    let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
+    let input = codegen_sdk_cst::File::new(&db, file_path, content);
     let file = codegen_sdk_python::ast::parse_query(&db, input);
     assert_eq!(file.definitions(&db).functions(&db).len(), 1);
 }
@@ -69,7 +69,7 @@ test()";
     let file_path = write_to_temp_file(content, &temp_dir);
     let db = codegen_sdk_cst::CSTDatabase::default();
     let content = codegen_sdk_cst::Input::new(&db, content.to_string());
-    let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
+    let input = codegen_sdk_cst::File::new(&db, file_path, content);
     let file = codegen_sdk_python::ast::parse_query(&db, input);
     assert_eq!(file.references(&db).calls(&db).len(), 1);
     let definitions = file.definitions(&db);
@@ -78,7 +78,7 @@ test()";
     let function = codegen_sdk_python::ast::Symbol::Function(function.clone().clone());
     assert_eq!(
         function
-            .references_for_scopes(&db, temp_dir.path().to_path_buf(), vec![*file], &file)
+            .references(&db, temp_dir.path().to_path_buf(), vec![*file], &file)
             .len(),
         1
     );
@@ -94,13 +94,13 @@ def test():
     let usage_file_content = "
 from filea import test
 test()";
+    let root_path = temp_dir.path().to_path_buf();
     let file_path = write_to_temp_file_with_name(content, &temp_dir, "filea.py");
     let usage_file_path = write_to_temp_file_with_name(usage_file_content, &temp_dir, "fileb.py");
     let db = codegen_sdk_cst::CSTDatabase::default();
-    let content = codegen_sdk_cst::Input::new(&db, content.to_string());
-    let usage_content = codegen_sdk_cst::Input::new(&db, usage_file_content.to_string());
-    let input = codegen_sdk_ast::input::File::new(&db, file_path, content);
-    let usage_input = codegen_sdk_ast::input::File::new(&db, usage_file_path, usage_content);
+    let input = codegen_sdk_cst::File::new(&db, file_path, content, root_path.clone());
+    let usage_input =
+        codegen_sdk_cst::File::new(&db, usage_file_path, usage_file_content, root_path.clone());
     let file = codegen_sdk_python::ast::parse_query(&db, input);
     let usage_file = codegen_sdk_python::ast::parse_query(&db, usage_input);
     assert_eq!(usage_file.references(&db).calls(&db).len(), 1);
@@ -111,26 +111,6 @@ test()";
     let imports = usage_file.definitions(&db).imports(&db);
     let import = imports.get("test").unwrap().first().unwrap();
     let import = codegen_sdk_python::ast::Symbol::Import(import.clone().clone());
-    assert_eq!(
-        import
-            .references_for_scopes(
-                &db,
-                temp_dir.path().to_path_buf(),
-                vec![*usage_file],
-                &usage_file
-            )
-            .len(),
-        1
-    );
-    assert_eq!(
-        function
-            .references_for_scopes(
-                &db,
-                temp_dir.path().to_path_buf(),
-                vec![*file, *usage_file],
-                &usage_file
-            )
-            .len(),
-        1
-    );
+    assert_eq!(import.references(&db,).len(), 1);
+    assert_eq!(function.references(&db,).len(), 1);
 }

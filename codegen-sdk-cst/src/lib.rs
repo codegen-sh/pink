@@ -10,7 +10,7 @@ use dashmap::{DashMap, mapref::entry::Entry};
 mod database;
 use codegen_sdk_common::{ParseError, traits::CSTNode};
 pub use database::CSTDatabase;
-pub use input::Input;
+pub use input::File;
 mod language;
 pub use codegen_sdk_common::language::LANGUAGES;
 pub use language::CSTLanguage;

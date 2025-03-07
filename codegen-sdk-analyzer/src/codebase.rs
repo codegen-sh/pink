@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use codegen_sdk_ast::{Input, input::File};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialization::Cache;
+use codegen_sdk_cst::File;
 use codegen_sdk_resolution::{CodebaseContext, Db};
 use discovery::FilesToParse;
 use notify_debouncer_mini::DebounceEventResult;
-use salsa::{AsDynDatabase, Database, Setter};
+use salsa::Setter;
 
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
 mod discovery;
@@ -46,8 +46,7 @@ impl Codebase {
                     // to kick in, just like any other update to a salsa input.
                     let contents = std::fs::read_to_string(path)
                         .with_context(|| format!("Failed to read file {}", event.path.display()))?;
-                    let input = Input::new(&self.db, contents, self.root.clone());
-                    file.set_contents(&mut self.db).to(input);
+                    file.set_content(&mut self.db).to(contents);
                 }
                 Err(e) => {
                     log::error!(
@@ -91,7 +90,12 @@ impl Codebase {
         name: &str,
         op: fn(&dyn Db, File) -> T,
     ) -> Vec<T> {
-        execute_op_with_progress(self._db(), self.discover(), name, op)
+        execute_op_with_progress(
+            self._db(),
+            codegen_sdk_resolution::files(self._db()),
+            name,
+            op,
+        )
     }
 }
 impl CodebaseContext for Codebase {
