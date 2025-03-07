@@ -39,6 +39,8 @@ syn = { workspace = true }
 prettyplease = { workspace = true }
 salsa = { workspace = true }
 indextree = { workspace = true }
+indexmap = { workspace = true }
+rustc-hash = "2.1.1"
 [dev-dependencies]
 test-log = { workspace = true }
 [features]

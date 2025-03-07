@@ -126,6 +126,7 @@ rstest = "0.25.0"
 indextree = "4.7.3"
 thiserror = "2.0.11"
 indexmap = "2"
+smallvec = "1.11.0"
 [profile.dev]
 # codegen-backend = "cranelift"
 # split-debuginfo = "unpacked"
@@ -158,5 +159,7 @@ lto = false
 name = "parse"
 harness = false
 required-features = ["stable"]
-[profile.release]
+
+[profile.profiling]
+inherits = "release"
 debug = true

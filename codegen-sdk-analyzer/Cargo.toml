@@ -34,7 +34,6 @@ crossbeam-channel = { workspace = true }
 glob = "0.3.2"
 rayon = { workspace = true }
 ambassador = { workspace = true }
-indexmap = {workspace = true}
 [features]
 python = [ "codegen-sdk-python"] # TODO: Add python support
 typescript = [ "codegen-sdk-typescript"]

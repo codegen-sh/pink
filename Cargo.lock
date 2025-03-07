@@ -331,7 +331,6 @@ dependencies = [
  "dashmap",
  "env_logger",
  "glob",
- "indexmap",
  "indicatif",
  "indicatif-log-bridge",
  "log",
@@ -386,6 +385,7 @@ dependencies = [
  "buildid",
  "bytes",
  "convert_case",
+ "indexmap",
  "indextree",
  "lazy_static",
  "mockall",
@@ -394,6 +394,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rkyv",
+ "rustc-hash",
  "salsa",
  "serde",
  "serde_json",
@@ -646,10 +647,10 @@ dependencies = [
  "codegen-sdk-ast",
  "codegen-sdk-common",
  "codegen-sdk-cst",
- "indexmap",
  "indicatif",
  "log",
  "salsa",
+ "smallvec",
 ]
 
 [[package]]

@@ -25,9 +25,9 @@ pub mod ast {
         id: codegen_sdk_common::FileNodeId<'db>,
         #[return_ref]
         #[tracked]
-        dependencies: codegen_sdk_resolution::indexmap::IndexMap<
+        dependencies: codegen_sdk_common::hash::FxIndexMap<
             codegen_sdk_resolution::FullyQualifiedName<'db>,
-            codegen_sdk_resolution::indexmap::IndexSet<crate::ast::Call<'db>>,
+            codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>,
         >,
     }
     impl<'db>
@@ -41,8 +41,7 @@ pub mod ast {
             &'db self,
             db: &'db dyn codegen_sdk_resolution::Db,
             key: &codegen_sdk_resolution::FullyQualifiedName<'db>,
-        ) -> Option<&'db codegen_sdk_resolution::indexmap::IndexSet<crate::ast::Call<'db>>>
-        {
+        ) -> Option<&'db codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>> {
             self.dependencies(db).get(key)
         }
     }
@@ -95,17 +94,17 @@ pub mod ast {
         fn compute_dependencies(
             self,
             db: &'db dyn codegen_sdk_resolution::Db,
-        ) -> codegen_sdk_resolution::indexmap::IndexMap<
+        ) -> codegen_sdk_common::hash::FxIndexMap<
             codegen_sdk_resolution::FullyQualifiedName<'db>,
-            codegen_sdk_resolution::indexmap::IndexSet<Self::ReferenceType>,
+            codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
         >
         where
             Self: 'db,
         {
-            let mut dependencies: codegen_sdk_resolution::indexmap::IndexMap<
+            let mut dependencies: codegen_sdk_common::hash::FxIndexMap<
                 codegen_sdk_resolution::FullyQualifiedName<'db>,
-                codegen_sdk_resolution::indexmap::IndexSet<Self::ReferenceType>,
-            > = codegen_sdk_resolution::indexmap::IndexMap::new();
+                codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
+            > = codegen_sdk_common::hash::FxIndexMap::default();
             for reference in self.resolvables(db) {
                 let resolved = reference.clone().resolve_type(db);
                 for resolved in resolved {

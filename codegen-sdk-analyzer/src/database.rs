@@ -72,7 +72,7 @@ impl salsa::Database for CodegenDatabase {
 }
 #[salsa::db]
 impl Db for CodegenDatabase {
-    fn files(&self) -> indexmap::IndexSet<codegen_sdk_cst::File> {
+    fn files(&self) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_cst::File> {
         self.files
             .iter()
             .map(|entry| entry.value().clone())

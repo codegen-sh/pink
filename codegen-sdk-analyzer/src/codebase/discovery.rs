@@ -9,7 +9,7 @@ use glob::glob;
 use crate::database::CodegenDatabase;
 #[salsa::input]
 pub struct FilesToParse {
-    pub files: indexmap::IndexSet<codegen_sdk_cst::File>,
+    pub files: codegen_sdk_common::hash::FxHashSet<codegen_sdk_cst::File>,
     pub root: PathBuf,
 }
 pub fn log_languages() {

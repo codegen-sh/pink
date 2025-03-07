@@ -1,10 +1,12 @@
 use std::hash::Hash;
 
-use indexmap::{IndexMap, IndexSet};
-
 use crate::{Db, FullyQualifiedName, HasId, ResolveType};
 pub trait Dependencies<'db, Type, ReferenceType>: Eq + Hash + Clone {
-    fn get(&'db self, db: &'db dyn Db, key: &Type) -> Option<&'db IndexSet<ReferenceType>>;
+    fn get(
+        &'db self,
+        db: &'db dyn Db,
+        key: &Type,
+    ) -> Option<&'db codegen_sdk_common::hash::FxIndexSet<ReferenceType>>;
 }
 // Resolve a given string name in a scope to a given type
 pub trait Scope<'db>: Sized {
@@ -18,12 +20,17 @@ pub trait Scope<'db>: Sized {
     fn compute_dependencies(
         self,
         db: &'db dyn Db,
-    ) -> IndexMap<FullyQualifiedName<'db>, IndexSet<Self::ReferenceType>>
+    ) -> codegen_sdk_common::hash::FxIndexMap<
+        FullyQualifiedName<'db>,
+        codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
+    >
     where
         Self: 'db,
     {
-        let mut dependencies: IndexMap<FullyQualifiedName<'db>, IndexSet<Self::ReferenceType>> =
-            IndexMap::new();
+        let mut dependencies: codegen_sdk_common::hash::FxIndexMap<
+            FullyQualifiedName<'db>,
+            codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
+        > = codegen_sdk_common::hash::FxIndexMap::default();
         for reference in self.resolvables(db) {
             let resolved = reference.clone().resolve_type(db);
             for resolved in resolved {

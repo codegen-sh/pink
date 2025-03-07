@@ -3,14 +3,13 @@ use codegen_sdk_ast::{Definitions, References};
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_cst::File;
 use codegen_sdk_resolution::{Db, Scope};
-use indexmap::IndexSet;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use super::discovery::{FilesToParse, log_languages};
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
 pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>(
     db: &Database,
-    files: IndexSet<File>,
+    files: codegen_sdk_common::hash::FxHashSet<File>,
     name: &str,
     op: fn(&Database, File) -> T,
 ) -> Vec<T> {

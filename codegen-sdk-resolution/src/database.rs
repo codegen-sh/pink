@@ -8,9 +8,9 @@ pub trait Db: salsa::Database + Send {
     fn get_file(&self, path: PathBuf) -> Option<File>;
     fn multi_progress(&self) -> &MultiProgress;
     fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()>;
-    fn files(&self) -> indexmap::IndexSet<File>;
+    fn files(&self) -> codegen_sdk_common::hash::FxHashSet<File>;
 }
 #[salsa::tracked]
-pub fn files(db: &dyn Db) -> indexmap::IndexSet<codegen_sdk_cst::File> {
+pub fn files(db: &dyn Db) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_cst::File> {
     db.files()
 }
