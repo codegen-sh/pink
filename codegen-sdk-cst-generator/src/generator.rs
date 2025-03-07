@@ -53,6 +53,7 @@ fn get_parser(language: &Language) -> TokenStream {
             #[tracked]
             #[return_ref]
             #[no_clone]
+            #[no_eq]
             pub tree: Arc<Tree<NodeTypes<'db>>>,
             pub program: indextree::NodeId,
         }

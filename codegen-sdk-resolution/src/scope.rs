@@ -20,17 +20,17 @@ pub trait Scope<'db>: Sized {
     fn compute_dependencies(
         self,
         db: &'db dyn Db,
-    ) -> codegen_sdk_common::hash::FxIndexMap<
+    ) -> codegen_sdk_common::hash::FxHashMap<
         FullyQualifiedName<'db>,
         codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
     >
     where
         Self: 'db,
     {
-        let mut dependencies: codegen_sdk_common::hash::FxIndexMap<
+        let mut dependencies: codegen_sdk_common::hash::FxHashMap<
             FullyQualifiedName<'db>,
             codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
-        > = codegen_sdk_common::hash::FxIndexMap::default();
+        > = codegen_sdk_common::hash::FxHashMap::default();
         for reference in self.resolvables(db) {
             let resolved = reference.clone().resolve_type(db);
             for resolved in resolved {

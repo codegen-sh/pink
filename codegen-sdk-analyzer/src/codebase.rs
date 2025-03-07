@@ -88,12 +88,14 @@ impl Codebase {
     pub fn execute_op_with_progress<T: Send + Sync>(
         &self,
         name: &str,
-        op: fn(&dyn Db, File) -> T,
+        parallel: bool,
+        op: fn(&dyn Db, codegen_sdk_common::FileNodeId<'_>) -> T,
     ) -> Vec<T> {
         execute_op_with_progress(
             self._db(),
             codegen_sdk_resolution::files(self._db()),
             name,
+            parallel,
             op,
         )
     }
@@ -118,8 +120,9 @@ impl CodebaseContext for Codebase {
     fn get_file<'a>(&'a self, path: PathBuf) -> Option<&'a Self::File<'a>> {
         if let Ok(path) = path.canonicalize() {
             let file = self.db.files.get(&path);
-            if let Some(file) = file {
-                return parse_file(&self.db, file.clone()).file(&self.db).as_ref();
+            if let Some(_) = file {
+                let file_id = codegen_sdk_common::FileNodeId::new(&self.db, path);
+                return parse_file(&self.db, file_id).file(&self.db).as_ref();
             }
         }
         None

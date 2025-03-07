@@ -20,5 +20,5 @@ pub use name::{FullyQualifiedName, HasId};
 pub trait HasFile<'db> {
     type File<'db1>;
     fn file(&self, db: &'db dyn Db) -> &'db Self::File<'db>;
-    fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf;
+    fn root_path(&self, db: &'db dyn Db) -> PathBuf;
 }

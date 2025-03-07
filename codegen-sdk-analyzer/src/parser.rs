@@ -14,7 +14,10 @@ pub struct Parsed<'db> {
     pub file: Option<ParsedFile<'db>>,
 }
 #[salsa::tracked(return_ref)]
-pub fn parse_file(db: &dyn salsa::Database, file: codegen_sdk_cst::File) -> Parsed<'_> {
+pub fn parse_file<'db>(
+    db: &'db dyn codegen_sdk_resolution::Db,
+    file: codegen_sdk_common::FileNodeId<'db>,
+) -> Parsed<'db> {
     parse_language!();
-    Parsed::new(db, FileNodeId::new(db, file.path(db)), None)
+    Parsed::new(db, file, None)
 }

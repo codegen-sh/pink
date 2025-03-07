@@ -662,7 +662,7 @@ impl<'a> Query<'a> {
         let symbol_name = self.symbol_name();
         return quote! {
             let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, node.file_id(),#name.source());
-            let symbol = #symbol_name::new(db, fully_qualified_name, id, node.clone(), #(#args.clone().into()),*);
+            let symbol = #symbol_name::new(db, fully_qualified_name, id, #(#args.clone().into()),*);
             #to_append.entry(#name.source()).or_default().push(symbol);
         };
     }
@@ -913,6 +913,8 @@ impl<'a> Query<'a> {
             }
             let name_ident = format_ident!("{}", name);
             fields.push(parse_quote!(
+                #[tracked]
+                #[return_ref]
                 pub #name_ident: crate::cst::#type_name<'db>
             ));
         }

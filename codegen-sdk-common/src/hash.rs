@@ -6,7 +6,8 @@ pub type FxIndexSet<K> = indexmap::IndexSet<K, FxHasher>;
 pub type FxIndexMap<K, V> = indexmap::IndexMap<K, V, FxHasher>;
 // pub type FxDashMap<K, V> = dashmap::DashMap<K, V, FxHasher>;
 // pub type FxLinkedHashSet<K> = hashlink::LinkedHashSet<K, FxHasher>;
-pub type FxHashSet<K> = std::collections::HashSet<K, FxHasher>;
+pub type FxHashSet<K> = hashbrown::HashSet<K, FxHasher>;
+pub type FxHashMap<K, V> = hashbrown::HashMap<K, V, FxHasher>;
 pub fn hash<T: Hash>(t: &T) -> u64 {
     FxHasher::default().hash_one(t)
 }

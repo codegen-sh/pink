@@ -20,7 +20,7 @@ use crate::progress::get_multi_progress;
 // Basic Database implementation for Query generation. This is not used for anything else.
 pub struct CodegenDatabase {
     storage: salsa::Storage<Self>,
-    pub files: DashMap<PathBuf, File>,
+    pub files: Arc<DashMap<PathBuf, File>>,
     dirs: Vec<PathBuf>,
     multi_progress: MultiProgress,
     file_watcher: Arc<Mutex<Debouncer<RecommendedWatcher>>>,
@@ -41,7 +41,7 @@ impl CodegenDatabase {
             file_watcher: get_watcher(tx),
             storage: salsa::Storage::default(),
             multi_progress,
-            files: DashMap::new(),
+            files: Arc::new(DashMap::new()),
             dirs: Vec::new(),
             root,
         }
@@ -72,10 +72,10 @@ impl salsa::Database for CodegenDatabase {
 }
 #[salsa::db]
 impl Db for CodegenDatabase {
-    fn files(&self) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_cst::File> {
+    fn files(&self) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_common::FileNodeId<'_>> {
         self.files
             .iter()
-            .map(|entry| entry.value().clone())
+            .map(|entry| codegen_sdk_common::FileNodeId::new(self, entry.key().clone()))
             .collect()
     }
     fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()> {

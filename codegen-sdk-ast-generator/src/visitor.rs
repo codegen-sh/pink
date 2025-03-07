@@ -84,24 +84,30 @@ pub fn generate_visitor<'db>(
                 _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
                 #[id]
                 node_id: indextree::NodeId,
-                #[tracked]
-                #[return_ref]
-                pub node: crate::cst::#type_name<'db>,
+                // #[tracked]
+                // #[return_ref]
+                // pub node: crate::cst::#type_name<'db>,
                 #(#fields),*
+            }
+            impl<'db> #variant<'db> {
+                pub fn node(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db crate::cst::#type_name<'db> {
+                    let file = self.file(db);
+                    let tree = file.tree(db);
+                    tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+                }
             }
             impl<'db> codegen_sdk_resolution::HasFile<'db> for #variant<'db> {
                 type File<'db1> = #language_struct<'db1>;
                 fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
-                    let path = self.node(db).id().file(db).path(db);
-                    let input = db.get_file(path).unwrap();
-                    parse(db, input)
+                    let path = self._fully_qualified_name(db).path(db);
+                    parse(db, path)
                 }
-                fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
                     self.node(db).id().root(db).path(db)
                 }
             }
             impl<'db> codegen_sdk_resolution::HasId<'db> for #variant<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn codegen_sdk_resolution::Db) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
                     self._fully_qualified_name(db)
                 }
             }
@@ -125,14 +131,14 @@ pub fn generate_visitor<'db>(
                         #(Self::#symbol_names(symbol) => symbol.file(db),)*
                     }
                 }
-                fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
                     }
                 }
             }
             impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn codegen_sdk_resolution::Db) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
                     }

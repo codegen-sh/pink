@@ -385,6 +385,7 @@ dependencies = [
  "buildid",
  "bytes",
  "convert_case",
+ "hashbrown 0.15.2",
  "indexmap",
  "indextree",
  "lazy_static",
@@ -1228,6 +1229,7 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash",
+ "rayon",
 ]
 
 [[package]]
