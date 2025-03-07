@@ -91,9 +91,8 @@ pub fn generate_visitor<'db>(
                 type File<'db1> = #language_struct<'db1>;
                 fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
                     let path = self.node(db).id().file(db).path(db);
-                    let root = self.root_path(db);
                     let input = db.input(path).unwrap();
-                    parse_query(db, input, root)
+                    parse_query(db, input)
                 }
                 fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf {
                     self.node(db).id().root(db).path(db)

@@ -56,7 +56,7 @@ fn get_parser(language: &Language) -> TokenStream {
             pub tree: Tree<NodeTypes<'db>>,
             pub program: indextree::NodeId,
         }
-        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::Input, path: PathBuf, root: PathBuf) -> Option<Parsed<'db>> {
+        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::Input, path: PathBuf) -> Option<Parsed<'db>> {
             let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
             let tree = codegen_sdk_common::language::#language_name::#language_struct_name.parse_tree_sitter(&input.content(db));
             match tree {
@@ -65,7 +65,7 @@ fn get_parser(language: &Language) -> TokenStream {
                         ParseError::SyntaxError.report(db);
                         None
                     } else {
-                        let mut context = ParseContext::new(db, path, root, buffer);
+                        let mut context = ParseContext::new(db, path, input.root(db), buffer);
                         let root_id = #program_id::orphaned(&mut context, tree.root_node())
                         .map_or_else(|e| {
                             e.report(db);
@@ -88,7 +88,7 @@ fn get_parser(language: &Language) -> TokenStream {
         }
         #[salsa::tracked(return_ref)]
         pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
-            let raw = parse_program_raw(db, input, std::path::PathBuf::new(), std::path::PathBuf::new());
+            let raw = parse_program_raw(db, input, std::path::PathBuf::new());
             if let Some(parsed) = raw {
                 parsed
             } else {
@@ -103,7 +103,7 @@ fn get_parser(language: &Language) -> TokenStream {
                 &codegen_sdk_common::language::#language_name::#language_struct_name
             }
             fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>, indextree::NodeId)> {
-                let input = codegen_sdk_cst::Input::new(db, content);
+                let input = codegen_sdk_cst::Input::new(db, content, std::path::PathBuf::new());
                 let parsed = parse_program(db, input);
                 let program_id = parsed.program(db);
                 let tree = parsed.tree(db);

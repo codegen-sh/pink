@@ -13,8 +13,8 @@ struct Args {
     input: String,
 }
 fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize, usize, usize)> {
-    codebase.execute_op_with_progress("Getting Usages", |db, file, root| {
-        if let Some(parsed) = parse_file(db, file, root).file(db) {
+    codebase.execute_op_with_progress("Getting Usages", |db, file| {
+        if let Some(parsed) = parse_file(db, file).file(db) {
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(file) = parsed {
                 let definitions = file.definitions(db);

@@ -12,7 +12,7 @@ pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>
     db: &Database,
     files: FilesToParse,
     name: &str,
-    op: fn(&Database, File, PathBuf) -> T,
+    op: fn(&Database, File) -> T,
 ) -> Vec<T> {
     let multi = db.multi_progress();
     let style = ProgressStyle::with_template(
@@ -27,16 +27,15 @@ pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>
     let inputs = files
         .files(db)
         .into_iter()
-        .map(|file| (&pg, file, files.root(db).clone(), op))
+        .map(|file| (&pg, file, op))
         .collect::<Vec<_>>();
     let results: Vec<T> = salsa::par_map(db, inputs, move |db, input| {
-        let (pg, file, root, op) = input;
+        let (pg, file, op) = input;
         let res = op(
             db,
             #[cfg(feature = "serialization")]
             &cache,
             file,
-            root,
         );
         pg.inc(1);
         res
@@ -53,8 +52,8 @@ pub fn execute_op_with_progress<Database: Db + ?Sized + 'static, T: Send + Sync>
 // }
 #[salsa::tracked]
 fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
-    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file, root| {
-        let file = parse_file(db, file, root);
+    let _: Vec<_> = execute_op_with_progress(db, files, "Parsing Files", |db, file| {
+        let file = parse_file(db, file);
         if let Some(parsed) = file.file(db) {
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(parsed) = parsed {
@@ -65,7 +64,7 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
             if let ParsedFile::Python(parsed) = parsed {
                 parsed.definitions(db);
                 parsed.references(db);
-                parsed.compute_dependencies(db);
+                parsed.compute_dependencies_query(db);
             }
         }
         ()

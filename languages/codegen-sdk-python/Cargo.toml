@@ -18,7 +18,6 @@ log = { workspace = true }
 codegen-sdk-ast = { workspace = true }
 codegen-sdk-resolution = { workspace = true }
 memchr = { version = "2" }
-
 [build-dependencies]
 codegen-sdk-cst-generator = { workspace = true }
 codegen-sdk-ast-generator = { workspace = true }

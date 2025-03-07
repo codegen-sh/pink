@@ -19,3 +19,4 @@ pub trait HasFile<'db> {
     fn file(&self, db: &'db dyn Db) -> &'db Self::File<'db>;
     fn root_path(&self, db: &'db dyn salsa::Database) -> PathBuf;
 }
+pub use indexmap;

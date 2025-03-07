@@ -56,6 +56,14 @@ pub mod ast {
             }
             results
         }
+        #[salsa::tracked(return_ref)]
+        fn compute_dependencies_query(
+            self,
+            db: &'db dyn codegen_sdk_resolution::Db,
+        ) -> codegen_sdk_resolution::indexmap::IndexMap<Self::Type, Vec<Self::ReferenceType>>
+        {
+            self.compute_dependencies(db)
+        }
     }
     #[salsa::tracked]
     impl<'db> ResolveType<'db> for crate::ast::Import<'db> {
@@ -65,7 +73,7 @@ pub mod ast {
             let target_path = self.resolve_import(db);
             if let Some(target_path) = target_path {
                 if let Some(input) = db.get_file(target_path) {
-                    return PythonFile::parse(db, input, self.root_path(db))
+                    return PythonFile::parse(db, input)
                         .resolve(db, self.name(db).source())
                         .to_vec();
                 }

@@ -117,7 +117,7 @@ insta = "1.42.1"
 prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro", "full"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
-salsa = {version = "0.18.0"}
+salsa = {git = "https://github.com/salsa-rs/salsa", branch = "master"}
 subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
@@ -125,7 +125,7 @@ crossbeam-channel = "0.5.11"
 rstest = "0.25.0"
 indextree = "4.7.3"
 thiserror = "2.0.11"
-
+indexmap = "2"
 [profile.dev]
 # codegen-backend = "cranelift"
 # split-debuginfo = "unpacked"

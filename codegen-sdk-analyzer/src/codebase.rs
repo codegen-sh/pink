@@ -24,8 +24,9 @@ pub struct Codebase {
 
 impl Codebase {
     pub fn new(root: PathBuf) -> Self {
+        let root = root.canonicalize().unwrap();
         let (tx, rx) = crossbeam_channel::unbounded();
-        let mut db = CodegenDatabase::new(tx);
+        let mut db = CodegenDatabase::new(tx, root.clone());
         db.watch_dir(PathBuf::from(&root)).unwrap();
         let codebase = Self { db, root, rx };
         codebase.sync();
@@ -45,7 +46,7 @@ impl Codebase {
                     // to kick in, just like any other update to a salsa input.
                     let contents = std::fs::read_to_string(path)
                         .with_context(|| format!("Failed to read file {}", event.path.display()))?;
-                    let input = Input::new(&self.db, contents);
+                    let input = Input::new(&self.db, contents, self.root.clone());
                     file.set_contents(&mut self.db).to(input);
                 }
                 Err(e) => {
@@ -88,7 +89,7 @@ impl Codebase {
     pub fn execute_op_with_progress<T: Send + Sync>(
         &self,
         name: &str,
-        op: fn(&dyn Db, File, PathBuf) -> T,
+        op: fn(&dyn Db, File) -> T,
     ) -> Vec<T> {
         execute_op_with_progress(self._db(), self.discover(), name, op)
     }
@@ -114,9 +115,7 @@ impl CodebaseContext for Codebase {
         if let Ok(path) = path.canonicalize() {
             let file = self.db.files.get(&path);
             if let Some(file) = file {
-                return parse_file(&self.db, file.clone(), self.root.clone())
-                    .file(&self.db)
-                    .as_ref();
+                return parse_file(&self.db, file.clone()).file(&self.db).as_ref();
             }
         }
         None

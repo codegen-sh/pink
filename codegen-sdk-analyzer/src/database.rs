@@ -25,6 +25,7 @@ pub struct CodegenDatabase {
     dirs: Vec<PathBuf>,
     multi_progress: MultiProgress,
     file_watcher: Arc<Mutex<Debouncer<RecommendedWatcher>>>,
+    root: PathBuf,
 }
 fn get_watcher(
     tx: crossbeam_channel::Sender<DebounceEventResult>,
@@ -35,7 +36,7 @@ fn get_watcher(
     Arc::new(Mutex::new(new_debouncer_opt(config, tx).unwrap()))
 }
 impl CodegenDatabase {
-    pub fn new(tx: crossbeam_channel::Sender<DebounceEventResult>) -> Self {
+    pub fn new(tx: crossbeam_channel::Sender<DebounceEventResult>, root: PathBuf) -> Self {
         let multi_progress = get_multi_progress();
         Self {
             file_watcher: get_watcher(tx),
@@ -43,6 +44,7 @@ impl CodegenDatabase {
             multi_progress,
             files: DashMap::new(),
             dirs: Vec::new(),
+            root,
         }
     }
     fn _watch_file(&self, path: &PathBuf) -> anyhow::Result<()> {
@@ -102,7 +104,7 @@ impl Db for CodegenDatabase {
                 self._watch_file(&path)?;
                 let contents = std::fs::read_to_string(&path)
                     .with_context(|| format!("Failed to read {}", path.display()))?;
-                let input = Input::new(self, contents);
+                let input = Input::new(self, contents, self.root.clone());
                 *entry.insert(File::new(self, path, input))
             }
         })
