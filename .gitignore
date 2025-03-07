@@ -68,3 +68,4 @@ tests/integration/verified_codemods/codemod_data/repo_commits.json
 target/*
 .benchmarks/*
 **.snap.new
+flamegraph.svg

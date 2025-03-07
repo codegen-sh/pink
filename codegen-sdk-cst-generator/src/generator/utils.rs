@@ -65,6 +65,20 @@ pub fn get_from_enum_to_ref(enum_name: &str, variant_names: &Vec<Ident>) -> Toke
                 node.as_ref().into()
             }
         }
+        impl<'db3> From<#name_ref<'db3>> for #name<'db3> {
+            fn from(node: #name_ref<'db3>) -> Self {
+                match node {
+                    #(#name_ref::#variant_names(data) => Self::#variant_names((*data).clone()),)*
+                }
+            }
+        }
+        impl<'db3> From<&'db3 #name_ref<'db3>> for #name<'db3> {
+            fn from(node: &'db3 #name_ref<'db3>) -> Self {
+                match node {
+                    #(#name_ref::#variant_names(data) => Self::#variant_names((*data).clone()),)*
+                }
+            }
+        }
         #(
             impl<'db3> TryFrom<#name_ref<'db3>> for &'db3 #variant_names<'db3> {
                 type Error = codegen_sdk_cst::ConversionError;

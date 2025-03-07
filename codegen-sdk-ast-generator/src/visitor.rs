@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use codegen_sdk_common::Language;
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 use syn::parse_quote_spanned;
 
 use super::query::Query;
@@ -24,9 +24,11 @@ pub fn generate_visitor<'db>(
     let mut types = Vec::new();
     let mut variants = BTreeSet::new();
     let mut enter_methods = BTreeMap::new();
+    let mut symbol_names = Vec::new();
     for query in queries {
         names.push(query.executor_id());
         types.push(format_ident!("{}", query.struct_name()));
+        symbol_names.push(query.symbol_name());
         for variant in query.struct_variants() {
             variants.insert(format_ident!("{}", variant));
             enter_methods
@@ -36,7 +38,7 @@ pub fn generate_visitor<'db>(
         }
     }
     let mut methods: Vec<syn::Arm> = Vec::new();
-    for (variant, queries) in enter_methods {
+    for (variant, queries) in enter_methods.iter() {
         let mut matchers = TokenStream::new();
         let struct_name = format_ident!("{}", variant);
         for query in queries {
@@ -49,14 +51,107 @@ pub fn generate_visitor<'db>(
             }
         });
     }
+
+    let symbol_name = if name == "definition" {
+        format_ident!("Symbol")
+    } else {
+        format_ident!("Reference")
+    };
     let maps = quote! {
         #(
-            let mut #names: BTreeMap<String,Vec<indextree::NodeId>> = BTreeMap::new();
+            let mut #names: BTreeMap<String,Vec<#symbol_names<'db>>> = BTreeMap::new();
         )*
     };
     let constructor = quote! {
         Self::new(db, #(#names),*)
 
+    };
+    let mut defs = Vec::new();
+    let language_struct = format_ident!("{}File", language.struct_name());
+    for (variant, type_name) in symbol_names.iter().zip(types.iter()) {
+        let query = enter_methods
+            .get(&type_name.to_string())
+            .unwrap()
+            .first()
+            .unwrap();
+        let fields = query.struct_fields();
+        let span = Span::mixed_site();
+        defs.push(quote_spanned! {
+            span =>
+            #[salsa::tracked]
+            pub struct #variant<'db> {
+                #[id]
+                _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+                #[id]
+                node_id: indextree::NodeId,
+                // #[tracked]
+                // #[return_ref]
+                // pub node: crate::cst::#type_name<'db>,
+                #(#fields),*
+            }
+            impl<'db> #variant<'db> {
+                pub fn node(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db crate::cst::#type_name<'db> {
+                    let file = self.file(db);
+                    let tree = file.tree(db);
+                    tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+                }
+            }
+            impl<'db> codegen_sdk_resolution::HasFile<'db> for #variant<'db> {
+                type File<'db1> = #language_struct<'db1>;
+                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+                    let path = self._fully_qualified_name(db).path(db);
+                    parse(db, path)
+                }
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+                    self.node(db).id().root(db).path(db)
+                }
+            }
+            impl<'db> codegen_sdk_resolution::HasId<'db> for #variant<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                    self._fully_qualified_name(db)
+                }
+            }
+        });
+    }
+    let symbol = if defs.len() > 0 {
+        quote! {
+                #(
+                    #defs
+                )*
+            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            pub enum #symbol_name<'db> {
+                #(
+                    #symbol_names(#symbol_names<'db>),
+                )*
+            }
+            impl<'db> codegen_sdk_resolution::HasFile<'db> for #symbol_name<'db> {
+                type File<'db1> = #language_struct<'db1>;
+                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.file(db),)*
+                    }
+                }
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
+                    }
+                }
+            }
+            impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
+                    }
+                }
+            }
+        }
+    } else {
+        quote! {
+            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            pub enum #symbol_name<'db> {
+                _Phantom(std::marker::PhantomData<&'db ()>)
+            }
+        }
     };
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
     let output_constructor = quote! {
@@ -76,11 +171,9 @@ pub fn generate_visitor<'db>(
             #constructor
         }
     };
-    let underscored_names = names
-        .iter()
-        .map(|name| format_ident!("_{}", name))
-        .collect::<Vec<_>>();
+
     quote! {
+        #symbol
         // Three lifetimes:
         // db: the lifetime of the database
         // db1: the lifetime of the visitor executing per-node
@@ -89,17 +182,11 @@ pub fn generate_visitor<'db>(
         pub struct #name<'db> {
             #(
                 #[return_ref]
-                pub #underscored_names: BTreeMap<String, Vec<indextree::NodeId>>,
+                pub #names: BTreeMap<String, Vec<#symbol_names<'db>>>,
             )*
         }
         impl<'db> #name<'db> {
             #output_constructor
-            #(
-                pub fn #names(&self, db: &'db dyn salsa::Database, tree: &'db codegen_sdk_common::tree::Tree<crate::cst::NodeTypes<'db>>) -> BTreeMap<String, Vec<&'db crate::cst::#types<'db>>> {
-                    self.#underscored_names(db).iter().map(|(k, v)|
-                    (k.clone(), v.iter().map(|id| tree.get(id).unwrap().as_ref().try_into().unwrap()).collect())).collect()
-                }
-            )*
         }
     }
 }

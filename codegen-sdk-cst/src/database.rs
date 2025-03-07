@@ -2,7 +2,7 @@ use std::{any::Any, path::PathBuf, sync::Arc};
 
 use dashmap::{DashMap, mapref::entry::Entry};
 
-use crate::Input;
+use crate::File;
 #[salsa::db]
 #[derive(Default, Clone)]
 // Basic Database implementation for Query generation. This is not used for anything else.

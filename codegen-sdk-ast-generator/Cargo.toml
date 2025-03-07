@@ -16,6 +16,7 @@ codegen-sdk-ts_query = { workspace = true }
 convert_case = { workspace = true }
 salsa = { workspace = true }
 syn = { workspace = true }
+indextree = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 insta = { workspace = true }

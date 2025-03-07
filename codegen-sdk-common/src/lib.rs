@@ -1,6 +1,7 @@
 #![feature(error_generic_member_access)]
 #![feature(trivial_bounds)]
 mod errors;
+pub mod hash;
 pub mod language;
 pub mod traits;
 pub mod utils;

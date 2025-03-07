@@ -224,7 +224,7 @@ impl<'a> Node<'a> {
                 fn from_node(context: &mut ParseContext<'db, NodeTypes<'db>>, node: tree_sitter::Node) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
                     let start_position = Point::from(context.db, node.start_position());
                     let end_position = Point::from(context.db, node.end_position());
-                    let id = CSTNodeId::new(context.db, context.file_id, node.id());
+                    let id = CSTNodeId::new(context.db, context.file_id, node.id(), context.root);
                     let mut ids = Vec::new();
                     #(#constructor_fields)*
                     Ok((Self {

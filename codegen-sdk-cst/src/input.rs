@@ -1,5 +1,10 @@
 use std::path::PathBuf;
 #[salsa::input]
-pub struct Input {
+pub struct File {
+    #[id]
+    pub path: PathBuf,
+    #[return_ref]
     pub content: String,
+    #[id]
+    pub root: PathBuf,
 }

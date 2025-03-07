@@ -14,6 +14,7 @@ subenum = {workspace = true}
 bytes = { workspace = true }
 codegen-sdk-cst = { workspace = true }
 codegen-sdk-ast = { workspace = true }
+codegen-sdk-resolution = { workspace = true }
 log = { workspace = true }
 [build-dependencies]
 codegen-sdk-cst-generator = { workspace = true }
