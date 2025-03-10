@@ -47,7 +47,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
-          manylinux: auto
+          manylinux: manylinux_2_34_${{matrix.platform.target}}
           working-directory: bindings/python
           rust-toolchain: nightly
       - name: Upload wheels
@@ -111,6 +111,7 @@ jobs:
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           working-directory: bindings/python
+          rust-toolchain: nightly
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
