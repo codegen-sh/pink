@@ -5,39 +5,157 @@ expression: "codegen_sdk_common::generator::format_code_string(&visitor.to_strin
 #[salsa::tracked]
 pub struct Class<'db> {
     #[id]
+    _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+    #[id]
     node_id: indextree::NodeId,
     #[tracked]
     #[return_ref]
-    pub node: crate::cst::ClassDefinition<'db>,
     pub name: crate::cst::Identifier<'db>,
+}
+impl<'db> Class<'db> {
+    pub fn node(
+        &self,
+        db: &'db dyn codegen_sdk_resolution::Db,
+    ) -> &'db crate::cst::ClassDefinition<'db> {
+        let file = self.file(db);
+        let tree = file.tree(db);
+        tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+    }
+}
+impl<'db> codegen_sdk_resolution::HasFile<'db> for Class<'db> {
+    type File<'db1> = PythonFile<'db1>;
+    fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+        let path = self._fully_qualified_name(db).path(db);
+        parse(db, path)
+    }
+    fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+        self.node(db).id().root(db).path(db)
+    }
+}
+impl<'db> codegen_sdk_resolution::HasId<'db> for Class<'db> {
+    fn fully_qualified_name(
+        &self,
+        db: &'db dyn salsa::Database,
+    ) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+        self._fully_qualified_name(db)
+    }
 }
 #[salsa::tracked]
 pub struct Constant<'db> {
     #[id]
+    _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+    #[id]
     node_id: indextree::NodeId,
     #[tracked]
     #[return_ref]
-    pub node: crate::cst::Module<'db>,
     pub name: crate::cst::Identifier<'db>,
+}
+impl<'db> Constant<'db> {
+    pub fn node(
+        &self,
+        db: &'db dyn codegen_sdk_resolution::Db,
+    ) -> &'db crate::cst::Module<'db> {
+        let file = self.file(db);
+        let tree = file.tree(db);
+        tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+    }
+}
+impl<'db> codegen_sdk_resolution::HasFile<'db> for Constant<'db> {
+    type File<'db1> = PythonFile<'db1>;
+    fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+        let path = self._fully_qualified_name(db).path(db);
+        parse(db, path)
+    }
+    fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+        self.node(db).id().root(db).path(db)
+    }
+}
+impl<'db> codegen_sdk_resolution::HasId<'db> for Constant<'db> {
+    fn fully_qualified_name(
+        &self,
+        db: &'db dyn salsa::Database,
+    ) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+        self._fully_qualified_name(db)
+    }
 }
 #[salsa::tracked]
 pub struct Function<'db> {
     #[id]
-    node_id: indextree::NodeId,
-    #[tracked]
-    #[return_ref]
-    pub node: crate::cst::FunctionDefinition<'db>,
-    pub name: crate::cst::Identifier<'db>,
-}
-#[salsa::tracked]
-pub struct Import<'db> {
+    _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
     #[id]
     node_id: indextree::NodeId,
     #[tracked]
     #[return_ref]
-    pub node: crate::cst::ImportFromStatement<'db>,
+    pub name: crate::cst::Identifier<'db>,
+}
+impl<'db> Function<'db> {
+    pub fn node(
+        &self,
+        db: &'db dyn codegen_sdk_resolution::Db,
+    ) -> &'db crate::cst::FunctionDefinition<'db> {
+        let file = self.file(db);
+        let tree = file.tree(db);
+        tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+    }
+}
+impl<'db> codegen_sdk_resolution::HasFile<'db> for Function<'db> {
+    type File<'db1> = PythonFile<'db1>;
+    fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+        let path = self._fully_qualified_name(db).path(db);
+        parse(db, path)
+    }
+    fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+        self.node(db).id().root(db).path(db)
+    }
+}
+impl<'db> codegen_sdk_resolution::HasId<'db> for Function<'db> {
+    fn fully_qualified_name(
+        &self,
+        db: &'db dyn salsa::Database,
+    ) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+        self._fully_qualified_name(db)
+    }
+}
+#[salsa::tracked]
+pub struct Import<'db> {
+    #[id]
+    _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+    #[id]
+    node_id: indextree::NodeId,
+    #[tracked]
+    #[return_ref]
     pub module: crate::cst::DottedName<'db>,
+    #[tracked]
+    #[return_ref]
     pub name: crate::cst::DottedName<'db>,
+}
+impl<'db> Import<'db> {
+    pub fn node(
+        &self,
+        db: &'db dyn codegen_sdk_resolution::Db,
+    ) -> &'db crate::cst::ImportFromStatement<'db> {
+        let file = self.file(db);
+        let tree = file.tree(db);
+        tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+    }
+}
+impl<'db> codegen_sdk_resolution::HasFile<'db> for Import<'db> {
+    type File<'db1> = PythonFile<'db1>;
+    fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+        let path = self._fully_qualified_name(db).path(db);
+        parse(db, path)
+    }
+    fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+        self.node(db).id().root(db).path(db)
+    }
+}
+impl<'db> codegen_sdk_resolution::HasId<'db> for Import<'db> {
+    fn fully_qualified_name(
+        &self,
+        db: &'db dyn salsa::Database,
+    ) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+        self._fully_qualified_name(db)
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
 pub enum Symbol<'db> {
@@ -45,6 +163,38 @@ pub enum Symbol<'db> {
     Constant(Constant<'db>),
     Function(Function<'db>),
     Import(Import<'db>),
+}
+impl<'db> codegen_sdk_resolution::HasFile<'db> for Symbol<'db> {
+    type File<'db1> = PythonFile<'db1>;
+    fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+        match self {
+            Self::Class(symbol) => symbol.file(db),
+            Self::Constant(symbol) => symbol.file(db),
+            Self::Function(symbol) => symbol.file(db),
+            Self::Import(symbol) => symbol.file(db),
+        }
+    }
+    fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+        match self {
+            Self::Class(symbol) => symbol.root_path(db),
+            Self::Constant(symbol) => symbol.root_path(db),
+            Self::Function(symbol) => symbol.root_path(db),
+            Self::Import(symbol) => symbol.root_path(db),
+        }
+    }
+}
+impl<'db> codegen_sdk_resolution::HasId<'db> for Symbol<'db> {
+    fn fully_qualified_name(
+        &self,
+        db: &'db dyn salsa::Database,
+    ) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+        match self {
+            Self::Class(symbol) => symbol.fully_qualified_name(db),
+            Self::Constant(symbol) => symbol.fully_qualified_name(db),
+            Self::Function(symbol) => symbol.fully_qualified_name(db),
+            Self::Import(symbol) => symbol.fully_qualified_name(db),
+        }
+    }
 }
 #[salsa::tracked]
 pub struct Definitions<'db> {
@@ -73,14 +223,34 @@ impl<'db> Definitions<'db> {
                     ///Code for query: (class_definition   name: (identifier) @name) @definition.class
                     ///Code for field: name: (identifier) @name
                     let name = node.name(tree);
-                    let symbol = Class::new(db, id, node.clone(), name.clone());
+                    let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(
+                        db,
+                        node.file_id(),
+                        name.source(),
+                    );
+                    let symbol = Class::new(
+                        db,
+                        fully_qualified_name,
+                        id,
+                        name.clone().into(),
+                    );
                     classes.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::FunctionDefinition(node) => {
                     ///Code for query: (function_definition   name: (identifier) @name) @definition.function
                     ///Code for field: name: (identifier) @name
                     let name = node.name(tree);
-                    let symbol = Function::new(db, id, node.clone(), name.clone());
+                    let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(
+                        db,
+                        node.file_id(),
+                        name.source(),
+                    );
+                    let symbol = Function::new(
+                        db,
+                        fully_qualified_name,
+                        id,
+                        name.clone().into(),
+                    );
                     functions.entry(name.source()).or_default().push(symbol);
                 }
                 crate::cst::NodeTypes::ImportFromStatement(node) => {
@@ -95,12 +265,17 @@ impl<'db> Definitions<'db> {
                             if let crate::cst::ImportFromStatementModuleNameRef::DottedName(
                                 module_name,
                             ) = module_name {
+                                let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(
+                                    db,
+                                    node.file_id(),
+                                    name.source(),
+                                );
                                 let symbol = Import::new(
                                     db,
+                                    fully_qualified_name,
                                     id,
-                                    node.clone(),
-                                    module_name.clone(),
-                                    name.clone(),
+                                    module_name.clone().into(),
+                                    name.clone().into(),
                                 );
                                 imports.entry(name.source()).or_default().push(symbol);
                             }
@@ -122,11 +297,16 @@ impl<'db> Definitions<'db> {
                                     ///Code for field: left: (identifier) @name
                                     let left = child.left(tree);
                                     if let crate::cst::AssignmentLeftRef::Identifier(left) = left {
+                                        let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(
+                                            db,
+                                            node.file_id(),
+                                            left.source(),
+                                        );
                                         let symbol = Constant::new(
                                             db,
+                                            fully_qualified_name,
                                             id,
-                                            node.clone(),
-                                            left.clone(),
+                                            left.clone().into(),
                                         );
                                         constants.entry(left.source()).or_default().push(symbol);
                                     }
