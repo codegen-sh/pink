@@ -215,9 +215,9 @@ dependencies = [
 
 [[package]]
 name = "bytes"
-version = "1.10.0"
+version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f61dac84819c6588b558454b194026eb1f09c293b9036ae9b159e74e73ab6cf9"
+checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
 name = "cast"
@@ -308,6 +308,19 @@ name = "clap_lex"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
+
+[[package]]
+name = "codegen-bindings-generator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "codegen-sdk-common",
+ "codegen-sdk-cst-generator",
+ "log",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
 
 [[package]]
 name = "codegen-sdk-analyzer"
@@ -2025,9 +2038,15 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 name = "pink-python"
 version = "0.1.0"
 dependencies = [
+ "codegen-bindings-generator",
  "codegen-sdk-analyzer",
+ "codegen-sdk-common",
+ "codegen-sdk-python",
  "codegen-sdk-resolution",
+ "env_logger",
+ "log",
  "pyo3",
+ "pyo3-bytes",
  "pyo3-log",
 ]
 
@@ -2151,6 +2170,7 @@ version = "0.23.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7778bffd85cf38175ac1f545509665d0b9b92a198ca7941f131f85f7a4f9a872"
 dependencies = [
+ "anyhow",
  "cfg-if",
  "indoc",
  "libc",
@@ -2171,6 +2191,16 @@ checksum = "94f6cbe86ef3bf18998d9df6e0f3fc1050a8c5efa409bf712e661a4366e010fb"
 dependencies = [
  "once_cell",
  "target-lexicon",
+]
+
+[[package]]
+name = "pyo3-bytes"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4404970fe5cad3b196021a9cc555634735a4f11d1df53f8c482a329151e7dfa9"
+dependencies = [
+ "bytes",
+ "pyo3",
 ]
 
 [[package]]

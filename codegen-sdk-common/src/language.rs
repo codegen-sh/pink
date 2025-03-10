@@ -1,4 +1,4 @@
-use std::{hash::Hash, num::NonZeroU16, sync::Arc};
+use std::{hash::Hash, num::NonZeroU16, path::PathBuf, sync::Arc};
 
 use convert_case::{Case, Casing};
 use mockall::automock;
@@ -88,6 +88,15 @@ impl Language {
             .iter()
             .find(|node| normalize_type_name(&node.type_name, node.named) == struct_name)
             .cloned()
+    }
+    pub fn should_parse(&self, file_path: &PathBuf) -> Result<bool, ParseError> {
+        Ok(self.file_extensions.contains(
+            &file_path
+                .extension()
+                .ok_or(ParseError::Miscelaneous)?
+                .to_str()
+                .ok_or(ParseError::Miscelaneous)?,
+        ))
     }
 }
 #[cfg(feature = "go")]

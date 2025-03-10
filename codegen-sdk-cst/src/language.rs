@@ -70,12 +70,6 @@ pub trait CSTLanguage {
     }
 
     fn should_parse(file_path: &PathBuf) -> Result<bool, ParseError> {
-        Ok(Self::language().file_extensions.contains(
-            &file_path
-                .extension()
-                .ok_or(ParseError::Miscelaneous)?
-                .to_str()
-                .ok_or(ParseError::Miscelaneous)?,
-        ))
+        Self::language().should_parse(file_path)
     }
 }

@@ -62,7 +62,7 @@ members = [
   "languages/codegen-sdk-yaml",
   "languages/codegen-sdk-toml",
   "languages/codegen-sdk-ts_query",
-  "languages/codegen-sdk-typescript", "codegen-sdk-resolution", "bindings/python",
+  "languages/codegen-sdk-typescript", "codegen-sdk-resolution", "bindings/python", "codegen-bindings-generator",
 ]
 resolver = "2"
 [workspace.dependencies]
@@ -95,6 +95,7 @@ codegen-sdk-cst = { path = "codegen-sdk-cst"}
 codegen-sdk-ast = { path = "codegen-sdk-ast" }
 codegen-sdk-resolution = { path = "codegen-sdk-resolution" }
 codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" , default-features = false}
+codegen-bindings-generator = { path = "codegen-bindings-generator" }
 codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
 codegen-sdk-ast-generator = { path = "codegen-sdk-ast-generator" }
 codegen-sdk-ts_query = { path = "languages/codegen-sdk-ts_query" }
