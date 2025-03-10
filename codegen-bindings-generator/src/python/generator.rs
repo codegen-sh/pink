@@ -47,14 +47,22 @@ fn generate_file_struct(language: &Language) -> anyhow::Result<Vec<syn::Stmt>> {
             }
         }
     });
+    Ok(output)
+}
+fn generate_module(
+    language: &Language,
+    state: &codegen_sdk_cst_generator::State,
+) -> anyhow::Result<Vec<syn::Stmt>> {
+    let mut output = Vec::new();
     let language_name = language.name();
     let register_name = format_ident!("register_{}", language_name);
-
+    let struct_name = format_ident!("{}", language.file_struct_name());
+    let node_names = state.get_node_struct_names();
     output.push(parse_quote! {
         pub fn #register_name(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
             let child_module = PyModule::new(parent_module.py(), #language_name)?;
-            pyo3_log::init();
             child_module.add_class::<#struct_name>()?;
+            #(child_module.add_class::<#node_names>()?;)*
             parent_module.add_submodule(&child_module)?;
             Ok(())
         }
@@ -145,5 +153,7 @@ pub(crate) fn generate_bindings(language: &Language) -> anyhow::Result<Vec<syn::
         let cst_struct = generate_cst_struct(language, node)?;
         output.extend(cst_struct);
     }
+    let module = generate_module(language, &state)?;
+    output.extend(module);
     Ok(output)
 }
