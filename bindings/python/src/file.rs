@@ -1,15 +1,13 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
-use codegen_sdk_analyzer::ParsedFile;
-use pyo3::pyclass;
+use pyo3::{pyclass, sync::GILProtected};
 #[pyclass]
 pub struct File {
     path: PathBuf,
+    codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
 }
 impl File {
-    pub fn new(file: &ParsedFile) -> Self {
-        Self {
-            path: file.path.clone(),
-        }
+    pub fn new(path: PathBuf, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
+        Self { path, codebase }
     }
 }

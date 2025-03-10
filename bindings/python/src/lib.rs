@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use codegen_sdk_analyzer::ParsedFile;
 use codegen_sdk_resolution::CodebaseContext;
@@ -7,20 +7,29 @@ use pyo3::{prelude::*, sync::GILProtected};
 mod file;
 #[pyclass]
 struct Codebase {
-    codebase: GILProtected<codegen_sdk_analyzer::Codebase>,
+    codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
 }
 #[pymethods]
 impl Codebase {
     #[new]
-    fn new(repo_path: PathBuf) -> Self {
+    fn new(py: Python<'_>, repo_path: PathBuf) -> Self {
+        let codebase = py.allow_threads(|| codegen_sdk_analyzer::Codebase::new(repo_path));
         Self {
-            codebase: GILProtected::new(codegen_sdk_analyzer::Codebase::new(repo_path)),
+            codebase: Arc::new(GILProtected::new(codebase)),
         }
     }
+    fn has_file(&self, py: Python<'_>, path: PathBuf) -> PyResult<bool> {
+        let path = path.canonicalize()?;
+        Ok(self.codebase.get(py).get_file(path).is_some())
+    }
     fn get_file(&self, py: Python<'_>, path: PathBuf) -> PyResult<Option<File>> {
-        let file = self.codebase.get(py).get_file(path);
-        let file = file.map(|file| File::new(file));
-        Ok(file)
+        let path = path.canonicalize()?;
+        if self.has_file(py, path.clone())? {
+            let file = File::new(path, self.codebase.clone());
+            Ok(Some(file))
+        } else {
+            Ok(None)
+        }
     }
 }
 

@@ -5,7 +5,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-codegen-sdk-analyzer = { workspace = true, features = ["python", "typescript"]}
+codegen-sdk-analyzer = { workspace = true, features = ["python", "typescript", "toml", "yaml", "json"]}
 codegen-sdk-resolution = { workspace = true }
 pyo3 = "0.23.0"
 pyo3-log = "0.12.1"
