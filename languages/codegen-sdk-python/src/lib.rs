@@ -31,6 +31,7 @@ pub mod ast {
         id: codegen_sdk_common::FileNodeId<'db>,
         #[return_ref]
         #[tracked]
+        #[no_eq]
         pub dependencies: codegen_sdk_common::hash::FxHashMap<
             codegen_sdk_resolution::FullyQualifiedName<'db>,
             codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>,
@@ -51,7 +52,7 @@ pub mod ast {
             self.dependencies(db).get(key)
         }
     }
-    #[salsa::tracked(return_ref)]
+    #[salsa::tracked(return_ref, no_eq)]
     pub fn dependencies<'db>(
         db: &'db dyn codegen_sdk_resolution::Db,
         input: codegen_sdk_common::FileNodeId<'db>,

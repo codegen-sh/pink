@@ -14,8 +14,8 @@ pub trait Db: salsa::Database + Send {
     }
 }
 #[salsa::tracked]
-pub fn files(
-    db: &dyn Db,
-) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_common::FileNodeId<'_>> {
+pub fn files<'db>(
+    db: &'db dyn Db,
+) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_common::FileNodeId<'db>> {
     db.files()
 }
