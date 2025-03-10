@@ -23,7 +23,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 convert_case = { workspace = true }
-tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", optional = true}
+tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", rev = "0555ac0da902abff06076e40501102cee3ba68bd", optional = true}
 phf = { version = "0.11.3", features = ["macros"] }
 rkyv = { workspace = true  }
 xdg = "2.5.2"
