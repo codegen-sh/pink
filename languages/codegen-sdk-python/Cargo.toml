@@ -17,13 +17,14 @@ codegen-sdk-cst = { workspace = true }
 log = { workspace = true }
 codegen-sdk-ast = { workspace = true }
 codegen-sdk-resolution = { workspace = true }
-
+memchr = { version = "2" }
 [build-dependencies]
 codegen-sdk-cst-generator = { workspace = true }
 codegen-sdk-ast-generator = { workspace = true }
 codegen-sdk-common = { workspace = true, features = ["python"] }
 env_logger = { workspace = true }
 log = { workspace = true }
+
 [dev-dependencies]
 test-log = { workspace = true }
 tempfile = {workspace = true}

@@ -53,10 +53,11 @@ fn get_parser(language: &Language) -> TokenStream {
             #[tracked]
             #[return_ref]
             #[no_clone]
-            pub tree: Tree<NodeTypes<'db>>,
+            #[no_eq]
+            pub tree: Arc<Tree<NodeTypes<'db>>>,
             pub program: indextree::NodeId,
         }
-        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::Input, path: PathBuf) -> Option<Parsed<'db>> {
+        pub fn parse_program_raw<'db>(db: &'db dyn salsa::Database, input: codegen_sdk_cst::File) -> Option<Parsed<'db>> {
             let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
             let tree = codegen_sdk_common::language::#language_name::#language_struct_name.parse_tree_sitter(&input.content(db));
             match tree {
@@ -65,7 +66,7 @@ fn get_parser(language: &Language) -> TokenStream {
                         ParseError::SyntaxError.report(db);
                         None
                     } else {
-                        let mut context = ParseContext::new(db, path, buffer);
+                        let mut context = ParseContext::new(db, input.path(db), input.root(db), buffer);
                         let root_id = #program_id::orphaned(&mut context, tree.root_node())
                         .map_or_else(|e| {
                             e.report(db);
@@ -74,7 +75,7 @@ fn get_parser(language: &Language) -> TokenStream {
                             Some(program)
                         });
                         if let Some(program) = root_id {
-                            Some(Parsed::new(db, context.file_id, context.tree, program))
+                            Some(Parsed::new(db, context.file_id, Arc::new(context.tree), program))
                         } else {
                             None
                         }
@@ -87,8 +88,8 @@ fn get_parser(language: &Language) -> TokenStream {
             }
         }
         #[salsa::tracked(return_ref)]
-        pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::Input) -> Parsed<'_> {
-            let raw = parse_program_raw(db, input, std::path::PathBuf::new());
+        pub fn parse_program(db: &dyn salsa::Database, input: codegen_sdk_cst::File) -> Parsed<'_> {
+            let raw = parse_program_raw(db, input);
             if let Some(parsed) = raw {
                 parsed
             } else {
@@ -102,13 +103,13 @@ fn get_parser(language: &Language) -> TokenStream {
             fn language() -> &'static codegen_sdk_common::language::Language {
                 &codegen_sdk_common::language::#language_name::#language_struct_name
             }
-            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)> {
-                let input = codegen_sdk_cst::Input::new(db, content);
+            fn parse<'db>(db: &'db dyn salsa::Database, content: std::string::String) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>, indextree::NodeId)> {
+                let input = codegen_sdk_cst::File::new(db, std::path::PathBuf::new(), content, std::path::PathBuf::new());
                 let parsed = parse_program(db, input);
-                let program = parsed.program(db);
+                let program_id = parsed.program(db);
                 let tree = parsed.tree(db);
-                let program = tree.get(&program).unwrap().as_ref();
-                Some((program.try_into().unwrap(), tree))
+                let program = tree.get(&program_id).unwrap().as_ref();
+                Some((program.try_into().unwrap(), tree, program_id))
             }
         }
     }

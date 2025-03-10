@@ -22,7 +22,7 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for TestNode<'db> {
     ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         let start_position = Point::from(context.db, node.start_position());
         let end_position = Point::from(context.db, node.end_position());
-        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id(), context.root);
         let mut ids = Vec::new();
         let _children = named_children_without_field_names::<
             NodeTypes<'db>,

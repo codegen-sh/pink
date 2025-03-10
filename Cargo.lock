@@ -364,6 +364,7 @@ dependencies = [
  "codegen-sdk-ts_query",
  "convert_case",
  "derive_more",
+ "indextree",
  "insta",
  "log",
  "proc-macro2",
@@ -384,6 +385,8 @@ dependencies = [
  "buildid",
  "bytes",
  "convert_case",
+ "hashbrown 0.15.2",
+ "indexmap",
  "indextree",
  "lazy_static",
  "mockall",
@@ -392,6 +395,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rkyv",
+ "rustc-hash",
  "salsa",
  "serde",
  "serde_json",
@@ -425,6 +429,7 @@ dependencies = [
  "codegen-sdk-analyzer",
  "codegen-sdk-ast",
  "codegen-sdk-common",
+ "codegen-sdk-python",
  "codegen-sdk-resolution",
  "codegen-sdk-typescript",
  "criterion",
@@ -446,6 +451,7 @@ dependencies = [
  "codegen-sdk-common",
  "convert_case",
  "dashmap",
+ "indextree",
  "log",
  "rkyv",
  "salsa",
@@ -484,6 +490,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -504,6 +511,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -524,6 +532,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -544,6 +553,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -565,6 +575,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -594,6 +605,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -619,6 +631,7 @@ dependencies = [
  "env_logger",
  "indextree",
  "log",
+ "memchr",
  "salsa",
  "subenum",
  "tempfile",
@@ -630,7 +643,15 @@ dependencies = [
 name = "codegen-sdk-resolution"
 version = "0.1.0"
 dependencies = [
+ "ambassador",
+ "anyhow",
+ "codegen-sdk-ast",
+ "codegen-sdk-common",
+ "codegen-sdk-cst",
+ "indicatif",
+ "log",
  "salsa",
+ "smallvec",
 ]
 
 [[package]]
@@ -644,6 +665,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -664,6 +686,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -684,6 +707,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -722,6 +746,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -742,6 +767,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -764,6 +790,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
+ "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -1202,6 +1229,7 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash",
+ "rayon",
 ]
 
 [[package]]
@@ -2316,7 +2344,7 @@ checksum = "6ea1a2d0a644769cc99faa24c3ad26b379b786fe7c36fd3c546254801650e6dd"
 [[package]]
 name = "salsa"
 version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?branch=master#ceb9b083b3c0f6a1634e5a0b75b7bb5c7ca7b33f"
+source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
 dependencies = [
  "boxcar",
  "crossbeam-queue",
@@ -2325,6 +2353,7 @@ dependencies = [
  "hashlink",
  "indexmap",
  "parking_lot",
+ "portable-atomic",
  "rayon",
  "rustc-hash",
  "salsa-macro-rules",
@@ -2336,12 +2365,12 @@ dependencies = [
 [[package]]
 name = "salsa-macro-rules"
 version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?branch=master#ceb9b083b3c0f6a1634e5a0b75b7bb5c7ca7b33f"
+source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
 
 [[package]]
 name = "salsa-macros"
 version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?branch=master#ceb9b083b3c0f6a1634e5a0b75b7bb5c7ca7b33f"
+source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",

@@ -7,20 +7,21 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
-codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" }
+codegen-sdk-analyzer = { path = "codegen-sdk-analyzer", default-features = false }
 codegen-sdk-ast = { workspace = true}
 codegen-sdk-common = { workspace = true}
 anyhow = { workspace = true}
 salsa = { workspace = true}
-codegen-sdk-typescript = { workspace = true}
+codegen-sdk-typescript = { workspace = true, optional = true }
+codegen-sdk-python = { workspace = true, optional = true }
 env_logger = { workspace = true }
 log = { workspace = true }
 codegen-sdk-resolution = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
 [features]
-python = [ "codegen-sdk-analyzer/python"] # TODO: Add python support
-typescript = [ "codegen-sdk-analyzer/typescript"]
+python = [ "codegen-sdk-analyzer/python", "codegen-sdk-python"]
+typescript = [ "codegen-sdk-analyzer/typescript", "codegen-sdk-typescript"]
 tsx = [ "codegen-sdk-analyzer/tsx"]
 jsx = [ "codegen-sdk-analyzer/jsx"]
 javascript = [ "codegen-sdk-analyzer/javascript"]
@@ -116,7 +117,7 @@ insta = "1.42.1"
 prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro", "full"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
-salsa = {git = "https://github.com/salsa-rs/salsa", branch = "master"}
+salsa = {git = "https://github.com/salsa-rs/salsa", rev ="dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"}
 subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
@@ -124,7 +125,8 @@ crossbeam-channel = "0.5.11"
 rstest = "0.25.0"
 indextree = "4.7.3"
 thiserror = "2.0.11"
-
+indexmap = "2"
+smallvec = "1.11.0"
 [profile.dev]
 # codegen-backend = "cranelift"
 # split-debuginfo = "unpacked"
@@ -157,3 +159,7 @@ lto = false
 name = "parse"
 harness = false
 required-features = ["stable"]
+
+[profile.profiling]
+inherits = "release"
+debug = true

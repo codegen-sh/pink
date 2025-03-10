@@ -1,6 +1,7 @@
 [package]
 name = "codegen-sdk-ast-generator"
 version = "0.1.0"
+description = "Generates the AST for the given language from the tree-sitter queries"
 edition = "2024"
 
 [dependencies]
@@ -16,6 +17,7 @@ codegen-sdk-ts_query = { workspace = true }
 convert_case = { workspace = true }
 salsa = { workspace = true }
 syn = { workspace = true }
+indextree = { workspace = true }
 [dev-dependencies]
 test-log = { workspace = true }
 insta = { workspace = true }

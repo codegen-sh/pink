@@ -20,7 +20,7 @@ mod tests {
         ";
         let db = codegen_sdk_cst::CSTDatabase::default();
         let module = crate::cst::JSON::parse(&db, content.to_string()).unwrap();
-        let (root, tree) = module;
+        let (root, tree, _) = module;
         assert!(root.children(tree).len() > 0);
     }
 }

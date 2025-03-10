@@ -2,64 +2,54 @@
 use std::{path::PathBuf, time::Instant};
 
 use clap::Parser;
-use codegen_sdk_analyzer::{Codebase, ParsedFile};
+use codegen_sdk_analyzer::{Codebase, ParsedFile, parse_file};
 use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
-use codegen_sdk_resolution::{CodebaseContext, References};
+use codegen_sdk_resolution::CodebaseContext;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
 }
+// #[salsa::tracked]
+fn get_definitions<'db>(
+    db: &'db dyn codegen_sdk_resolution::Db,
+    file: codegen_sdk_common::FileNodeId<'db>,
+) -> (usize, usize, usize, usize, usize, usize) {
+    if let Some(parsed) = parse_file(db, file).file(db) {
+        #[cfg(feature = "typescript")]
+        if let ParsedFile::Typescript(file) = parsed {
+            let definitions = file.definitions(db);
+            return (
+                definitions.classes(db).len(),
+                definitions.functions(db).len(),
+                definitions.interfaces(db).len(),
+                definitions.methods(db).len(),
+                definitions.modules(db).len(),
+                0,
+            );
+        }
+        #[cfg(feature = "python")]
+        if let ParsedFile::Python(file) = parsed {
+            let definitions = file.definitions(db);
+            let functions = definitions.functions(db);
+            let total_references = codegen_sdk_python::ast::references_for_file(db, file.id(db));
+            return (
+                definitions.classes(db).len(),
+                functions.len(),
+                0,
+                0,
+                0,
+                total_references,
+            );
+        }
+    }
+    (0, 0, 0, 0, 0, 0)
+}
 fn get_total_definitions(codebase: &Codebase) -> Vec<(usize, usize, usize, usize, usize, usize)> {
-    codebase
-        .files()
-        .into_iter()
-        .map(|parsed| {
-            #[cfg(feature = "typescript")]
-            if let ParsedFile::Typescript(file) = parsed {
-                let definitions = file.definitions(codebase.db());
-                if let Some(node) = file.node(codebase.db()) {
-                    let tree = node.tree(codebase.db());
-                    return (
-                        definitions.classes(codebase.db(), &tree).len(),
-                        definitions.functions(codebase.db(), &tree).len(),
-                        definitions.interfaces(codebase.db(), &tree).len(),
-                        definitions.methods(codebase.db(), &tree).len(),
-                        definitions.modules(codebase.db(), &tree).len(),
-                        0,
-                    );
-                }
-            }
-            #[cfg(feature = "python")]
-            if let ParsedFile::Python(file) = parsed {
-                let definitions = file.definitions(codebase.db());
-                let tree = file.node(codebase.db()).unwrap().tree(codebase.db());
-                let functions = definitions.functions(codebase.db(), &tree);
-                let mut total_references = 0;
-                let total_functions = functions.len();
-                for function in functions
-                    .into_iter()
-                    .map(|(_, functions)| functions)
-                    .flatten()
-                {
-                    total_references += function
-                        .references_for_scopes(codebase.db(), vec![*file], &file)
-                        .len();
-                }
-                return (
-                    definitions.classes(codebase.db(), &tree).len(),
-                    total_functions,
-                    0,
-                    0,
-                    0,
-                    total_references,
-                );
-            }
-            (0, 0, 0, 0, 0, 0)
-        })
-        .collect()
+    log::info!("Getting total definitions");
+    codebase.execute_op_with_progress("Getting Usages", true, |db, file| get_definitions(db, file))
 }
 fn print_definitions(codebase: &Codebase) {
     let mut total_classes = 0;

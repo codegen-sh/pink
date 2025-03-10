@@ -6,3 +6,11 @@ edition = "2024"
 
 [dependencies]
 salsa = { workspace = true }
+log = {workspace = true}
+codegen-sdk-ast = { workspace = true }
+codegen-sdk-common = { workspace = true }
+anyhow = { workspace = true }
+indicatif = { workspace = true }
+ambassador = { workspace = true }
+codegen-sdk-cst = { workspace = true }
+smallvec = { workspace = true }

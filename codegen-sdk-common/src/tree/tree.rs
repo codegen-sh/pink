@@ -39,6 +39,9 @@ impl<T: TreeNode> Tree<T> {
         id.children(&self.ids)
             .map(|id| (self.get(&id).unwrap(), id))
     }
+    pub fn arena(&self) -> &Arena<T> {
+        &self.ids
+    }
 }
 unsafe impl<T> Update for Tree<T>
 where

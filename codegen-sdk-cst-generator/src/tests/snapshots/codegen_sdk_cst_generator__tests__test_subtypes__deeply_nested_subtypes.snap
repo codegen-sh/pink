@@ -147,6 +147,36 @@ impl<'db3> From<&'db3 NodeTypes<'db3>> for NodeTypesRef<'db3> {
         node.as_ref().into()
     }
 }
+impl<'db3> From<NodeTypesRef<'db3>> for NodeTypes<'db3> {
+    fn from(node: NodeTypesRef<'db3>) -> Self {
+        match node {
+            NodeTypesRef::ClassDeclaration(data) => {
+                Self::ClassDeclaration((*data).clone())
+            }
+            NodeTypesRef::ExpressionStatement(data) => {
+                Self::ExpressionStatement((*data).clone())
+            }
+            NodeTypesRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
+impl<'db3> From<&'db3 NodeTypesRef<'db3>> for NodeTypes<'db3> {
+    fn from(node: &'db3 NodeTypesRef<'db3>) -> Self {
+        match node {
+            NodeTypesRef::ClassDeclaration(data) => {
+                Self::ClassDeclaration((*data).clone())
+            }
+            NodeTypesRef::ExpressionStatement(data) => {
+                Self::ExpressionStatement((*data).clone())
+            }
+            NodeTypesRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
 impl<'db3> TryFrom<NodeTypesRef<'db3>> for &'db3 ClassDeclaration<'db3> {
     type Error = codegen_sdk_cst::ConversionError;
     fn try_from(node: NodeTypesRef<'db3>) -> Result<Self, Self::Error> {
@@ -212,6 +242,30 @@ impl<'db3> From<&'db3 Declaration<'db3>> for NodeTypesRef<'db3> {
         node.as_ref().into()
     }
 }
+impl<'db3> From<DeclarationRef<'db3>> for Declaration<'db3> {
+    fn from(node: DeclarationRef<'db3>) -> Self {
+        match node {
+            DeclarationRef::ClassDeclaration(data) => {
+                Self::ClassDeclaration((*data).clone())
+            }
+            DeclarationRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
+impl<'db3> From<&'db3 DeclarationRef<'db3>> for Declaration<'db3> {
+    fn from(node: &'db3 DeclarationRef<'db3>) -> Self {
+        match node {
+            DeclarationRef::ClassDeclaration(data) => {
+                Self::ClassDeclaration((*data).clone())
+            }
+            DeclarationRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
 impl<'db3> TryFrom<DeclarationRef<'db3>> for &'db3 ClassDeclaration<'db3> {
     type Error = codegen_sdk_cst::ConversionError;
     fn try_from(node: DeclarationRef<'db3>) -> Result<Self, Self::Error> {
@@ -263,6 +317,24 @@ impl<'db3> From<&'db3 FunctionDeclaration<'db3>> for NodeTypesRef<'db3> {
         node.as_ref().into()
     }
 }
+impl<'db3> From<FunctionDeclarationRef<'db3>> for FunctionDeclaration<'db3> {
+    fn from(node: FunctionDeclarationRef<'db3>) -> Self {
+        match node {
+            FunctionDeclarationRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
+impl<'db3> From<&'db3 FunctionDeclarationRef<'db3>> for FunctionDeclaration<'db3> {
+    fn from(node: &'db3 FunctionDeclarationRef<'db3>) -> Self {
+        match node {
+            FunctionDeclarationRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
 impl<'db3> TryFrom<FunctionDeclarationRef<'db3>> for &'db3 MethodDeclaration<'db3> {
     type Error = codegen_sdk_cst::ConversionError;
     fn try_from(node: FunctionDeclarationRef<'db3>) -> Result<Self, Self::Error> {
@@ -300,6 +372,36 @@ impl<'db3> StatementRef<'db3> {
 impl<'db3> From<&'db3 Statement<'db3>> for NodeTypesRef<'db3> {
     fn from(node: &'db3 Statement<'db3>) -> Self {
         node.as_ref().into()
+    }
+}
+impl<'db3> From<StatementRef<'db3>> for Statement<'db3> {
+    fn from(node: StatementRef<'db3>) -> Self {
+        match node {
+            StatementRef::ClassDeclaration(data) => {
+                Self::ClassDeclaration((*data).clone())
+            }
+            StatementRef::ExpressionStatement(data) => {
+                Self::ExpressionStatement((*data).clone())
+            }
+            StatementRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
+    }
+}
+impl<'db3> From<&'db3 StatementRef<'db3>> for Statement<'db3> {
+    fn from(node: &'db3 StatementRef<'db3>) -> Self {
+        match node {
+            StatementRef::ClassDeclaration(data) => {
+                Self::ClassDeclaration((*data).clone())
+            }
+            StatementRef::ExpressionStatement(data) => {
+                Self::ExpressionStatement((*data).clone())
+            }
+            StatementRef::MethodDeclaration(data) => {
+                Self::MethodDeclaration((*data).clone())
+            }
+        }
     }
 }
 impl<'db3> TryFrom<StatementRef<'db3>> for &'db3 ClassDeclaration<'db3> {
@@ -363,7 +465,7 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for ClassDeclaration<'db> {
     ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         let start_position = Point::from(context.db, node.start_position());
         let end_position = Point::from(context.db, node.end_position());
-        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id(), context.root);
         let mut ids = Vec::new();
         Ok((
             Self {
@@ -484,7 +586,7 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for ExpressionStatement<'db> {
     ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         let start_position = Point::from(context.db, node.start_position());
         let end_position = Point::from(context.db, node.end_position());
-        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id(), context.root);
         let mut ids = Vec::new();
         Ok((
             Self {
@@ -605,7 +707,7 @@ impl<'db> FromNode<'db, NodeTypes<'db>> for MethodDeclaration<'db> {
     ) -> Result<(Self, Vec<indextree::NodeId>), ParseError> {
         let start_position = Point::from(context.db, node.start_position());
         let end_position = Point::from(context.db, node.end_position());
-        let id = CSTNodeId::new(context.db, context.file_id, node.id());
+        let id = CSTNodeId::new(context.db, context.file_id, node.id(), context.root);
         let mut ids = Vec::new();
         Ok((
             Self {
@@ -715,13 +817,13 @@ pub struct Parsed<'db> {
     #[tracked]
     #[return_ref]
     #[no_clone]
-    pub tree: Tree<NodeTypes<'db>>,
+    #[no_eq]
+    pub tree: Arc<Tree<NodeTypes<'db>>>,
     pub program: indextree::NodeId,
 }
 pub fn parse_program_raw<'db>(
     db: &'db dyn salsa::Database,
-    input: codegen_sdk_cst::Input,
-    path: PathBuf,
+    input: codegen_sdk_cst::File,
 ) -> Option<Parsed<'db>> {
     let buffer = Bytes::from(input.content(db).as_bytes().to_vec());
     let tree = codegen_sdk_common::language::language::Language
@@ -732,7 +834,12 @@ pub fn parse_program_raw<'db>(
                 ParseError::SyntaxError.report(db);
                 None
             } else {
-                let mut context = ParseContext::new(db, path, buffer);
+                let mut context = ParseContext::new(
+                    db,
+                    input.path(db),
+                    input.root(db),
+                    buffer,
+                );
                 let root_id = Program::orphaned(&mut context, tree.root_node())
                     .map_or_else(
                         |e| {
@@ -742,7 +849,9 @@ pub fn parse_program_raw<'db>(
                         |program| { Some(program) },
                     );
                 if let Some(program) = root_id {
-                    Some(Parsed::new(db, context.file_id, context.tree, program))
+                    Some(
+                        Parsed::new(db, context.file_id, Arc::new(context.tree), program),
+                    )
                 } else {
                     None
                 }
@@ -757,9 +866,9 @@ pub fn parse_program_raw<'db>(
 #[salsa::tracked(return_ref)]
 pub fn parse_program(
     db: &dyn salsa::Database,
-    input: codegen_sdk_cst::Input,
+    input: codegen_sdk_cst::File,
 ) -> Parsed<'_> {
-    let raw = parse_program_raw(db, input, std::path::PathBuf::new());
+    let raw = parse_program_raw(db, input);
     if let Some(parsed) = raw {
         parsed
     } else {
@@ -776,12 +885,19 @@ impl CSTLanguage for Language {
     fn parse<'db>(
         db: &'db dyn salsa::Database,
         content: std::string::String,
-    ) -> Option<(&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>)> {
-        let input = codegen_sdk_cst::Input::new(db, content);
+    ) -> Option<
+        (&'db Self::Program<'db>, &'db Tree<Self::Types<'db>>, indextree::NodeId),
+    > {
+        let input = codegen_sdk_cst::File::new(
+            db,
+            std::path::PathBuf::new(),
+            content,
+            std::path::PathBuf::new(),
+        );
         let parsed = parse_program(db, input);
-        let program = parsed.program(db);
+        let program_id = parsed.program(db);
         let tree = parsed.tree(db);
-        let program = tree.get(&program).unwrap().as_ref();
-        Some((program.try_into().unwrap(), tree))
+        let program = tree.get(&program_id).unwrap().as_ref();
+        Some((program.try_into().unwrap(), tree, program_id))
     }
 }
