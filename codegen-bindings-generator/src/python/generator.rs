@@ -35,11 +35,13 @@ fn generate_file_struct(language: &Language) -> anyhow::Result<Vec<syn::Stmt>> {
     output.push(parse_quote! {
         #[pymethods]
         impl #struct_name {
+            #[getter]
             pub fn content(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 let codebase = self.codebase.get(py);
                 let file = self.file(py)?.root(codebase.db());
                 Ok(file.source())
             }
+            #[getter]
             pub fn content_bytes(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
                 let codebase = self.codebase.get(py);
                 let file = self.file(py)?.root(codebase.db());
@@ -109,22 +111,31 @@ fn generate_cst_struct(
     output.push(parse_quote! {
         #[pymethods]
         impl #struct_name {
+            #[getter]
             pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 let node = self.get_node(py)?;
                 Ok(node.source())
             }
+            #[getter]
+            pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+                self.source(py)
+            }
+            #[getter]
             pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
                 let node = self.get_node(py)?;
                 Ok(pyo3_bytes::PyBytes::new(node.text()))
             }
+            #[getter]
             pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
                 let node = self.get_node(py)?;
                 Ok(node.start_byte())
             }
+            #[getter]
             pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
                 let node = self.get_node(py)?;
                 Ok(node.end_byte())
             }
+            #[getter]
             pub fn start_position<'a>(&'a self, py: Python<'a>) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
                 let node = self.get_node(py)?;
                 let position = node.start_position();
@@ -132,6 +143,7 @@ fn generate_cst_struct(
                 let column = position.column(self.codebase.get(py).db());
                 pyo3::types::PyTuple::new(py, vec![row, column])
             }
+            #[getter]
             pub fn end_position<'a>(&'a self, py: Python<'a>) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
                 let node = self.get_node(py)?;
                 let position = node.end_position();
