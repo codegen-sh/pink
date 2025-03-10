@@ -1,5 +1,6 @@
 [package]
 name = "codegen-bindings-generator"
+description = "Generates bindings for the codegen-sdk"
 version = "0.1.0"
 edition = "2024"
 
