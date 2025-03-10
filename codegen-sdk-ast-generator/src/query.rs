@@ -13,9 +13,10 @@ use codegen_sdk_ts_query::cst as ts_query;
 use derive_more::Debug;
 use indextree::NodeId;
 use log::{debug, info, warn};
+mod field;
+mod symbol;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::parse_quote;
 use ts_query::NodeTypes;
 fn name_for_capture<'a>(capture: &'a ts_query::Capture<'a>) -> String {
     full_name_for_capture(capture)
@@ -846,7 +847,7 @@ impl<'a> Query<'a> {
             );
         }
     }
-    pub fn struct_fields(&self) -> Vec<syn::Field> {
+    pub fn get_fields(&self) -> Vec<field::Field> {
         let mut fields = Vec::new();
         for capture in self.target_captures() {
             let name = name_for_capture(capture);
@@ -911,14 +912,22 @@ impl<'a> Query<'a> {
                     }
                 }
             }
-            let name_ident = format_ident!("{}", name);
-            fields.push(parse_quote!(
-                #[tracked]
-                #[return_ref]
-                pub #name_ident: crate::cst::#type_name<'db>
-            ));
+            fields.push(field::Field {
+                name: name.to_string(),
+                kind: type_name.to_string(),
+                is_optional: false,
+                is_multiple: false,
+            });
         }
         fields
+    }
+    pub fn symbol(&self) -> symbol::Symbol {
+        symbol::Symbol {
+            name: self.symbol_name().to_string(),
+            type_name: self.struct_name().to_string(),
+            language_struct: self.language.file_struct_name().to_string(),
+            fields: self.get_fields(),
+        }
     }
 }
 
@@ -940,6 +949,16 @@ pub trait HasQuery {
             }
         }
         queries
+    }
+    fn symbols<'a, 'db: 'a>(
+        &'a self,
+        db: &'db dyn salsa::Database,
+    ) -> BTreeMap<String, symbol::Symbol> {
+        let mut symbols = BTreeMap::new();
+        for (name, query) in self.queries(db).into_iter() {
+            symbols.insert(name, query.symbol());
+        }
+        symbols
     }
 }
 impl HasQuery for Language {
