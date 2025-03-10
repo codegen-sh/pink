@@ -2668,7 +2668,7 @@ dependencies = [
 [[package]]
 name = "subenum"
 version = "1.1.2"
-source = "git+https://github.com/mrenow/subenum?branch=main#d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"
+source = "git+https://github.com/mrenow/subenum?rev=d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72#d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"
 dependencies = [
  "heck 0.4.1",
  "proc-macro2",
@@ -2985,7 +2985,7 @@ checksum = "38eee4db33814de3d004de9d8d825627ed3320d0989cce0dea30efaf5be4736c"
 [[package]]
 name = "tree-sitter-md"
 version = "0.4.0"
-source = "git+https://github.com/tree-sitter-grammars/tree-sitter-markdown#192407ab5a24bfc24f13332979b5e7967518754a"
+source = "git+https://github.com/tree-sitter-grammars/tree-sitter-markdown?rev=192407ab5a24bfc24f13332979b5e7967518754a#192407ab5a24bfc24f13332979b5e7967518754a"
 dependencies = [
  "cc",
  "tree-sitter-language",
@@ -3004,7 +3004,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter-query"
 version = "0.5.0"
-source = "git+https://github.com/tree-sitter-grammars/tree-sitter-query#0555ac0da902abff06076e40501102cee3ba68bd"
+source = "git+https://github.com/tree-sitter-grammars/tree-sitter-query?rev=0555ac0da902abff06076e40501102cee3ba68bd#0555ac0da902abff06076e40501102cee3ba68bd"
 dependencies = [
  "cc",
  "tree-sitter-language",

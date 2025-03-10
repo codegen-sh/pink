@@ -78,7 +78,7 @@ tree-sitter-java = "0.23.5"
 tree-sitter-ruby = "0.23.1"
 tree-sitter-rust = "0.23.2"
 tree-sitter-go = "0.23.4"
-tree-sitter-md = {git="https://github.com/tree-sitter-grammars/tree-sitter-markdown"}
+tree-sitter-md = {git="https://github.com/tree-sitter-grammars/tree-sitter-markdown", rev = "192407ab5a24bfc24f13332979b5e7967518754a"}
 tree-sitter-yaml = "0.7.0"
 tree-sitter-toml-ng = "0.7.0"
 bytes = "1.10.0"
@@ -120,7 +120,7 @@ prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro", "full"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
 salsa = {version = "0.19.0"}
-subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
+subenum = {git = "https://github.com/mrenow/subenum", rev = "d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
 crossbeam-channel = "0.5.11"
