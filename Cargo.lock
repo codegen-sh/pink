@@ -110,6 +110,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arc-swap"
+version = "1.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457"
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,9 +215,9 @@ dependencies = [
 
 [[package]]
 name = "bytes"
-version = "1.10.0"
+version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f61dac84819c6588b558454b194026eb1f09c293b9036ae9b159e74e73ab6cf9"
+checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
 name = "cast"
@@ -302,6 +308,16 @@ name = "clap_lex"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
+
+[[package]]
+name = "codegen-bindings-generator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "codegen-sdk-common",
+ "quote",
+ "syn 2.0.98",
+]
 
 [[package]]
 name = "codegen-sdk-analyzer"
@@ -449,16 +465,10 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "codegen-sdk-common",
- "convert_case",
  "dashmap",
  "indextree",
- "log",
- "rkyv",
  "salsa",
- "tempfile",
- "test-log",
  "thiserror 2.0.11",
- "tree-sitter",
 ]
 
 [[package]]
@@ -645,13 +655,10 @@ version = "0.1.0"
 dependencies = [
  "ambassador",
  "anyhow",
- "codegen-sdk-ast",
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "indicatif",
- "log",
  "salsa",
- "smallvec",
 ]
 
 [[package]]
@@ -1463,6 +1470,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "indoc"
+version = "2.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4c7245a08504955605670dbf141fceab975f15ca21570696aebe9d2e71576bd"
+
+[[package]]
 name = "inotify"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1699,6 +1712,15 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
+
+[[package]]
+name = "memoffset"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "miniz_oxide"
@@ -2001,6 +2023,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "pink-python"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "codegen-bindings-generator",
+ "codegen-sdk-analyzer",
+ "codegen-sdk-common",
+ "codegen-sdk-python",
+ "codegen-sdk-resolution",
+ "env_logger",
+ "log",
+ "pyo3",
+ "pyo3-bytes",
+ "pyo3-log",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2110,6 +2149,91 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca414edb151b4c8d125c12566ab0d74dc9cdba36fb80eb7b848c15f495fd32d1"
 dependencies = [
  "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
+
+[[package]]
+name = "pyo3"
+version = "0.23.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7778bffd85cf38175ac1f545509665d0b9b92a198ca7941f131f85f7a4f9a872"
+dependencies = [
+ "anyhow",
+ "cfg-if",
+ "indoc",
+ "libc",
+ "memoffset",
+ "once_cell",
+ "portable-atomic",
+ "pyo3-build-config",
+ "pyo3-ffi",
+ "pyo3-macros",
+ "unindent",
+]
+
+[[package]]
+name = "pyo3-build-config"
+version = "0.23.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94f6cbe86ef3bf18998d9df6e0f3fc1050a8c5efa409bf712e661a4366e010fb"
+dependencies = [
+ "once_cell",
+ "target-lexicon",
+]
+
+[[package]]
+name = "pyo3-bytes"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4404970fe5cad3b196021a9cc555634735a4f11d1df53f8c482a329151e7dfa9"
+dependencies = [
+ "bytes",
+ "pyo3",
+]
+
+[[package]]
+name = "pyo3-ffi"
+version = "0.23.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9f1b4c431c0bb1c8fb0a338709859eed0d030ff6daa34368d3b152a63dfdd8d"
+dependencies = [
+ "libc",
+ "pyo3-build-config",
+]
+
+[[package]]
+name = "pyo3-log"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be5bb22b77965a7b5394e9aae9897a0607b51df5167561ffc3b02643b4200bc7"
+dependencies = [
+ "arc-swap",
+ "log",
+ "pyo3",
+]
+
+[[package]]
+name = "pyo3-macros"
+version = "0.23.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbc2201328f63c4710f68abdf653c89d8dbc2858b88c5d88b0ff38a75288a9da"
+dependencies = [
+ "proc-macro2",
+ "pyo3-macros-backend",
+ "quote",
+ "syn 2.0.98",
+]
+
+[[package]]
+name = "pyo3-macros-backend"
+version = "0.23.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fca6726ad0f3da9c9de093d6f116a93c1a38e417ed73bf138472cf4064f72028"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "pyo3-build-config",
  "quote",
  "syn 2.0.98",
 ]
@@ -2343,8 +2467,9 @@ checksum = "6ea1a2d0a644769cc99faa24c3ad26b379b786fe7c36fd3c546254801650e6dd"
 
 [[package]]
 name = "salsa"
-version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd55c6549513b2a42884dae31e3d4f4ac8a6cc51062e68e24d162133889f327c"
 dependencies = [
  "boxcar",
  "crossbeam-queue",
@@ -2364,13 +2489,15 @@ dependencies = [
 
 [[package]]
 name = "salsa-macro-rules"
-version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2619b4b451beab0a7e4364ff1e6f31950e7e418888fd9bf2f28889671563166a"
 
 [[package]]
 name = "salsa-macros"
-version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4be57a99b3896e8d26850428a6874fb86849e2db874e1db3528e5cee4337d277"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2541,7 +2668,7 @@ dependencies = [
 [[package]]
 name = "subenum"
 version = "1.1.2"
-source = "git+https://github.com/mrenow/subenum?branch=main#d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"
+source = "git+https://github.com/mrenow/subenum?rev=d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72#d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"
 dependencies = [
  "heck 0.4.1",
  "proc-macro2",
@@ -2595,6 +2722,12 @@ dependencies = [
  "rayon",
  "windows 0.57.0",
 ]
+
+[[package]]
+name = "target-lexicon"
+version = "0.12.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
 name = "tempfile"
@@ -2747,19 +2880,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "784e0ac535deb450455cbfa28a6f0df145ea1bb7ae51b821cf5e7927fdcfbdd0"
 dependencies = [
  "pin-project-lite",
- "tracing-attributes",
  "tracing-core",
-]
-
-[[package]]
-name = "tracing-attributes"
-version = "0.1.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "395ae124c09f9e6918a2310af6038fba074bcf474ac352496d5910dd59a2226d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.98",
 ]
 
 [[package]]
@@ -2864,7 +2985,7 @@ checksum = "38eee4db33814de3d004de9d8d825627ed3320d0989cce0dea30efaf5be4736c"
 [[package]]
 name = "tree-sitter-md"
 version = "0.4.0"
-source = "git+https://github.com/tree-sitter-grammars/tree-sitter-markdown#192407ab5a24bfc24f13332979b5e7967518754a"
+source = "git+https://github.com/tree-sitter-grammars/tree-sitter-markdown?rev=192407ab5a24bfc24f13332979b5e7967518754a#192407ab5a24bfc24f13332979b5e7967518754a"
 dependencies = [
  "cc",
  "tree-sitter-language",
@@ -2883,7 +3004,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter-query"
 version = "0.5.0"
-source = "git+https://github.com/tree-sitter-grammars/tree-sitter-query#0555ac0da902abff06076e40501102cee3ba68bd"
+source = "git+https://github.com/tree-sitter-grammars/tree-sitter-query?rev=0555ac0da902abff06076e40501102cee3ba68bd#0555ac0da902abff06076e40501102cee3ba68bd"
 dependencies = [
  "cc",
  "tree-sitter-language",
@@ -2968,6 +3089,12 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unindent"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7264e107f553ccae879d21fbea1d6724ac785e8c3bfc762137959b5802826ef3"
 
 [[package]]
 name = "url"

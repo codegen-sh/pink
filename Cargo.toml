@@ -1,4 +1,4 @@
-cargo-features = ["codegen-backend"]
+cargo-features = ["codegen-backend", "profile-rustflags"]
 
 [package]
 name = "codegen-sdk-core"
@@ -7,7 +7,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
-codegen-sdk-analyzer = { path = "codegen-sdk-analyzer", default-features = false }
+codegen-sdk-analyzer = { workspace = true }
 codegen-sdk-ast = { workspace = true}
 codegen-sdk-common = { workspace = true}
 anyhow = { workspace = true}
@@ -62,7 +62,7 @@ members = [
   "languages/codegen-sdk-yaml",
   "languages/codegen-sdk-toml",
   "languages/codegen-sdk-ts_query",
-  "languages/codegen-sdk-typescript", "codegen-sdk-resolution",
+  "languages/codegen-sdk-typescript", "codegen-sdk-resolution", "bindings/python", "codegen-bindings-generator",
 ]
 resolver = "2"
 [workspace.dependencies]
@@ -78,7 +78,7 @@ tree-sitter-java = "0.23.5"
 tree-sitter-ruby = "0.23.1"
 tree-sitter-rust = "0.23.2"
 tree-sitter-go = "0.23.4"
-tree-sitter-md = {git="https://github.com/tree-sitter-grammars/tree-sitter-markdown"}
+tree-sitter-md = {git="https://github.com/tree-sitter-grammars/tree-sitter-markdown", rev = "192407ab5a24bfc24f13332979b5e7967518754a"}
 tree-sitter-yaml = "0.7.0"
 tree-sitter-toml-ng = "0.7.0"
 bytes = "1.10.0"
@@ -94,6 +94,8 @@ codegen-sdk-common = { path = "codegen-sdk-common" }
 codegen-sdk-cst = { path = "codegen-sdk-cst"}
 codegen-sdk-ast = { path = "codegen-sdk-ast" }
 codegen-sdk-resolution = { path = "codegen-sdk-resolution" }
+codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" , default-features = false}
+codegen-bindings-generator = { path = "codegen-bindings-generator" }
 codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
 codegen-sdk-ast-generator = { path = "codegen-sdk-ast-generator" }
 codegen-sdk-ts_query = { path = "languages/codegen-sdk-ts_query" }
@@ -117,8 +119,8 @@ insta = "1.42.1"
 prettyplease = "0.2.29"
 syn = { version = "2.0.98", features = ["proc-macro", "full"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
-salsa = {git = "https://github.com/salsa-rs/salsa", rev ="dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"}
-subenum = {git = "https://github.com/mrenow/subenum", branch = "main"}
+salsa = {version = "0.19.0"}
+subenum = {git = "https://github.com/mrenow/subenum", rev = "d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
 crossbeam-channel = "0.5.11"

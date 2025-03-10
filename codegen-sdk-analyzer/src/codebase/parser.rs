@@ -135,10 +135,9 @@ pub fn parse_files<'db>(
     #[cfg(feature = "serialization")] cache: &'db Cache,
     files_to_parse: FilesToParse,
 ) -> () {
-    rayon::ThreadPoolBuilder::new()
+    let _ = rayon::ThreadPoolBuilder::new()
         .stack_size(1024 * 1024 * 1024 * 10)
-        .build_global()
-        .unwrap();
+        .build_global();
     log_languages();
     #[cfg(feature = "serialization")]
     let cache = Cache::new().unwrap();

@@ -1,0 +1,15 @@
+[project]
+name = "codegen-sdk-pink"
+dynamic = ["version", "summary", "description", "authors", "license", "readme", "description_content_type", "keywords", "home_page", "author_email", "author", "license", "project_url"]
+requires-python = ">=3.11"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "codegen_sdk_pink"
+[tool.uv]
+# Rebuild package when any rust files change
+cache-keys = [{file = "pyproject.toml"}, {file = "Cargo.toml"}, {file = "**/*.rs"}]
