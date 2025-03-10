@@ -2344,7 +2344,7 @@ checksum = "6ea1a2d0a644769cc99faa24c3ad26b379b786fe7c36fd3c546254801650e6dd"
 [[package]]
 name = "salsa"
 version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?branch=master#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
+source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
 dependencies = [
  "boxcar",
  "crossbeam-queue",
@@ -2365,12 +2365,12 @@ dependencies = [
 [[package]]
 name = "salsa-macro-rules"
 version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?branch=master#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
+source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
 
 [[package]]
 name = "salsa-macros"
 version = "0.18.0"
-source = "git+https://github.com/salsa-rs/salsa?branch=master#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
+source = "git+https://github.com/salsa-rs/salsa?rev=dbb0e5f6ab2cd61e42b372f333ab694f24141cf1#dbb0e5f6ab2cd61e42b372f333ab694f24141cf1"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",

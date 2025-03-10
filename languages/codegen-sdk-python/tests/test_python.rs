@@ -48,13 +48,13 @@ class Test:
 #[test_log::test]
 fn test_python_ast_function() {
     let temp_dir = tempfile::tempdir().unwrap();
+    let root_path = temp_dir.path().to_path_buf();
     let content = "
 def test():
     pass";
     let file_path = write_to_temp_file(content, &temp_dir);
     let db = codegen_sdk_cst::CSTDatabase::default();
-    let content = codegen_sdk_cst::Input::new(&db, content.to_string());
-    let input = codegen_sdk_cst::File::new(&db, file_path, content);
+    let input = codegen_sdk_cst::File::new(&db, file_path, content, root_path.clone());
     let file = codegen_sdk_python::ast::parse_query(&db, input);
     assert_eq!(file.definitions(&db).functions(&db).len(), 1);
 }

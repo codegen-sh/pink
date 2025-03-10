@@ -1,6 +1,5 @@
 use codegen_sdk_common::FileNodeId;
 
-use crate::Db;
 #[salsa::interned]
 pub struct FullyQualifiedName<'db> {
     #[id]

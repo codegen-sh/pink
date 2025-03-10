@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use anyhow::Context;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialization::Cache;
-use codegen_sdk_cst::File;
 use codegen_sdk_resolution::{CodebaseContext, Db};
 use discovery::FilesToParse;
 use notify_debouncer_mini::DebounceEventResult;
@@ -66,7 +65,7 @@ impl Codebase {
 
     pub fn errors(&self) -> Vec<()> {
         let mut errors = Vec::new();
-        for file in self.discover().files(&self.db) {
+        for file in self.db.files() {
             if self.get_file(file.path(&self.db)).is_none() {
                 errors.push(());
             }

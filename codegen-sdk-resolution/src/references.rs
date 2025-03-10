@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::{Db, Dependencies, FullyQualifiedName, HasFile, HasId, Parse, ResolveType, files};
+use crate::{Db, Dependencies, FullyQualifiedName, HasFile, HasId, Parse, ResolveType};
 
 pub trait References<
     'db,

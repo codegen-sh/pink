@@ -7,7 +7,7 @@ use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
-use codegen_sdk_resolution::{CodebaseContext, References};
+use codegen_sdk_resolution::CodebaseContext;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
@@ -21,24 +21,20 @@ fn get_definitions<'db>(
         #[cfg(feature = "typescript")]
         if let ParsedFile::Typescript(file) = parsed {
             let definitions = file.definitions(db);
-            if let Some(node) = file.node(db) {
-                let tree = node.tree(db);
-                return (
-                    definitions.classes(db).len(),
-                    definitions.functions(db).len(),
-                    definitions.interfaces(db).len(),
-                    definitions.methods(db).len(),
-                    definitions.modules(db).len(),
-                    0,
-                );
-            }
+            return (
+                definitions.classes(db).len(),
+                definitions.functions(db).len(),
+                definitions.interfaces(db).len(),
+                definitions.methods(db).len(),
+                definitions.modules(db).len(),
+                0,
+            );
         }
         #[cfg(feature = "python")]
         if let ParsedFile::Python(file) = parsed {
             let definitions = file.definitions(db);
             let functions = definitions.functions(db);
-            let mut total_references =
-                codegen_sdk_python::ast::references_for_file(db, file.id(db));
+            let total_references = codegen_sdk_python::ast::references_for_file(db, file.id(db));
             return (
                 definitions.classes(db).len(),
                 functions.len(),
@@ -87,17 +83,17 @@ fn main() -> anyhow::Result<()> {
     let dir = args.input;
     let start = Instant::now();
     let mut codebase = Codebase::new(PathBuf::from(&dir));
-    // let end = Instant::now();
-    // let duration: std::time::Duration = end.duration_since(start);
-    // let memory = get_memory();
-    // log::info!(
-    //     "{} files parsed in {:?}.{} seconds with {} errors. Using {} MB of memory",
-    //     codebase.files().len(),
-    //     duration.as_secs(),
-    //     duration.subsec_millis(),
-    //     codebase.errors().len(),
-    //     memory / 1024 / 1024
-    // );
+    let end = Instant::now();
+    let duration: std::time::Duration = end.duration_since(start);
+    let memory = get_memory();
+    log::info!(
+        "{} files parsed in {:?}.{} seconds with {} errors. Using {} MB of memory",
+        codebase.files().len(),
+        duration.as_secs(),
+        duration.subsec_millis(),
+        codebase.errors().len(),
+        memory / 1024 / 1024
+    );
     loop {
         // Compile the code starting at the provided input, this will read other
         // needed files using the on-demand mechanism.
