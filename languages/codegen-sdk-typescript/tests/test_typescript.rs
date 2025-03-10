@@ -2,6 +2,7 @@
 use std::path::PathBuf;
 
 use codegen_sdk_ast::Definitions;
+use codegen_sdk_resolution::Db;
 fn write_to_temp_file(content: &str, temp_dir: &tempfile::TempDir) -> PathBuf {
     let file_path = temp_dir.path().join("test.ts");
     std::fs::write(&file_path, content).unwrap();
@@ -30,9 +31,8 @@ fn test_typescript_ast_interface() {
     let content = "interface Test { }".to_string();
     let file_path = write_to_temp_file(&content, &temp_dir);
     let db = codegen_sdk_cst::CSTDatabase::default();
-    let root_path = temp_dir.path().to_path_buf();
-    db.input(file_path);
-    let input = codegen_sdk_cst::FileNodeId::new(&db, file_path);
+    db.input(file_path.clone()).unwrap();
+    let input = codegen_sdk_common::FileNodeId::new(&db, file_path);
     let file = codegen_sdk_typescript::ast::parse(&db, input);
     assert_eq!(file.definitions(&db).interfaces(&db).len(), 1);
 }

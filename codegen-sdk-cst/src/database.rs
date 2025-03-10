@@ -5,7 +5,7 @@ use dashmap::{DashMap, mapref::entry::Entry};
 use crate::File;
 #[salsa::db]
 #[derive(Default, Clone)]
-// Basic Database implementation for Query generation. This is not used for anything else.
+// Basic Database implementation for Query generation and testing. This is not used for anything else.
 pub struct CSTDatabase {
     storage: salsa::Storage<Self>,
 }
