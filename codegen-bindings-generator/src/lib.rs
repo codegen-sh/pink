@@ -1,20 +1,21 @@
 #![feature(extend_one)]
 
 use codegen_sdk_common::{generator::format_code, language::Language};
-use quote::{ToTokens, quote};
+use quote::ToTokens;
 use syn::parse_quote;
 mod python;
-pub fn generate_python_bindings(language: &Language) -> anyhow::Result<()> {
-    let imports = quote! {
+pub(crate) fn get_imports() -> syn::File {
+    parse_quote! {
         use pyo3::prelude::*;
         use std::path::PathBuf;
         use std::sync::Arc;
         use pyo3::sync::GILProtected;
         use codegen_sdk_resolution::CodebaseContext;
         use codegen_sdk_common::traits::CSTNode;
-        // use pyo3_stub_gen::{impl_stub_type, derive::*};
-
-    };
+    }
+}
+pub fn generate_python_bindings(language: &Language) -> anyhow::Result<()> {
+    let imports = get_imports();
     let bindings = python::generator::generate_bindings(language)?;
     let ast: syn::File = parse_quote! {
         #imports

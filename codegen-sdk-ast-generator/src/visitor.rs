@@ -102,7 +102,7 @@ pub fn generate_visitor<'db>(
                 }
             }
             impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
                     }

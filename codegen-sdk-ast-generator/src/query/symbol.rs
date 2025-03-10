@@ -26,7 +26,7 @@ impl Symbol {
             #[salsa::tracked]
             pub struct #variant<'db> {
                 #[id]
-                _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+                _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName,
                 #[id]
                 node_id: indextree::NodeId,
                 // #[tracked]
@@ -52,7 +52,7 @@ impl Symbol {
                 }
             }
             impl<'db> codegen_sdk_resolution::HasId<'db> for #variant<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName {
                     self._fully_qualified_name(db)
                 }
             }

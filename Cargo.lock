@@ -316,6 +316,7 @@ dependencies = [
  "anyhow",
  "codegen-sdk-ast-generator",
  "codegen-sdk-common",
+ "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
  "proc-macro2",
  "quote",

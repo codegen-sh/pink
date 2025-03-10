@@ -1,7 +1,7 @@
 use codegen_sdk_common::FileNodeId;
 
-#[salsa::interned]
-pub struct FullyQualifiedName<'db> {
+#[salsa::interned(no_lifetime)]
+pub struct FullyQualifiedName {
     #[id]
     pub path: FileNodeId,
     #[return_ref]
@@ -9,5 +9,5 @@ pub struct FullyQualifiedName<'db> {
 }
 
 pub trait HasId<'db> {
-    fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> FullyQualifiedName<'db>;
+    fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> FullyQualifiedName;
 }

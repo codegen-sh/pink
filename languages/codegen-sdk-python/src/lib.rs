@@ -33,21 +33,21 @@ pub mod ast {
         #[tracked]
         #[no_eq]
         pub dependencies: codegen_sdk_common::hash::FxHashMap<
-            codegen_sdk_resolution::FullyQualifiedName<'db>,
+            codegen_sdk_resolution::FullyQualifiedName,
             codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>,
         >,
     }
     impl<'db>
         codegen_sdk_resolution::Dependencies<
             'db,
-            codegen_sdk_resolution::FullyQualifiedName<'db>,
+            codegen_sdk_resolution::FullyQualifiedName,
             crate::ast::Call<'db>,
         > for PythonDependencies<'db>
     {
         fn get(
             &'db self,
             db: &'db dyn codegen_sdk_resolution::Db,
-            key: &codegen_sdk_resolution::FullyQualifiedName<'db>,
+            key: &codegen_sdk_resolution::FullyQualifiedName,
         ) -> Option<&'db codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>> {
             self.dependencies(db).get(key)
         }
@@ -64,7 +64,7 @@ pub mod ast {
     pub fn dependency_keys<'db>(
         db: &'db dyn codegen_sdk_resolution::Db,
         input: codegen_sdk_common::FileNodeId,
-    ) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_resolution::FullyQualifiedName<'db>> {
+    ) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_resolution::FullyQualifiedName> {
         let dependencies = dependencies(db, input);
         dependencies.dependencies(db).keys().cloned().collect()
     }
@@ -72,7 +72,7 @@ pub mod ast {
     struct UsagesInput<'db> {
         #[id]
         input: codegen_sdk_common::FileNodeId,
-        name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+        name: codegen_sdk_resolution::FullyQualifiedName,
     }
     #[salsa::tracked(return_ref)]
     pub fn usages<'db>(
@@ -134,14 +134,14 @@ pub mod ast {
             self,
             db: &'db dyn codegen_sdk_resolution::Db,
         ) -> codegen_sdk_common::hash::FxHashMap<
-            codegen_sdk_resolution::FullyQualifiedName<'db>,
+            codegen_sdk_resolution::FullyQualifiedName,
             codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
         >
         where
             Self: 'db,
         {
             let mut dependencies: codegen_sdk_common::hash::FxHashMap<
-                codegen_sdk_resolution::FullyQualifiedName<'db>,
+                codegen_sdk_resolution::FullyQualifiedName,
                 codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
             > = codegen_sdk_common::hash::FxHashMap::default();
             for reference in self.resolvables(db) {
@@ -233,7 +233,7 @@ pub mod ast {
     }
     pub fn references_impl<'db>(
         db: &'db dyn Db,
-        name: codegen_sdk_resolution::FullyQualifiedName<'db>,
+        name: codegen_sdk_resolution::FullyQualifiedName,
     ) -> Vec<crate::ast::Call<'db>> {
         let files = codegen_sdk_resolution::files(db);
         log::info!(target: "resolution", "Finding references across {:?} files", files.len());
