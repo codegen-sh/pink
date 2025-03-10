@@ -1,2 +1,4 @@
 [build]
-rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zthreads=16", "-Ctarget-cpu=native"]
+rustflags = ["-Zthreads=16"]
+[profile.dev]
+rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zthreads=16"]
