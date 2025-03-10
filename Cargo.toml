@@ -1,4 +1,4 @@
-cargo-features = ["codegen-backend"]
+cargo-features = ["codegen-backend", "profile-rustflags"]
 
 [package]
 name = "codegen-sdk-core"
