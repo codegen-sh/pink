@@ -5,6 +5,7 @@ use codegen_sdk_cst::CSTDatabase;
 use quote::{ToTokens, quote};
 mod generator;
 mod query;
+pub use query::{HasQuery, field::Field, symbol::Symbol};
 mod visitor;
 use syn::parse_quote;
 pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
