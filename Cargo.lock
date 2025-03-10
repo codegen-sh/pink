@@ -315,9 +315,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "codegen-sdk-common",
- "codegen-sdk-cst-generator",
- "log",
- "proc-macro2",
  "quote",
  "syn 2.0.98",
 ]
@@ -468,16 +465,10 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "codegen-sdk-common",
- "convert_case",
  "dashmap",
  "indextree",
- "log",
- "rkyv",
  "salsa",
- "tempfile",
- "test-log",
  "thiserror 2.0.11",
- "tree-sitter",
 ]
 
 [[package]]
@@ -664,13 +655,10 @@ version = "0.1.0"
 dependencies = [
  "ambassador",
  "anyhow",
- "codegen-sdk-ast",
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "indicatif",
- "log",
  "salsa",
- "smallvec",
 ]
 
 [[package]]

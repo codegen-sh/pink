@@ -4,19 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tree-sitter = { workspace = true }
 bytes = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
-convert_case = { workspace = true }
-rkyv = { workspace = true }
-log = { workspace = true }
 salsa = { workspace = true }
 dashmap = "6.1.0"
 thiserror = {workspace = true}
 indextree = { workspace = true }
-[dev-dependencies]
-tempfile = { workspace = true }
-test-log = { workspace = true }
 
 [features]
 serialization = ["codegen-sdk-common/serialization"]

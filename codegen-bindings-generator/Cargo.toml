@@ -6,8 +6,5 @@ edition = "2024"
 [dependencies]
 quote = { workspace = true }
 codegen-sdk-common = { workspace = true }
-codegen-sdk-cst-generator = { workspace = true }
 syn = { workspace = true }
-proc-macro2 = { workspace = true }
 anyhow = { workspace = true }
-log = { workspace = true }
