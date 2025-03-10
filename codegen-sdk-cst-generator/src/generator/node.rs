@@ -178,7 +178,7 @@ impl<'a> Node<'a> {
             #derives
             pub struct #name<'db> {
                 id: CSTNodeId<'db>,
-                file_id: FileNodeId<'db>,
+                file_id: FileNodeId,
                 start_byte: usize,
                 end_byte: usize,
                 start_position: Point<'db>,
@@ -313,7 +313,7 @@ impl<'a> Node<'a> {
                 fn id(&self) -> CSTNodeId<'db> {
                     self.id
                 }
-                fn file_id(&self) -> FileNodeId<'db> {
+                fn file_id(&self) -> FileNodeId {
                     self.file_id
                 }
             }

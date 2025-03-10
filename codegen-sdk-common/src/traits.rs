@@ -87,7 +87,7 @@ where
         unimplemented!("is_extra not implemented")
     }
     fn id(&self) -> CSTNodeId<'db>;
-    fn file_id(&self) -> FileNodeId<'db>;
+    fn file_id(&self) -> FileNodeId;
 }
 
 // pub trait CSTNodeExt<'db>: CSTNode<'db> {

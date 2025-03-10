@@ -2,6 +2,7 @@ use std::{hash::Hash, num::NonZeroU16, path::PathBuf, sync::Arc};
 
 use convert_case::{Case, Casing};
 use mockall::automock;
+use proc_macro2::Span;
 use tree_sitter::Parser;
 
 use crate::{
@@ -82,6 +83,12 @@ impl Language {
     }
     pub fn struct_name(&self) -> &'static str {
         self.struct_name
+    }
+    pub fn file_struct_name(&self) -> syn::Ident {
+        syn::Ident::new(&format!("{}File", self.struct_name()), Span::call_site())
+    }
+    pub fn package_name(&self) -> String {
+        format!("codegen_sdk_{}", self.name())
     }
     pub fn node_for_struct_name(&self, struct_name: &str) -> Option<Arc<Node>> {
         self.nodes

@@ -88,7 +88,7 @@ impl Codebase {
         &self,
         name: &str,
         parallel: bool,
-        op: fn(&dyn Db, codegen_sdk_common::FileNodeId<'_>) -> T,
+        op: fn(&dyn Db, codegen_sdk_common::FileNodeId) -> T,
     ) -> Vec<T> {
         execute_op_with_progress(
             self._db(),

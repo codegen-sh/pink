@@ -14,7 +14,7 @@ pub mod ast {
         fn resolve_import(
             self,
             db: &'db dyn codegen_sdk_resolution::Db,
-        ) -> Option<codegen_sdk_common::FileNodeId<'db>> {
+        ) -> Option<codegen_sdk_common::FileNodeId> {
             let root_path = self.root_path(db);
             let module = self.module(db).source().replace(".", "/");
             let target_path = root_path.join(module).with_extension("py");
@@ -28,7 +28,7 @@ pub mod ast {
     #[salsa::tracked]
     pub struct PythonDependencies<'db> {
         #[id]
-        id: codegen_sdk_common::FileNodeId<'db>,
+        id: codegen_sdk_common::FileNodeId,
         #[return_ref]
         #[tracked]
         #[no_eq]
@@ -55,7 +55,7 @@ pub mod ast {
     #[salsa::tracked(return_ref, no_eq)]
     pub fn dependencies<'db>(
         db: &'db dyn codegen_sdk_resolution::Db,
-        input: codegen_sdk_common::FileNodeId<'db>,
+        input: codegen_sdk_common::FileNodeId,
     ) -> PythonDependencies<'db> {
         let file = parse(db, input);
         PythonDependencies::new(db, file.id(db), file.compute_dependencies(db))
@@ -63,7 +63,7 @@ pub mod ast {
     #[salsa::tracked(return_ref, no_eq)]
     pub fn dependency_keys<'db>(
         db: &'db dyn codegen_sdk_resolution::Db,
-        input: codegen_sdk_common::FileNodeId<'db>,
+        input: codegen_sdk_common::FileNodeId,
     ) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_resolution::FullyQualifiedName<'db>> {
         let dependencies = dependencies(db, input);
         dependencies.dependencies(db).keys().cloned().collect()
@@ -71,7 +71,7 @@ pub mod ast {
     #[salsa::tracked]
     struct UsagesInput<'db> {
         #[id]
-        input: codegen_sdk_common::FileNodeId<'db>,
+        input: codegen_sdk_common::FileNodeId,
         name: codegen_sdk_resolution::FullyQualifiedName<'db>,
     }
     #[salsa::tracked(return_ref)]
@@ -196,7 +196,7 @@ pub mod ast {
     // #[salsa::tracked(return_ref)]
     pub fn references_for_file<'db>(
         db: &'db dyn Db,
-        file: codegen_sdk_common::FileNodeId<'db>,
+        file: codegen_sdk_common::FileNodeId,
     ) -> usize {
         let parsed = parse(db, file);
         let definitions = parsed.definitions(db);

@@ -18,5 +18,5 @@ pub mod naming;
 #[cfg(feature = "serialization")]
 pub mod serialize;
 pub mod tree;
-pub use tree::{CSTNodeId, FileNodeId, Point, Range, Tree, TreeNode};
+pub use tree::{CSTNodeId, CSTNodeTreeId, FileNodeId, Point, Range, Tree, TreeNode};
 pub mod generator;

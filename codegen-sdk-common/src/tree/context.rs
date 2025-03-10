@@ -5,8 +5,8 @@ use bytes::Bytes;
 use crate::tree::{FileNodeId, Tree, TreeNode};
 pub struct ParseContext<'db, T: TreeNode> {
     pub db: &'db dyn salsa::Database,
-    pub file_id: FileNodeId<'db>,
-    pub root: FileNodeId<'db>,
+    pub file_id: FileNodeId,
+    pub root: FileNodeId,
     pub buffer: Arc<Bytes>,
     pub tree: Tree<T>,
 }

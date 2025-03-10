@@ -15,7 +15,7 @@ struct Args {
 // #[salsa::tracked]
 fn get_definitions<'db>(
     db: &'db dyn codegen_sdk_resolution::Db,
-    file: codegen_sdk_common::FileNodeId<'db>,
+    file: codegen_sdk_common::FileNodeId,
 ) -> (usize, usize, usize, usize, usize, usize) {
     if let Some(parsed) = parse_file(db, file).file(db) {
         #[cfg(feature = "typescript")]

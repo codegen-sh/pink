@@ -69,10 +69,10 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
         #[return_ref]
         pub node: Option<crate::cst::Parsed<'db>>,
         #[id]
-        pub id: codegen_sdk_common::FileNodeId<'db>,
+        pub id: codegen_sdk_common::FileNodeId,
     }
     impl<'db> codegen_sdk_resolution::Parse<'db> for #language_struct_name<'db> {
-        fn parse(db: &'db dyn codegen_sdk_resolution::Db, input: codegen_sdk_common::FileNodeId<'db>) -> &'db Self {
+        fn parse(db: &'db dyn codegen_sdk_resolution::Db, input: codegen_sdk_common::FileNodeId) -> &'db Self {
             parse(db, input)
         }
     }
@@ -82,7 +82,7 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     //     }}
     // }}
     #[salsa::tracked(return_ref)]
-    pub fn parse<'db>(db: &'db dyn codegen_sdk_resolution::Db, input: codegen_sdk_common::FileNodeId<'db>) -> #language_struct_name<'db> {
+    pub fn parse<'db>(db: &'db dyn codegen_sdk_resolution::Db, input: codegen_sdk_common::FileNodeId) -> #language_struct_name<'db> {
         let input = db.input(input.path(db)).unwrap();
         log::debug!("Parsing {} file: {}", input.path(db).display(), #language_name_str);
         let ast = crate::cst::parse_program_raw(db, input);

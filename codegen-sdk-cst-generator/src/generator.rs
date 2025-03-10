@@ -49,7 +49,7 @@ fn get_parser(language: &Language) -> TokenStream {
         #[salsa::tracked]
         pub struct Parsed<'db> {
             #[id]
-            id: FileNodeId<'db>,
+            id: FileNodeId,
             #[tracked]
             #[return_ref]
             #[no_clone]

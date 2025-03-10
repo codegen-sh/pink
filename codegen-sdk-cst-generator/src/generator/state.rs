@@ -312,6 +312,9 @@ impl<'a> State<'a> {
             .map(|s| format_ident!("{}", normalize_type_name(s, true)))
             .collect()
     }
+    pub fn nodes(&self) -> Vec<&Node<'a>> {
+        self.nodes.values().collect()
+    }
 }
 #[cfg(test)]
 mod tests {

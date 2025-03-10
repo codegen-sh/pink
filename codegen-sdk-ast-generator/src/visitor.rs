@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use codegen_sdk_common::Language;
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote, quote_spanned};
+use quote::{format_ident, quote};
 use syn::parse_quote_spanned;
 
 use super::query::Query;
@@ -68,50 +68,14 @@ pub fn generate_visitor<'db>(
     };
     let mut defs = Vec::new();
     let language_struct = format_ident!("{}File", language.struct_name());
-    for (variant, type_name) in symbol_names.iter().zip(types.iter()) {
+    for (_, type_name) in symbol_names.iter().zip(types.iter()) {
         let query = enter_methods
             .get(&type_name.to_string())
             .unwrap()
             .first()
             .unwrap();
-        let fields = query.struct_fields();
-        let span = Span::mixed_site();
-        defs.push(quote_spanned! {
-            span =>
-            #[salsa::tracked]
-            pub struct #variant<'db> {
-                #[id]
-                _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName<'db>,
-                #[id]
-                node_id: indextree::NodeId,
-                // #[tracked]
-                // #[return_ref]
-                // pub node: crate::cst::#type_name<'db>,
-                #(#fields),*
-            }
-            impl<'db> #variant<'db> {
-                pub fn node(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db crate::cst::#type_name<'db> {
-                    let file = self.file(db);
-                    let tree = file.tree(db);
-                    tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
-                }
-            }
-            impl<'db> codegen_sdk_resolution::HasFile<'db> for #variant<'db> {
-                type File<'db1> = #language_struct<'db1>;
-                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
-                    let path = self._fully_qualified_name(db).path(db);
-                    parse(db, path)
-                }
-                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
-                    self.node(db).id().root(db).path(db)
-                }
-            }
-            impl<'db> codegen_sdk_resolution::HasId<'db> for #variant<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
-                    self._fully_qualified_name(db)
-                }
-            }
-        });
+        let symbol = query.symbol();
+        defs.extend(symbol.as_syn_struct());
     }
     let symbol = if defs.len() > 0 {
         quote! {
