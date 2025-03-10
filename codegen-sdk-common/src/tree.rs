@@ -6,7 +6,7 @@ mod tree;
 pub use point::Point;
 pub use range::Range;
 mod id;
-pub use id::{CSTNodeId, FileNodeId};
+pub use id::{CSTNodeId, CSTNodeTreeId, FileNodeId};
 mod context;
 pub use context::ParseContext;
 pub use tree::{Tree, TreeNode};

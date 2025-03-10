@@ -6,7 +6,7 @@ languages_ast!();
 #[salsa::tracked]
 pub struct Parsed<'db> {
     #[id]
-    path: FileNodeId<'db>,
+    path: FileNodeId,
     #[return_ref]
     #[tracked]
     pub file: Option<ParsedFile<'db>>,
@@ -14,7 +14,7 @@ pub struct Parsed<'db> {
 #[salsa::tracked(return_ref)]
 pub fn parse_file<'db>(
     db: &'db dyn codegen_sdk_resolution::Db,
-    file: codegen_sdk_common::FileNodeId<'db>,
+    file: codegen_sdk_common::FileNodeId,
 ) -> Parsed<'db> {
     parse_language!();
     Parsed::new(db, file, None)

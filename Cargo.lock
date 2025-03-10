@@ -314,7 +314,10 @@ name = "codegen-bindings-generator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "codegen-sdk-ast-generator",
  "codegen-sdk-common",
+ "codegen-sdk-cst-generator",
+ "proc-macro2",
  "quote",
  "syn 2.0.98",
 ]

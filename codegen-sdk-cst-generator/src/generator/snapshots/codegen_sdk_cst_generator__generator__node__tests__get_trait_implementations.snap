@@ -36,7 +36,7 @@ impl<'db> CSTNode<'db> for TestNode<'db> {
     fn id(&self) -> CSTNodeId<'db> {
         self.id
     }
-    fn file_id(&self) -> FileNodeId<'db> {
+    fn file_id(&self) -> FileNodeId {
         self.file_id
     }
 }
