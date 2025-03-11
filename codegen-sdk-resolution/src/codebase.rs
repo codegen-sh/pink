@@ -1,11 +1,13 @@
 use std::path::PathBuf;
 
 use codegen_sdk_common::FileNodeId;
+use salsa::Database;
 
 use crate::Db;
 // Not sure what to name this
 // Equivalent to CodebaseGraph/CodebaseContext in the SDK
 pub trait CodebaseContext {
+    type Db: Database;
     type File<'a>
     where
         Self: 'a;
@@ -26,4 +28,7 @@ pub trait CodebaseContext {
         }
     }
     fn root_path(&self) -> PathBuf;
+    fn attach<T>(&self, op: impl FnOnce(&Self::Db) -> T) -> T {
+        unimplemented!()
+    }
 }

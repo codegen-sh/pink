@@ -11,8 +11,9 @@ fn generate_cst_struct(
     let mut output = Vec::new();
     let struct_name = format_ident!("{}", node.normalize_name());
     let package_name = syn::Ident::new(&language.package_name(), Span::call_site());
+    let module_name = format!("codegen_sdk_pink::{}.cst", language.name());
     output.push(parse_quote! {
-        #[pyclass]
+        #[pyclass(module=#module_name)]
         pub struct #struct_name {
             id: codegen_sdk_common::CSTNodeTreeId,
             codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -78,6 +79,9 @@ fn generate_cst_struct(
                 let row = position.row(self.codebase.get(py).db());
                 let column = position.column(self.codebase.get(py).db());
                 pyo3::types::PyTuple::new(py ,vec![row, column])
+            }
+            fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+                Ok(self.source(py)?)
             }
         }
     });

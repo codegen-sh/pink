@@ -85,7 +85,7 @@ impl Symbol {
                 let db = self.codebase.get(py).db();
                 let category = file.#category(db);
                 let subcategory = category.#subcategory(db);
-                let nodes = subcategory.values().flatten().enumerate().map(|(idx, node)| #type_name::new(node.fully_qualified_name(db), idx, self.codebase.clone())).collect();
+                let nodes = subcategory.values().map(|values| values.into_iter().enumerate().map(|(idx, node)| #type_name::new(node.fully_qualified_name(db), idx, self.codebase.clone()))).flatten().collect();
                 Ok(nodes)
             }
         }

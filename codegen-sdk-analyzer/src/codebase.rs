@@ -6,7 +6,7 @@ use codegen_sdk_common::serialization::Cache;
 use codegen_sdk_resolution::{CodebaseContext, Db};
 use discovery::FilesToParse;
 use notify_debouncer_mini::DebounceEventResult;
-use salsa::Setter;
+use salsa::{Database, Setter};
 
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
 mod discovery;
@@ -101,6 +101,7 @@ impl Codebase {
 }
 impl CodebaseContext for Codebase {
     type File<'a> = ParsedFile<'a>;
+    type Db = CodegenDatabase;
     fn root_path(&self) -> PathBuf {
         self.root.clone()
     }
@@ -125,5 +126,8 @@ impl CodebaseContext for Codebase {
             }
         }
         None
+    }
+    fn attach<T>(&self, op: impl FnOnce(&Self::Db) -> T) -> T {
+        self.db.attach(op)
     }
 }

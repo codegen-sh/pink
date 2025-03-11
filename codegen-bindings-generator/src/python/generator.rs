@@ -78,9 +78,10 @@ fn generate_symbol_struct(
     let mut output = Vec::new();
     let struct_name = format_ident!("{}", symbol.name);
     let package_name = syn::Ident::new(&language.package_name(), span);
+    let module_name = format!("codegen_sdk_pink.{}", language.name());
     output.push(parse_quote_spanned! {
         span =>
-        #[pyclass]
+        #[pyclass(module=#module_name)]
         pub struct #struct_name {
             id: codegen_sdk_resolution::FullyQualifiedName,
             idx: usize,
@@ -114,13 +115,20 @@ fn generate_symbol_struct(
                 let db = self.codebase.get(py).db();
                 Ok(cst::#ts_node_name::new(node.node_id(db), self.codebase.clone()))
             }
-            fn source(&self, py: Python<'_>) -> PyResult<String> {
+            fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 let db = self.codebase.get(py).db();
                 let node = self.get(py)?.node(db);
                 Ok(node.source())
             }
-            fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+            fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 Ok(self.source(py)?)
+            }
+            fn __repr__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+                let node = self.get(py)?;
+                let codebase = self.codebase.get(py);
+                codebase.attach(|_db| {
+                    Ok(format!("{node:#?}"))
+                })
             }
         }
     });
