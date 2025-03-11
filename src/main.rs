@@ -34,7 +34,8 @@ fn get_definitions<'db>(
         if let ParsedFile::Python(file) = parsed {
             let definitions = file.definitions(db);
             let functions = definitions.functions(db);
-            let total_references = codegen_sdk_python::ast::references_for_file(db, file.id(db));
+            let total_references =
+                codegen_sdk_analyzer::codegen_sdk_python::ast::references_for_file(db, file.id(db));
             return (
                 definitions.classes(db).len(),
                 functions.len(),

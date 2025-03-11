@@ -127,3 +127,20 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
     }
     output.into()
 }
+#[proc_macro]
+pub fn re_export_languages(_item: TokenStream) -> TokenStream {
+    let mut output = proc_macro2::TokenStream::new();
+    for language in LANGUAGES.iter() {
+        if language.name() == "ts_query" {
+            continue;
+        }
+        let name = language.name();
+        let package_name = format_ident!("{}", language.package_name());
+        let variant: proc_macro2::TokenStream = quote! {
+            #[cfg(feature = #name)]
+            pub use #package_name;
+        };
+        output.extend_one(variant);
+    }
+    output.into()
+}

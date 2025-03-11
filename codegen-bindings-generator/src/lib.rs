@@ -1,6 +1,7 @@
 #![feature(extend_one)]
 
 use codegen_sdk_common::{generator::format_code, language::Language};
+pub use python::generate_python_bindings_common;
 use quote::ToTokens;
 use syn::parse_quote;
 mod python;
@@ -17,6 +18,7 @@ pub(crate) fn get_imports() -> syn::File {
         use codegen_sdk_resolution::HasId;
     }
 }
+
 pub fn generate_python_bindings(language: &Language) -> anyhow::Result<()> {
     let imports = get_imports();
     let bindings = python::generator::generate_bindings(language)?;

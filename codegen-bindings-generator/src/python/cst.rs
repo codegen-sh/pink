@@ -24,7 +24,7 @@ fn generate_cst_struct(
             pub fn new(id: codegen_sdk_common::CSTNodeTreeId, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
                 Self { id, codebase }
             }
-            fn get_node<'db>(&'db self, py: Python<'db>) -> PyResult<&'db #package_name::cst::#struct_name<'db>> {
+            fn get_node<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::cst::#struct_name<'db>> {
                 #(#file_getter)*
                 let tree = file.tree(codebase.db());
                 let node = tree.get(self.id.id(codebase.db()));

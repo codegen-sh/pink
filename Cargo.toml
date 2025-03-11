@@ -12,16 +12,14 @@ codegen-sdk-ast = { workspace = true}
 codegen-sdk-common = { workspace = true}
 anyhow = { workspace = true}
 salsa = { workspace = true}
-codegen-sdk-typescript = { workspace = true, optional = true }
-codegen-sdk-python = { workspace = true, optional = true }
 env_logger = { workspace = true }
 log = { workspace = true }
 codegen-sdk-resolution = { workspace = true}
 sysinfo = "0.33.1"
 rkyv.workspace = true
 [features]
-python = [ "codegen-sdk-analyzer/python", "codegen-sdk-python"]
-typescript = [ "codegen-sdk-analyzer/typescript", "codegen-sdk-typescript"]
+python = [ "codegen-sdk-analyzer/python"]
+typescript = [ "codegen-sdk-analyzer/typescript"]
 tsx = [ "codegen-sdk-analyzer/tsx"]
 jsx = [ "codegen-sdk-analyzer/jsx"]
 javascript = [ "codegen-sdk-analyzer/javascript"]
@@ -34,8 +32,8 @@ markdown = [ "codegen-sdk-analyzer/markdown"]
 yaml = [ "codegen-sdk-analyzer/yaml"]
 toml = [ "codegen-sdk-analyzer/toml"]
 serialization = ["codegen-sdk-common/serialization", "codegen-sdk-analyzer/serialization"]
-stable = ["json", "toml", "typescript", "tsx", "jsx", "go", "python", "yaml", "java", "ruby", "rust", "javascript", "markdown"]
-default = []
+stable = ["codegen-sdk-analyzer/stable", "typescript", "tsx", "jsx", "javascript", "json", "toml", "yaml", "java", "ruby", "rust", "go", "markdown"]
+default = ["json"]
 [dev-dependencies]
 test-log = { workspace = true }
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -125,13 +123,13 @@ indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.17.11", features = ["rayon"] }
 crossbeam-channel = "0.5.11"
 rstest = "0.25.0"
-indextree = "4.7.3"
+indextree = { version = "4.7.3", features = ["std"], default-features = false }
 thiserror = "2.0.11"
 indexmap = "2"
 smallvec = "1.11.0"
 [profile.dev]
 # codegen-backend = "cranelift"
-# split-debuginfo = "unpacked"
+split-debuginfo = "unpacked"
 
 [profile.dev.package]
 insta.opt-level = 3

@@ -29,12 +29,15 @@ fn generate_file_struct(
             pub fn new(path: PathBuf, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
                 Self { path, codebase }
             }
-            fn file<'db>(&'db self, py: Python<'db>) -> PyResult<&'db #package_name::ast::#struct_name<'db>>{
+            fn file<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::ast::#struct_name<'db>>{
                 let codebase = self.codebase.get(py);
                 if let codegen_sdk_analyzer::ParsedFile::#variant_name(file) = codebase.get_file(&self.path).unwrap() {
                     Ok(file)
                 } else {
-                    Err(pyo3::exceptions::PyValueError::new_err("File not found"))
+                    Err(pyo3::exceptions::PyValueError::new_err(format!(
+                        "File not found at {}",
+                        self.path.display()
+                    )))
                 }
             }
         }
@@ -93,7 +96,7 @@ fn generate_symbol_struct(
             pub fn new(id: codegen_sdk_resolution::FullyQualifiedName, idx: usize, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
                 Self { id, idx, codebase }
             }
-            fn get<'db>(&'db self, py: Python<'db>) -> PyResult<&'db #package_name::ast::#struct_name<'db>> {
+            fn get<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::ast::#struct_name<'db>> {
                 #(#file_getter)*
                 let name = self.id.name(codebase.db());
                 let node = file.#category(codebase.db()).#subcategory(codebase.db()).get(name).unwrap();

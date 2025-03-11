@@ -9,15 +9,9 @@ use pyo3::{prelude::*, sync::GILProtected};
 //     derive::{gen_stub_pyclass, gen_stub_pyclass_enum, gen_stub_pymethods},
 // };
 mod file;
-pub mod python {
-    include!(concat!(env!("OUT_DIR"), "/python-bindings.rs"));
-}
 // #[gen_stub_pyclass_enum]
-#[derive(IntoPyObject)]
-enum FileEnum {
-    Python(crate::python::PythonFile),
-    Unknown(crate::file::File),
-}
+include!(concat!(env!("OUT_DIR"), "/common-bindings.rs"));
+
 // #[gen_stub_pyclass]
 #[pyclass]
 struct Codebase {
