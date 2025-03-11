@@ -1,6 +1,7 @@
 use convert_case::{Case, Casing};
 use pluralizer::pluralize;
 use proc_macro2::Span;
+use quote::format_ident;
 use syn::parse_quote_spanned;
 
 use crate::query::field::Field;
@@ -88,6 +89,39 @@ impl Symbol {
                 let nodes = subcategory.values().map(|values| values.into_iter().enumerate().map(|(idx, node)| #type_name::new(node.fully_qualified_name(db), idx, self.codebase.clone()))).flatten().collect();
                 Ok(nodes)
             }
+
+        }
+    }
+    pub fn py_file_get(&self) -> syn::Stmt {
+        let span = Span::call_site();
+        let method_name = format_ident!("get_{}", self.name.to_case(Case::Snake));
+        let category = syn::Ident::new(&self.category, span);
+        let type_name = syn::Ident::new(&self.name, span);
+        let subcategory = syn::Ident::new(&self.subcategory, span);
+        parse_quote_spanned! {
+            span =>
+            #[pyo3(signature = (name,optional=false))]
+            pub fn #method_name(&self, py: Python<'_>, name: String, optional: bool) -> PyResult<Option<#type_name>> {
+                let file = self.file(py)?;
+                let db = self.codebase.get(py).db();
+                let category = file.#category(db);
+                let subcategory = category.#subcategory(db);
+                let res = subcategory.get(&name);
+                if let Some(nodes) = res {
+                    if nodes.len() == 1 {
+                        Ok(Some(#type_name::new(nodes[0].fully_qualified_name(db), 0, self.codebase.clone())))
+                    } else {
+                        Err(pyo3::exceptions::PyValueError::new_err(format!("Ambiguous symbol {} found {} possible matches", name, nodes.len())))
+                    }
+                } else {
+                    if optional {
+                        Ok(None)
+                    } else {
+                        Err(pyo3::exceptions::PyValueError::new_err(format!("No symbol {} found", name)))
+                    }
+                }
+            }
+
         }
     }
 }

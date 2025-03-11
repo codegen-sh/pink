@@ -18,7 +18,7 @@ impl Field {
             #[doc = #doc]
             #[tracked]
             #[return_ref]
-            pub #name_ident: indextree::NodeId
+            pub #name_ident: codegen_sdk_common::CSTNodeTreeId
         )
     }
     fn doc(&self) -> String {
@@ -45,7 +45,7 @@ impl Field {
         parse_quote!(
             pub fn #name_ident(&self, db: &'db dyn codegen_sdk_resolution::Db) -> #type_name {
                 #[doc = #msg]
-                let id = self.#field_ident(db);
+                let id = self.#field_ident(db).id(db);
                 let file = self.file(db);
                 let node = file.tree(db).get(&id).unwrap();
                 node.as_ref().try_into().unwrap()

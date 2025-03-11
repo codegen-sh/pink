@@ -689,7 +689,7 @@ impl<'a> Query<'a> {
             let name = tree.get(&#name).unwrap().source();
             let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, node.file_id(),name.clone());
             let tree_id = codegen_sdk_common::CSTNodeTreeId::from_node_id(db, &node.id(), id);
-            let symbol = #symbol_name::new(db, fully_qualified_name, tree_id, #(#args.clone()),*);
+            let symbol = #symbol_name::new(db, fully_qualified_name, tree_id, #(codegen_sdk_common::CSTNodeTreeId::from_node_id(db, &tree.get(&#args).unwrap().id(), #args.clone())),*);
             #to_append.entry(name).or_default().push(symbol);
         };
     }

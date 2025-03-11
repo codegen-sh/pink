@@ -28,7 +28,5 @@ pub trait CodebaseContext {
         }
     }
     fn root_path(&self) -> PathBuf;
-    fn attach<T>(&self, op: impl FnOnce(&Self::Db) -> T) -> T {
-        unimplemented!()
-    }
+    fn attach<T>(&self, op: impl FnOnce(&Self::Db) -> T) -> T;
 }

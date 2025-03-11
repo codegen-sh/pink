@@ -8,4 +8,6 @@ codebase = Codebase("/Users/ellen/workspace/scratch/codegen-sdk/src")
 print(len(codebase.files))
 for file in codebase.files:
     print(file.path)
-    print(file.functions)
+    for function in file.functions:
+        print(function.name)
+        print(file.get_function(str(function.name)))

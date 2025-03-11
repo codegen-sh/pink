@@ -42,7 +42,10 @@ fn generate_file_struct(
             }
         }
     });
-    let methods = symbols.iter().map(|symbol| symbol.py_file_getter());
+    let methods = symbols
+        .iter()
+        .map(|symbol| vec![symbol.py_file_getter(), symbol.py_file_get()])
+        .flatten();
     output.push(parse_quote! {
         #[pymethods]
         impl #struct_name {
@@ -105,6 +108,25 @@ fn generate_symbol_struct(
             }
         }
     });
+    let fields: Vec<syn::Stmt> = symbol
+        .fields
+        .iter()
+        .map(|field| -> Vec<syn::Stmt> {
+            let name = syn::Ident::new(&field.name, span);
+            let underscore_name = syn::Ident::new(&format!("_{}", field.name), span);
+            let type_name = syn::Ident::new(&field.kind, span);
+            parse_quote_spanned! {
+                span =>
+                #[getter]
+                pub fn #name(&self, py: Python<'_>) -> PyResult<cst::#type_name> {
+                    let node = self.get(py)?;
+                    let db = self.codebase.get(py).db();
+                    Ok(cst::#type_name::new(node.#underscore_name(db).clone(), self.codebase.clone()))
+                }
+            }
+        })
+        .flatten()
+        .collect();
     let ts_node_name = syn::Ident::new(&symbol.type_name, span);
     output.push(parse_quote_spanned! {
         span =>
@@ -130,6 +152,7 @@ fn generate_symbol_struct(
                     Ok(format!("{node:#?}"))
                 })
             }
+            #(#fields)*
         }
     });
     Ok(output)
