@@ -1,6 +1,5 @@
 use std::{path::PathBuf, sync::Arc};
 
-use codegen_sdk_common::language::LANGUAGES;
 use codegen_sdk_resolution::{CodebaseContext, File as _};
 use file::File;
 use pyo3::{prelude::*, sync::GILProtected};
@@ -19,17 +18,7 @@ struct Codebase {
 }
 impl Codebase {
     fn convert_file(&self, path: &PathBuf) -> PyResult<FileEnum> {
-        for language in LANGUAGES.iter() {
-            if language
-                .should_parse(path)
-                .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?
-            {
-                let file = python::PythonFile::new(path.clone(), self.codebase.clone());
-                return Ok(FileEnum::Python(file));
-            }
-        }
-        let file = crate::file::File::new(path.clone(), self.codebase.clone());
-        Ok(FileEnum::Unknown(file))
+        FileEnum::parse(path, self.codebase.clone())
     }
 }
 // #[gen_stub_pymethods]

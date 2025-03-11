@@ -32,13 +32,40 @@ pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Re
             }
         })
         .collect();
-
+    let parsers: Vec<syn::Stmt> = languages
+        .iter()
+        .filter(|language| language.name() != "ts_query")
+        .map(|language| -> Vec<syn::Stmt> {
+            let flag_name = language.name();
+            let name = format_ident!("{}", language.name());
+            let variant = format_ident!("{}", language.struct_name());
+            let file_name = format_ident!("{}", language.file_struct_name());
+            parse_quote! {
+                #[cfg(feature = #flag_name)]
+                if codegen_sdk_common::language::#name::#variant.should_parse(path).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))? {
+                    let file = #name::#file_name::new(path.clone(), codebase);
+                    return Ok(FileEnum::#variant(file));
+                }
+            }
+        })
+        .flatten()
+        .collect();
+    let parse: syn::Stmt = parse_quote! {
+        pub fn parse(path: &PathBuf, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> PyResult<FileEnum> {
+            #(#parsers)*
+        let file = crate::file::File::new(path.clone(),   codebase);
+        Ok(FileEnum::Unknown(file))
+    }
+    };
     let ast: syn::File = parse_quote! {
         #(#modules)*
         #[derive(IntoPyObject)]
         enum FileEnum {
             #(#variants,)*
             Unknown(File),
+        }
+        impl FileEnum {
+            #parse
         }
     };
     let out_dir = std::env::var("OUT_DIR")?;
