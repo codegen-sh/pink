@@ -21,6 +21,11 @@ impl Symbol {
             .iter()
             .map(|field| field.as_syn_field())
             .collect::<Vec<_>>();
+        let getters = self
+            .fields
+            .iter()
+            .map(|field| field.getter())
+            .collect::<Vec<_>>();
         parse_quote_spanned! {
             span =>
             #[salsa::tracked]
@@ -40,6 +45,7 @@ impl Symbol {
                     let tree = file.tree(db);
                     tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
                 }
+                #(#getters)*
             }
             impl<'db> codegen_sdk_resolution::HasFile<'db> for #variant<'db> {
                 type File<'db1> = #language_struct<'db1>;
