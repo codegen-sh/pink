@@ -44,6 +44,7 @@ fn generate_file_struct(
     });
     let methods = symbols
         .iter()
+        .filter(|symbol| symbol.category != symbol.subcategory)
         .map(|symbol| vec![symbol.py_file_getter(), symbol.py_file_get()])
         .flatten();
     output.push(parse_quote! {
