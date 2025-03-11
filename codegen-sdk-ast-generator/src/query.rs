@@ -619,7 +619,7 @@ impl<'a> Query<'a> {
             );
             matchers.extend_one(matcher);
         } else {
-            let subenum = self.state.get_subenum_variants(&first_node.source());
+            let subenum = self.state.get_subenum_variants(&first_node.source(), false);
             log::info!(
                 "subenum {} with {} variants",
                 first_node.source(),

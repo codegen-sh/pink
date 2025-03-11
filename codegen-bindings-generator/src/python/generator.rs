@@ -2,7 +2,7 @@ use codegen_sdk_ast_generator::{HasQuery, Symbol};
 use codegen_sdk_common::Language;
 use codegen_sdk_cst::CSTDatabase;
 use proc_macro2::Span;
-use quote::format_ident;
+use quote::{format_ident, quote};
 use syn::{parse_quote, parse_quote_spanned};
 
 use super::{cst::generate_cst, helpers};
@@ -92,7 +92,7 @@ fn generate_symbol_struct(
             codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
         }
     });
-    let file_getter = helpers::get_file(language);
+    let file_getter = helpers::get_file(language, quote! { self.id }, quote! { self.codebase });
     let category = syn::Ident::new(&symbol.category, span);
     let subcategory = syn::Ident::new(&symbol.subcategory, span);
     output.push(parse_quote_spanned! {
