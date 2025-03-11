@@ -23,7 +23,7 @@ fn generate_cst_struct(
     let file_type = format_ident!("{}", language.file_struct_name());
     output.push(parse_quote! {
         impl #struct_name {
-            pub fn new(id: codegen_sdk_common::CSTNodeTreeId, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
+            pub fn new(_py: Python<'_> ,id: codegen_sdk_common::CSTNodeTreeId, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
                 Self { id, codebase }
             }
             fn get_file<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::ast::#file_type<'db>> {
@@ -145,7 +145,7 @@ fn generate_cst_subenum(
         .map(|node| {
             let name = format_ident!("{}", node.normalize_name());
             parse_quote! {
-                codegen_sdk_analyzer::#package_name::cst::#ref_name::#name(_) => Ok(Self::#name(#name::new(id, codebase_arc.clone()))),
+                codegen_sdk_analyzer::#package_name::cst::#ref_name::#name(_) => Ok(Self::#name(#name::new(py ,id, codebase_arc.clone()))),
             }
         })
         .collect();

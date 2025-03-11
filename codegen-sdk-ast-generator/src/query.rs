@@ -1009,7 +1009,9 @@ pub trait HasQuery {
     ) -> BTreeMap<String, symbol::Symbol> {
         let mut symbols = BTreeMap::new();
         for (name, query) in self.queries(db).into_iter() {
-            symbols.insert(name, query.symbol());
+            if vec!["definition".to_string(), "reference".to_string()].contains(&&name) {
+                symbols.insert(name, query.symbol());
+            }
         }
         symbols
     }

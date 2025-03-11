@@ -122,7 +122,7 @@ fn generate_symbol_struct(
                 pub fn #name(&self, py: Python<'_>) -> PyResult<cst::#type_name> {
                     let node = self.get(py)?;
                     let db = self.codebase.get(py).db();
-                    Ok(cst::#type_name::new(node.#underscore_name(db).clone(), self.codebase.clone()))
+                    Ok(cst::#type_name::new(py.clone(), node.#underscore_name(db).clone(), self.codebase.clone()))
                 }
             }
         })
@@ -136,7 +136,7 @@ fn generate_symbol_struct(
             pub fn ts_node(&self, py: Python<'_>) -> PyResult<cst::#ts_node_name> {
                 let node = self.get(py)?;
                 let db = self.codebase.get(py).db();
-                Ok(cst::#ts_node_name::new(node.node_id(db), self.codebase.clone()))
+                Ok(cst::#ts_node_name::new(py, node.node_id(db), self.codebase.clone()))
             }
             fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 let db = self.codebase.get(py).db();
