@@ -3,8 +3,6 @@ use proc_macro2::Span;
 use quote::format_ident;
 use syn::parse_quote;
 
-use crate::get_imports;
-
 fn generate_cst_struct(
     language: &Language,
     node: &codegen_sdk_cst_generator::Node,

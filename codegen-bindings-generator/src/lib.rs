@@ -12,6 +12,9 @@ pub(crate) fn get_imports() -> syn::File {
         use pyo3::sync::GILProtected;
         use codegen_sdk_resolution::CodebaseContext;
         use codegen_sdk_common::traits::CSTNode;
+        use codegen_sdk_ast::References;
+        use codegen_sdk_ast::Definitions;
+        use codegen_sdk_resolution::HasId;
     }
 }
 pub fn generate_python_bindings(language: &Language) -> anyhow::Result<()> {

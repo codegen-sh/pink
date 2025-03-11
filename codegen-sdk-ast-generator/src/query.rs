@@ -14,7 +14,9 @@ use derive_more::Debug;
 use indextree::NodeId;
 use log::{debug, info, warn};
 pub mod field;
+use anyhow::Error;
 pub mod symbol;
+use pluralizer::pluralize;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use ts_query::NodeTypes;
@@ -255,11 +257,8 @@ impl<'a> Query<'a> {
     pub fn executor_id(&self) -> Ident {
         let raw_name = self.name();
         let name = raw_name.split(".").last().unwrap();
-        if name.ends_with("s") {
-            format_ident!("{}es", name)
-        } else {
-            format_ident!("{}s", name)
-        }
+        let pluralized = pluralize(name, 2, false);
+        format_ident!("{}", pluralized)
     }
     pub fn symbol_name(&self) -> Ident {
         let raw_name = self.name();
@@ -293,7 +292,7 @@ impl<'a> Query<'a> {
         field: &ts_query::FieldDefinition,
         struct_name: &str,
         current_node: &Ident,
-        current_node_id: &Ident,
+        _current_node_id: &Ident,
         existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
@@ -524,9 +523,12 @@ impl<'a> Query<'a> {
                                 .map(|c| format_ident!("{}", c.source()))
                                 .next()
                                 .unwrap();
+                            let msg =
+                                format!("Found @{}! on field: {:#?}", capture_name, field.source());
                             query_values.insert(
                                 capture_name,
                                 quote! {
+                                    #[doc = #msg]
                                     #current_node.#field_name
                                 },
                             );
@@ -554,7 +556,7 @@ impl<'a> Query<'a> {
                             query_values.insert(
                                 capture_name,
                                 quote! {
-                                    #current_node
+                                    #current_node_id
                                 },
                             );
                         }
@@ -695,7 +697,7 @@ impl<'a> Query<'a> {
         identifier: &ts_query::Identifier,
         struct_name: &str,
         current_node: &Ident,
-        current_node_id: &Ident,
+        _current_node_id: &Ident,
         existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
@@ -950,16 +952,33 @@ impl<'a> Query<'a> {
                 kind: type_name.to_string(),
                 is_optional: false,
                 is_multiple: false,
+                query: self.node().source().to_string(),
+                is_subenum: self.state.get_subenum_struct_names().contains(&type_name),
             });
         }
         fields
     }
+    fn category(&self) -> String {
+        let name = self.name();
+        let category = name
+            .split(".")
+            .next()
+            .ok_or_else(|| {
+                let msg = format!("No category found for: {}", name);
+                Error::msg(msg)
+            })
+            .unwrap();
+        pluralize(category.to_string().as_str(), 2, false)
+    }
+
     pub fn symbol(&self) -> symbol::Symbol {
         symbol::Symbol {
             name: self.symbol_name().to_string(),
             type_name: self.struct_name().to_string(),
             language_struct: self.language.file_struct_name().to_string(),
             fields: self.get_fields(),
+            category: self.category(),
+            subcategory: self.executor_id().to_string(),
         }
     }
 }

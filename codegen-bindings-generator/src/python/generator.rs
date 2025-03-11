@@ -1,4 +1,4 @@
-use codegen_sdk_ast_generator::HasQuery;
+use codegen_sdk_ast_generator::{HasQuery, Symbol};
 use codegen_sdk_common::Language;
 use codegen_sdk_cst::CSTDatabase;
 use proc_macro2::Span;
@@ -6,7 +6,10 @@ use quote::format_ident;
 use syn::parse_quote;
 
 use super::cst::generate_cst;
-fn generate_file_struct(language: &Language) -> anyhow::Result<Vec<syn::Stmt>> {
+fn generate_file_struct(
+    language: &Language,
+    symbols: Vec<&Symbol>,
+) -> anyhow::Result<Vec<syn::Stmt>> {
     let mut output = Vec::new();
     let struct_name = format_ident!("{}File", language.struct_name);
 
@@ -36,6 +39,7 @@ fn generate_file_struct(language: &Language) -> anyhow::Result<Vec<syn::Stmt>> {
             }
         }
     });
+    let methods = symbols.iter().map(|symbol| symbol.py_file_getter());
     output.push(parse_quote! {
         #[pymethods]
         impl #struct_name {
@@ -51,12 +55,13 @@ fn generate_file_struct(language: &Language) -> anyhow::Result<Vec<syn::Stmt>> {
                 let file = self.file(py)?.root(codebase.db());
                 Ok(pyo3_bytes::PyBytes::new(file.text()))
             }
+            #(#methods)*
         }
     });
     Ok(output)
 }
 fn generate_symbol_struct(
-    language: &Language,
+    _language: &Language,
     symbol: &codegen_sdk_ast_generator::Symbol,
 ) -> anyhow::Result<Vec<syn::Stmt>> {
     let mut output = Vec::new();
@@ -102,7 +107,7 @@ pub(crate) fn generate_bindings(language: &Language) -> anyhow::Result<Vec<syn::
     let state = codegen_sdk_cst_generator::State::new(language, config);
     let db = CSTDatabase::default();
     let symbols = language.symbols(&db);
-    let file_struct = generate_file_struct(language)?;
+    let file_struct = generate_file_struct(language, symbols.values().collect())?;
     let mut output = Vec::new();
     output.extend(file_struct);
 
@@ -117,4 +122,24 @@ pub(crate) fn generate_bindings(language: &Language) -> anyhow::Result<Vec<syn::
     let module = generate_module(language, symbol_idents)?;
     output.extend(module);
     Ok(output)
+}
+#[cfg(test)]
+mod tests {
+    use codegen_sdk_common::{
+        Language,
+        generator::format_code,
+        language::{python::Python, rust::Rust, typescript::Typescript},
+    };
+    use rstest::rstest;
+
+    use super::*;
+    #[test_log::test(rstest)]
+    #[case::python(&Python)]
+    #[case::typescript(&Typescript)]
+    #[case::rust(&Rust)]
+    fn test_generate_bindings(#[case] language: &Language) {
+        let bindings = generate_bindings(&language).unwrap();
+        let output = parse_quote! { #(#bindings)* };
+        insta::assert_snapshot!(format_code(&output).unwrap());
+    }
 }
