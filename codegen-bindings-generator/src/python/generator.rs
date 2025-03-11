@@ -12,10 +12,10 @@ fn generate_file_struct(
 ) -> anyhow::Result<Vec<syn::Stmt>> {
     let mut output = Vec::new();
     let struct_name = format_ident!("{}File", language.struct_name);
-
+    let module_name = format!("codegen_sdk_pink.{}", language.name());
     output.push(parse_quote! {
         // #[gen_stub_pyclass]
-        #[pyclass]
+        #[pyclass(module=#module_name)]
         pub struct #struct_name {
             path: PathBuf,
             codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -85,7 +85,7 @@ fn generate_symbol_struct(
     let module_name = format!("codegen_sdk_pink.{}", language.name());
     output.push(parse_quote_spanned! {
         span =>
-        #[pyclass(module=#module_name)]
+        #[pyclass]
         pub struct #struct_name {
             id: codegen_sdk_resolution::FullyQualifiedName,
             idx: usize,
@@ -216,6 +216,6 @@ mod tests {
     fn test_generate_bindings(#[case] language: &Language) {
         let bindings = generate_bindings(&language).unwrap();
         let output = parse_quote! { #(#bindings)* };
-        insta::assert_snapshot!(format_code(&output).unwrap());
+        insta::assert_snapshot!(language.name(), format_code(&output).unwrap());
     }
 }
