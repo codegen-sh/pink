@@ -578,14 +578,27 @@ mod tests {
         let nodes = vec![node_a, node_b, parent];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-
         let variants = state.get_variants("parent", true);
         assert_eq!(
             vec![
                 TypeDefinition {
+                    type_name: "node_a".to_string(),
+                    named: true,
+                },
+                TypeDefinition {
+                    type_name: "node_b".to_string(),
+                    named: true,
+                },
+                TypeDefinition {
                     type_name: "comment".to_string(),
                     named: true,
                 },
+            ],
+            variants
+        );
+        let variants = state.get_variants("parent", false);
+        assert_eq!(
+            vec![
                 TypeDefinition {
                     type_name: "node_a".to_string(),
                     named: true,

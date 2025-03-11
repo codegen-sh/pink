@@ -2016,7 +2016,6 @@ dependencies = [
  "pyo3",
  "pyo3-bytes",
  "pyo3-log",
- "test-log",
 ]
 
 [[package]]
