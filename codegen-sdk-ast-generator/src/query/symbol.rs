@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use pluralizer::pluralize;
 use proc_macro2::Span;
 use syn::parse_quote_spanned;
@@ -36,7 +37,7 @@ impl Symbol {
                 #[id]
                 _fully_qualified_name: codegen_sdk_resolution::FullyQualifiedName,
                 #[id]
-                node_id: indextree::NodeId,
+                pub node_id: codegen_sdk_common::CSTNodeTreeId,
                 // #[tracked]
                 // #[return_ref]
                 // pub node: crate::cst::#type_name<'db>,
@@ -46,18 +47,18 @@ impl Symbol {
                 pub fn node(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db crate::cst::#type_name<'db> {
                     let file = self.file(db);
                     let tree = file.tree(db);
-                    tree.get(&self.node_id(db)).unwrap().as_ref().try_into().unwrap()
+                    tree.get(self.node_id(db).id(db)).unwrap().as_ref().try_into().unwrap()
                 }
                 #(#getters)*
             }
             impl<'db> codegen_sdk_resolution::HasFile<'db> for #variant<'db> {
                 type File<'db1> = #language_struct<'db1>;
                 fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
-                    let path = self._fully_qualified_name(db).path(db);
-                    parse(db, path)
+                    let file = self._fully_qualified_name(db).file(db);
+                    parse(db, file)
                 }
-                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
-                    self.node(db).id().root(db).path(db)
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &PathBuf {
+                    self.node_id(db).root(db).path(db)
                 }
             }
             impl<'db> codegen_sdk_resolution::HasId<'db> for #variant<'db> {
@@ -69,7 +70,10 @@ impl Symbol {
     }
     pub fn py_file_getter(&self) -> syn::Stmt {
         let span = Span::call_site();
-        let method_name = syn::Ident::new(&pluralize(self.name.as_str(), 2, false), span);
+        let method_name = syn::Ident::new(
+            &pluralize(self.name.to_case(Case::Snake).as_str(), 2, false),
+            span,
+        );
         let category = syn::Ident::new(&self.category, span);
         let type_name = syn::Ident::new(&self.name, span);
         let subcategory = syn::Ident::new(&self.subcategory, span);
@@ -81,7 +85,7 @@ impl Symbol {
                 let db = self.codebase.get(py).db();
                 let category = file.#category(db);
                 let subcategory = category.#subcategory(db);
-                let nodes = subcategory.values().flatten().map(|node| #type_name::new(node.fully_qualified_name(), self.codebase.clone())).collect();
+                let nodes = subcategory.values().flatten().enumerate().map(|(idx, node)| #type_name::new(node.fully_qualified_name(db), idx, self.codebase.clone())).collect();
                 Ok(nodes)
             }
         }

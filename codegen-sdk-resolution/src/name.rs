@@ -3,7 +3,7 @@ use codegen_sdk_common::FileNodeId;
 #[salsa::interned(no_lifetime)]
 pub struct FullyQualifiedName {
     #[id]
-    pub path: FileNodeId,
+    pub file: FileNodeId,
     #[return_ref]
     pub name: String,
 }

@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use codegen_sdk_common::language::LANGUAGES;
-use codegen_sdk_resolution::CodebaseContext;
+use codegen_sdk_resolution::{CodebaseContext, File as _};
 use file::File;
 use pyo3::{prelude::*, sync::GILProtected};
 // use pyo3_stub_gen::{
@@ -23,6 +23,21 @@ enum FileEnum {
 struct Codebase {
     codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
 }
+impl Codebase {
+    fn convert_file(&self, path: &PathBuf) -> PyResult<FileEnum> {
+        for language in LANGUAGES.iter() {
+            if language
+                .should_parse(path)
+                .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?
+            {
+                let file = python::PythonFile::new(path.clone(), self.codebase.clone());
+                return Ok(FileEnum::Python(file));
+            }
+        }
+        let file = crate::file::File::new(path.clone(), self.codebase.clone());
+        Ok(FileEnum::Unknown(file))
+    }
+}
 // #[gen_stub_pymethods]
 #[pymethods]
 impl Codebase {
@@ -35,25 +50,26 @@ impl Codebase {
     }
     fn has_file(&self, py: Python<'_>, path: PathBuf) -> PyResult<bool> {
         let path = path.canonicalize()?;
-        Ok(self.codebase.get(py).get_file(path).is_some())
+        Ok(self.codebase.get(py).get_file(&path).is_some())
     }
     fn get_file(&self, py: Python<'_>, path: PathBuf) -> PyResult<Option<FileEnum>> {
         let path = path.canonicalize()?;
         if self.has_file(py, path.clone())? {
-            for language in LANGUAGES.iter() {
-                if language
-                    .should_parse(&path)
-                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?
-                {
-                    let file = python::PythonFile::new(path, self.codebase.clone());
-                    return Ok(Some(FileEnum::Python(file)));
-                }
-            }
-            let file = crate::file::File::new(path, self.codebase.clone());
-            Ok(Some(FileEnum::Unknown(file)))
+            Ok(Some(self.convert_file(&path)?))
         } else {
             Ok(None)
         }
+    }
+    #[getter]
+    fn files(&self, py: Python<'_>) -> PyResult<Vec<FileEnum>> {
+        let files = self.codebase.get(py).files();
+        Ok(files
+            .iter()
+            .filter_map(|file| {
+                self.convert_file(file.path(self.codebase.get(py).db()))
+                    .ok()
+            })
+            .collect())
     }
 }
 

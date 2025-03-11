@@ -31,7 +31,7 @@ fn test_typescript_ast_interface() {
     let content = "interface Test { }".to_string();
     let file_path = write_to_temp_file(&content, &temp_dir);
     let db = codegen_sdk_cst::CSTDatabase::default();
-    db.input(file_path.clone()).unwrap();
+    db.input(&file_path).unwrap();
     let input = codegen_sdk_common::FileNodeId::new(&db, file_path);
     let file = codegen_sdk_typescript::ast::parse(&db, input);
     assert_eq!(file.definitions(&db).interfaces(&db).len(), 1);

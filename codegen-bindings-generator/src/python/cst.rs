@@ -3,6 +3,7 @@ use proc_macro2::Span;
 use quote::format_ident;
 use syn::parse_quote;
 
+use super::helpers;
 fn generate_cst_struct(
     language: &Language,
     node: &codegen_sdk_cst_generator::Node,
@@ -10,7 +11,6 @@ fn generate_cst_struct(
     let mut output = Vec::new();
     let struct_name = format_ident!("{}", node.normalize_name());
     let package_name = syn::Ident::new(&language.package_name(), Span::call_site());
-    let variant_name = format_ident!("{}", language.struct_name);
     output.push(parse_quote! {
         #[pyclass]
         pub struct #struct_name {
@@ -18,24 +18,20 @@ fn generate_cst_struct(
             codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
         }
     });
+    let file_getter = helpers::get_file(language);
     output.push(parse_quote! {
         impl #struct_name {
             pub fn new(id: codegen_sdk_common::CSTNodeTreeId, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
                 Self { id, codebase }
             }
             fn get_node<'db>(&'db self, py: Python<'db>) -> PyResult<&'db #package_name::cst::#struct_name<'db>> {
-                let codebase = self.codebase.get(py);
-                let file = codebase.get_file_for_id(self.id.file(codebase.db()));
-                if let Some(codegen_sdk_analyzer::ParsedFile::#variant_name(py)) = file {
-                    let tree = py.tree(codebase.db());
-                    let node = tree.get(self.id.id(codebase.db()));
-                    if let Some(node) = node {
-                        node.as_ref().try_into().map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Failed to convert node to CSTNode {}", e)))
-                    } else {
-                        Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
-                    }
+                #(#file_getter)*
+                let tree = file.tree(codebase.db());
+                let node = tree.get(self.id.id(codebase.db()));
+                if let Some(node) = node {
+                    node.as_ref().try_into().map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Failed to convert node to CSTNode {}", e)))
                 } else {
-                    Err(pyo3::exceptions::PyValueError::new_err("File not found"))
+                    Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
                 }
             }
         }

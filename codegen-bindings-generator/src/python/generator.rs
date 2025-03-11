@@ -3,9 +3,9 @@ use codegen_sdk_common::Language;
 use codegen_sdk_cst::CSTDatabase;
 use proc_macro2::Span;
 use quote::format_ident;
-use syn::parse_quote;
+use syn::{parse_quote, parse_quote_spanned};
 
-use super::cst::generate_cst;
+use super::{cst::generate_cst, helpers};
 fn generate_file_struct(
     language: &Language,
     symbols: Vec<&Symbol>,
@@ -31,7 +31,7 @@ fn generate_file_struct(
             }
             fn file<'db>(&'db self, py: Python<'db>) -> PyResult<&'db #package_name::ast::#struct_name<'db>>{
                 let codebase = self.codebase.get(py);
-                if let codegen_sdk_analyzer::ParsedFile::#variant_name(file) = codebase.get_file(self.path.clone()).unwrap() {
+                if let codegen_sdk_analyzer::ParsedFile::#variant_name(file) = codebase.get_file(&self.path).unwrap() {
                     Ok(file)
                 } else {
                     Err(pyo3::exceptions::PyValueError::new_err("File not found"))
@@ -44,6 +44,10 @@ fn generate_file_struct(
         #[pymethods]
         impl #struct_name {
             #[getter]
+            pub fn path(&self) -> &PathBuf {
+                &self.path
+            }
+            #[getter]
             pub fn content(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 let codebase = self.codebase.get(py);
                 let file = self.file(py)?.root(codebase.db());
@@ -55,28 +59,65 @@ fn generate_file_struct(
                 let file = self.file(py)?.root(codebase.db());
                 Ok(pyo3_bytes::PyBytes::new(file.text()))
             }
+            fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+                Ok(self.content(py)?.to_string())
+            }
             #(#methods)*
         }
     });
     Ok(output)
 }
 fn generate_symbol_struct(
-    _language: &Language,
+    language: &Language,
     symbol: &codegen_sdk_ast_generator::Symbol,
 ) -> anyhow::Result<Vec<syn::Stmt>> {
+    let span = Span::call_site();
     let mut output = Vec::new();
     let struct_name = format_ident!("{}", symbol.name);
-    output.push(parse_quote! {
+    let package_name = syn::Ident::new(&language.package_name(), span);
+    output.push(parse_quote_spanned! {
+        span =>
         #[pyclass]
         pub struct #struct_name {
             id: codegen_sdk_resolution::FullyQualifiedName,
+            idx: usize,
             codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
         }
     });
-    output.push(parse_quote! {
+    let file_getter = helpers::get_file(language);
+    let category = syn::Ident::new(&symbol.category, span);
+    let subcategory = syn::Ident::new(&symbol.subcategory, span);
+    output.push(parse_quote_spanned! {
+        span =>
         impl #struct_name {
-            pub fn new(id: codegen_sdk_resolution::FullyQualifiedName, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
-                Self { id, codebase }
+            pub fn new(id: codegen_sdk_resolution::FullyQualifiedName, idx: usize, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
+                Self { id, idx, codebase }
+            }
+            fn get<'db>(&'db self, py: Python<'db>) -> PyResult<&'db #package_name::ast::#struct_name<'db>> {
+                #(#file_getter)*
+                let name = self.id.name(codebase.db());
+                let node = file.#category(codebase.db()).#subcategory(codebase.db()).get(name).unwrap();
+                node.get(self.idx).ok_or(pyo3::exceptions::PyValueError::new_err("Index out of bounds"))
+            }
+        }
+    });
+    let ts_node_name = syn::Ident::new(&symbol.type_name, span);
+    output.push(parse_quote_spanned! {
+        span =>
+        #[pymethods]
+        impl #struct_name {
+            pub fn ts_node(&self, py: Python<'_>) -> PyResult<cst::#ts_node_name> {
+                let node = self.get(py)?;
+                let db = self.codebase.get(py).db();
+                Ok(cst::#ts_node_name::new(node.node_id(db), self.codebase.clone()))
+            }
+            fn source(&self, py: Python<'_>) -> PyResult<String> {
+                let db = self.codebase.get(py).db();
+                let node = self.get(py)?.node(db);
+                Ok(node.source())
+            }
+            fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+                Ok(self.source(py)?)
             }
         }
     });

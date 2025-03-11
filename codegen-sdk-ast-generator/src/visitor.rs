@@ -95,7 +95,7 @@ pub fn generate_visitor<'db>(
                         #(Self::#symbol_names(symbol) => symbol.file(db),)*
                     }
                 }
-                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &PathBuf {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
                     }

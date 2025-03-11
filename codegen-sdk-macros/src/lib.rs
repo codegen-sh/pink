@@ -2,7 +2,7 @@
 extern crate proc_macro;
 use codegen_sdk_common::language::LANGUAGES;
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 
 // #[proc_macro]
 // pub fn parse_language(_item: TokenStream) -> TokenStream {
@@ -40,20 +40,26 @@ use quote::{format_ident, quote};
 pub fn languages_ast(_item: TokenStream) -> TokenStream {
     let mut output = Vec::new();
     let mut from_conversions = proc_macro2::TokenStream::new();
+    let mut variants = Vec::new();
+    let mut names = Vec::new();
     for language in LANGUAGES.iter() {
         if language.name() == "ts_query" {
             continue;
         }
         let name = language.name();
-        let package_name = format_ident!("codegen_sdk_{}", name);
+        let package_name = format_ident!("{}", language.package_name());
         let struct_name = format_ident!("{}", language.struct_name);
-        let file_name = format_ident!("{}File", language.struct_name);
+        let file_name = language.file_struct_name();
         let variant: proc_macro2::TokenStream = quote! {
         #[cfg(feature = #name)]
         #struct_name(#package_name::ast::#file_name<'db>),
         };
         output.push(variant);
-        from_conversions.extend_one(quote! {
+        variants.push(struct_name.clone());
+        names.push(name);
+        let span = proc_macro2::Span::mixed_site();
+        from_conversions.extend_one(quote_spanned! {
+            span =>
             #[cfg(feature = #name)]
             impl<'db> TryInto<#package_name::ast::#file_name<'db>> for ParsedFile<'db> {
                 type Error = ();
@@ -67,25 +73,33 @@ pub fn languages_ast(_item: TokenStream) -> TokenStream {
             }
         });
     }
-    let enum_output: TokenStream = quote! {
-    #[derive(Debug, Clone, Eq, PartialEq, Hash, salsa::Update)]
-    // #[delegate(
-    //     codegen_sdk_ast::Definitions<'db>
-    // )]
-    // #[delegate(
+    let span = proc_macro2::Span::mixed_site();
+    quote_spanned! {
+        span =>
+        #[derive(Debug, Clone, Eq, PartialEq, Hash, salsa::Update)]
+        // #[delegate(
+        //     codegen_sdk_ast::Definitions<'db>
+        // )]
+        // #[delegate(
     //     codegen_sdk_ast::References<'db>
     // )]
-    // #[delegate(
-    //     codegen_sdk_ast::FileExt<'db>
-    // )]
+
     pub enum ParsedFile<'db> {
         #(#output)*
     }
     #from_conversions
+    impl<'db> codegen_sdk_resolution::File<'db> for ParsedFile<'db> {
+        fn path(&self, db: &'db dyn salsa::Database) -> &std::path::PathBuf {
+            match self {
+                #(
+                    #[cfg(feature = #names)]
+                    Self::#variants(parsed) => parsed.path(db),
+                )*
+            }
+        }
     }
-    .into();
-
-    enum_output
+    }
+    .into()
 }
 
 #[proc_macro]
