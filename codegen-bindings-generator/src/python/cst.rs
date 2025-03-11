@@ -20,15 +20,20 @@ fn generate_cst_struct(
         }
     });
     let file_getter = helpers::get_file(language, quote! { self.id }, quote! { self.codebase });
+    let file_type = format_ident!("{}", language.file_struct_name());
     output.push(parse_quote! {
         impl #struct_name {
             pub fn new(id: codegen_sdk_common::CSTNodeTreeId, codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>) -> Self {
                 Self { id, codebase }
             }
-            fn get_node<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::cst::#struct_name<'db>> {
+            fn get_file<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::ast::#file_type<'db>> {
                 #(#file_getter)*
-                let tree = file.tree(codebase.db());
-                let node = tree.get(self.id.id(codebase.db()));
+                Ok(file)
+            }
+            fn get_node<'db>(&'db self, py: Python<'db>) -> PyResult<&'db codegen_sdk_analyzer::#package_name::cst::#struct_name<'db>> {
+                let file = self.get_file(py)?;
+                let tree = file.tree(self.codebase.get(py).db());
+                let node = tree.get(self.id.id(self.codebase.get(py).db()));
                 if let Some(node) = node {
                     node.as_ref().try_into().map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Failed to convert node to CSTNode {}", e)))
                 } else {
@@ -37,6 +42,24 @@ fn generate_cst_struct(
             }
         }
     });
+    let children_method = if node.has_children() {
+        let children_type = format_ident!("{}", node.children_struct_name());
+        quote! {
+            #[getter]
+            pub fn children(&self, py: Python<'_>) -> PyResult<Vec<#children_type>> {
+                let file = self.get_file(py)?;
+                let db = self.codebase.get(py).db();
+                let tree = file.tree(db);
+                let children = tree.children(self.id.id(db));
+                Ok(children.map(|(child, child_id)| {
+                    let id = codegen_sdk_common::CSTNodeTreeId::from_node_id(db, &child.id(),child_id);
+                    #children_type::new(py.clone(),id, self.codebase.clone()).unwrap()
+                }).collect())
+            }
+        }
+    } else {
+        quote! {}
+    };
     output.push(parse_quote! {
         #[pymethods]
         impl #struct_name {
@@ -80,6 +103,7 @@ fn generate_cst_struct(
                 let column = position.column(self.codebase.get(py).db());
                 pyo3::types::PyTuple::new(py ,vec![row, column])
             }
+            #children_method
             fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
                 Ok(self.source(py)?)
             }
@@ -94,8 +118,6 @@ fn generate_cst_subenum(
 ) -> anyhow::Result<Vec<syn::Stmt>> {
     let mut output = Vec::new();
     let struct_name = format_ident!("{}", normalize_type_name(name, true));
-    let package_name = syn::Ident::new(&language.package_name(), Span::call_site());
-    let module_name = format!("codegen_sdk_pink::{}.cst", language.name());
     let subenum_names = state
         .get_subenum_variants(&name, false)
         .iter()

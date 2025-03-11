@@ -131,7 +131,7 @@ impl<'a> Node<'a> {
             _ => format!("{}Children", self.normalize_name()),
         }
     }
-    fn has_children(&self) -> bool {
+    pub fn has_children(&self) -> bool {
         self.raw.children.is_some()
     }
     fn get_children_field(&self) -> TokenStream {
