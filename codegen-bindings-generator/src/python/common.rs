@@ -25,6 +25,7 @@ pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Re
             let path = format!("/{}-bindings.rs", language.name());
             parse_quote! {
                 #[cfg(feature = #flag_name)]
+                #[allow(unused)]
                 pub mod #name {
                     include!(concat!(env!("OUT_DIR"), #path));
                 }
