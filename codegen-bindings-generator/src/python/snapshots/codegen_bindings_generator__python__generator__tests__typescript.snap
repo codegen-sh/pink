@@ -82195,7 +82195,10 @@ impl TypeRef {
         )
     }
 }
-pub fn register_typescript(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn register_typescript(
+    py: Python<'_>,
+    parent_module: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     let child_module = PyModule::new(parent_module.py(), "typescript")?;
     child_module.add_class::<TypescriptFile>()?;
     child_module.add_class::<Class>()?;
@@ -82207,5 +82210,8 @@ pub fn register_typescript(parent_module: &Bound<'_, PyModule>) -> PyResult<()> 
     child_module.add_class::<TypeRef>()?;
     parent_module.add_submodule(&child_module)?;
     cst::register_cst(&child_module)?;
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item("codegen_sdk_pink.typescript", child_module)?;
     Ok(())
 }
