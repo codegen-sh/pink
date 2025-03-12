@@ -18,7 +18,7 @@ proc-macro2 = { workspace = true }
 log = { workspace = true }
 derive_more = { workspace = true }
 codegen-sdk-cst-generator = { workspace = true }
-codegen-sdk-ts_query = { workspace = true }
+codegen-sdk-ts-query = { workspace = true }
 convert_case = { workspace = true }
 salsa = { workspace = true }
 syn = { workspace = true }
