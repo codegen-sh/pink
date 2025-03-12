@@ -17,7 +17,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/setup-environment
-
+      - name: Cache Repos
+        id: cache-repos
+        uses: actions/cache@v4
+        with:
+          path: /tmp/pink-bench
+          key: ${{ runner.os }}-pink-bench-${{ hashFiles('benches/parse.rs') }}
 
       - name: Build the benchmark target(s)
         run: |
