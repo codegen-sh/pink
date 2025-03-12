@@ -73,7 +73,7 @@ members = [
   "languages/codegen-sdk-markdown",
   "languages/codegen-sdk-yaml",
   "languages/codegen-sdk-toml",
-  "languages/codegen-sdk-ts_query",
+  "languages/codegen-sdk-ts-query",
   "languages/codegen-sdk-typescript", "codegen-sdk-resolution", "bindings/python", "codegen-bindings-generator",
 ]
 resolver = "2"
@@ -110,7 +110,7 @@ codegen-sdk-analyzer = { path = "codegen-sdk-analyzer" , default-features = fals
 codegen-bindings-generator = { path = "codegen-bindings-generator" }
 codegen-sdk-cst-generator = { path = "codegen-sdk-cst-generator" }
 codegen-sdk-ast-generator = { path = "codegen-sdk-ast-generator" }
-codegen-sdk-ts-query = { path = "languages/codegen-sdk-ts_query" }
+codegen-sdk-ts-query = { path = "languages/codegen-sdk-ts-query" }
 codegen-sdk-typescript = { path = "languages/codegen-sdk-typescript" }
 codegen-sdk-python = { path = "languages/codegen-sdk-python" }
 codegen-sdk-java = { path = "languages/codegen-sdk-java" }
