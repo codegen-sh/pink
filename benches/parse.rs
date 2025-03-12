@@ -84,7 +84,7 @@ const REPOS: &[Repo] = &[
     },
 ];
 const fn repo_indices() -> [usize; REPOS.len()] {
-    [0, 1, 2, 3, 4, 5, 6]
+    [0, 1, 2, 3, 4]
 }
 #[divan::bench(consts = repo_indices())]
 fn parse<const REPO: usize>(bencher: divan::Bencher) {
