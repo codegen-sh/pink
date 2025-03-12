@@ -7,7 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-macros"
-
+description = "Macros for the codegen-sdk"
 
 [dependencies]
 codegen-sdk-common = { workspace = true}
