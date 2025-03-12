@@ -21,4 +21,6 @@ jobs:
         run: |
           ~/.cargo/bin/cargo-nextest nextest run --workspace --features stable
         env:
-            CARGO_TERM_COLOR: always
+          CARGO_TERM_COLOR: always
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
