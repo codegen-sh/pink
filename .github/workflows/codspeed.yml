@@ -29,9 +29,8 @@ jobs:
           cargo install cargo-codspeed --locked
           cargo codspeed build --features stable
         env:
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
-          CARGO_INCREMENTAL: 1
+            SCCACHE_GHA_ENABLED: "true"
+            RUSTC_WRAPPER: "sccache"
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
