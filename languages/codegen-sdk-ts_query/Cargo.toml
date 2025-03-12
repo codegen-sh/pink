@@ -7,6 +7,8 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-ts_query"
+[lib]
+crate-type = ["cdylib", "lib"]
 
 
 [dependencies]
