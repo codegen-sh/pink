@@ -7,7 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-cst"
-
+description = "Common code for the CST"
 
 [dependencies]
 bytes = { workspace = true }

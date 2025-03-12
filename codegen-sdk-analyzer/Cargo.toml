@@ -7,7 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-analyzer"
-
+description = "Core library for the codegen-sdk, responsible for parsing and analyzing code."
 
 [dependencies]
 salsa = { workspace = true }

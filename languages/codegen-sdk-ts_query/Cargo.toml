@@ -7,6 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-ts_query"
+description = "Tree-sitter Query language support for codegen-sdk. Built without an AST."
 [lib]
 crate-type = ["cdylib", "lib"]
 
