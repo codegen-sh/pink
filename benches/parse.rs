@@ -43,10 +43,10 @@ const REPOS: &[Repo] = &[
         name: "nest",
         url: "https://github.com/nestjs/nest",
     },
-    Repo {
-        name: "react",
-        url: "https://github.com/facebook/react",
-    },
+    // Repo {
+    //     name: "react",
+    //     url: "https://github.com/facebook/react",
+    // },
     // Repo {
     //     name: "vscode",
     //     url: "https://github.com/microsoft/vscode",
@@ -60,10 +60,10 @@ const REPOS: &[Repo] = &[
         name: "mypy",
         url: "https://github.com/python/mypy",
     },
-    Repo {
-        name: "django",
-        url: "https://github.com/django/django",
-    },
+    // Repo {
+    //     name: "django",
+    //     url: "https://github.com/django/django",
+    // },
     // Go libraries
     Repo {
         name: "gin",
