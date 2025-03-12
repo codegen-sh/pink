@@ -1,3 +1,4 @@
+// Representation of a field of a node. Can be optional, required, or, multiple
 use std::collections::HashSet;
 
 #[double]

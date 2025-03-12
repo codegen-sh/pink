@@ -1,3 +1,15 @@
+// We generate code for this layer using tree-sitter's node-types.json found in each language. We have two kinds of nodes in the tree-sitter grammar:
+// - Nodes without subtypes:
+// - These can have fields and children which can be of one or more node type
+// - Fields may also be optional or required
+// - Nodes with subtypes
+// - These correspond to many possible concrete nodes or nodes with subtypes
+
+// First, we read the node-types.json into a parsed struct. Then we take the list of all nodes and do the following:
+
+// - For nodes with subtypes, we flatten the list of possibilities recursively. For each of these nodes, we create a subenum which contains all possible variants
+// - For nodes without subtypes
+
 #![feature(extend_one)]
 mod config;
 mod generator;
