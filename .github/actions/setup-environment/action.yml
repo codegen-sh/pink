@@ -7,4 +7,5 @@ runs:
       with:
         toolchain: nightly
         components: rustc-codegen-cranelift-preview, rustfmt
+        cache-on-failure: true
     - uses: taiki-e/install-action@nextest
