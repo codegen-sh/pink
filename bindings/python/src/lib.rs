@@ -58,10 +58,10 @@ impl Codebase {
 
 #[pymodule]
 #[pyo3(name = "codegen_sdk_pink")]
-fn codegen_sdk_pink(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn codegen_sdk_pink(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     let _ = pyo3_log::try_init();
     m.add_class::<File>()?;
-    python::register_python(m)?;
+    register_all(py, m)?;
     m.add_class::<Codebase>()?;
     Ok(())
 }

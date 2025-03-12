@@ -6,10 +6,10 @@ license.workspace = true
 homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
-name = "codegen-sdk-ts_query"
+name = "codegen-sdk-ts-query"
 description = "Tree-sitter Query language support for codegen-sdk. Built without an AST."
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["rlib"]
 
 
 [dependencies]

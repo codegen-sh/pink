@@ -166,13 +166,17 @@ fn generate_module(
     let language_name = language.name();
     let register_name = format_ident!("register_{}", language_name);
     let struct_name = format_ident!("{}", language.file_struct_name());
+    let module_name = format!("codegen_sdk_pink.{}", language_name);
     output.push(parse_quote! {
-        pub fn #register_name(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
+        pub fn #register_name(py: Python<'_>, parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
             let child_module = PyModule::new(parent_module.py(), #language_name)?;
             child_module.add_class::<#struct_name>()?;
             #(child_module.add_class::<#symbols>()?;)*
             parent_module.add_submodule(&child_module)?;
             cst::register_cst(&child_module)?;
+            py.import("sys")?
+            .getattr("modules")?
+            .set_item(#module_name, child_module)?;
             Ok(())
         }
     });

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use codegen_sdk_ast::{Definitions, References};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
+use codegen_sdk_cst::LANGUAGES;
 use codegen_sdk_resolution::Db;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -144,6 +145,15 @@ pub fn parse_files<'db>(
     #[cfg(feature = "serialization")]
     let cached = get_cached_count(&cache, &files_to_parse);
     log::info!("Parsing {} files", files_to_parse.files(db).len());
+    for language in LANGUAGES.iter() {
+        let mut count = 0;
+        for file in files_to_parse.files(db).iter() {
+            if language.should_parse(&file.path(db)).unwrap() {
+                count += 1;
+            }
+        }
+        log::info!("{} files to parse for {}", count, language.name());
+    }
     parse_files_definitions_par(
         db,
         #[cfg(feature = "serialization")]

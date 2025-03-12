@@ -1,11 +1,13 @@
 use codegen_bindings_generator::{generate_python_bindings, generate_python_bindings_common};
-use codegen_sdk_common::language::LANGUAGES;
+use codegen_sdk_common::{Language, language::LANGUAGES};
 fn main() {
     env_logger::init();
-    for language in LANGUAGES.iter() {
-        if language.name() == "ts_query" {
-            continue;
-        }
+    let languages: Vec<&Language> = LANGUAGES
+        .iter()
+        .filter(|language| language.name() != "ts_query")
+        .cloned()
+        .collect();
+    for language in languages.iter() {
         generate_python_bindings(&language).unwrap_or_else(|e| {
             log::error!(
                 "Error generating Python bindings for {}: {}",
@@ -19,5 +21,5 @@ fn main() {
             );
         });
     }
-    generate_python_bindings_common(&LANGUAGES).unwrap();
+    generate_python_bindings_common(&languages).unwrap();
 }

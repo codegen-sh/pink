@@ -1,10 +1,30 @@
 use codegen_sdk_common::{Language, generator::format_code};
 use quote::{ToTokens, format_ident};
 use syn::parse_quote;
+fn generate_register_function(languages: &Vec<&Language>) -> syn::Stmt {
+    let parsers: Vec<syn::Stmt> = languages
+        .iter()
+        .map(|language| -> Vec<syn::Stmt> {
+            let flag_name = language.name();
+            let name = format_ident!("{}", language.name());
+            let register_name = format_ident!("register_{}", language.name());
+            parse_quote! {
+                #[cfg(feature = #flag_name)]
+                #name::#register_name(py.clone(), m)?;
+            }
+        })
+        .flatten()
+        .collect();
+    parse_quote! {
+        fn register_all(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+            #(#parsers)*
+            Ok(())
+        }
+    }
+}
 pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Result<()> {
     let variants: Vec<syn::Variant> = languages
         .iter()
-        .filter(|language| language.name() != "ts_query")
         .map(|language| {
             let flag_name = language.name();
             let struct_name = format_ident!("{}", language.struct_name());
@@ -18,7 +38,6 @@ pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Re
         .collect();
     let modules: Vec<syn::ItemMod> = languages
         .iter()
-        .filter(|language| language.name() != "ts_query")
         .map(|language| {
             let flag_name = language.name();
             let name = format_ident!("{}", language.name());
@@ -34,7 +53,6 @@ pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Re
         .collect();
     let parsers: Vec<syn::Stmt> = languages
         .iter()
-        .filter(|language| language.name() != "ts_query")
         .map(|language| -> Vec<syn::Stmt> {
             let flag_name = language.name();
             let name = format_ident!("{}", language.name());
@@ -57,6 +75,7 @@ pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Re
         Ok(FileEnum::Unknown(file))
     }
     };
+    let register_function = generate_register_function(languages);
     let ast: syn::File = parse_quote! {
         #(#modules)*
         #[derive(IntoPyObject)]
@@ -67,6 +86,7 @@ pub fn generate_python_bindings_common(languages: &Vec<&Language>) -> anyhow::Re
         impl FileEnum {
             #parse
         }
+        #register_function
     };
     let out_dir = std::env::var("OUT_DIR")?;
     let out_file = format!("{}/common-bindings.rs", out_dir);
