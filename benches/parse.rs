@@ -38,6 +38,7 @@ impl Display for Repo {
     }
 }
 const REPOS: &[Repo] = &[
+    // Typescript libraries
     Repo {
         name: "nest",
         url: "https://github.com/nestjs/nest",
@@ -46,27 +47,32 @@ const REPOS: &[Repo] = &[
         name: "react",
         url: "https://github.com/facebook/react",
     },
+    // Repo {
+    //     name: "vscode",
+    //     url: "https://github.com/microsoft/vscode",
+    // },
+    // Python libraries
+    // Repo {
+    //     name: "pytorch",
+    //     url: "https://github.com/pytorch/pytorch",
+    // },
+    Repo {
+        name: "mypy",
+        url: "https://github.com/python/mypy",
+    },
     Repo {
         name: "django",
         url: "https://github.com/django/django",
-    },
-    Repo {
-        name: "vscode",
-        url: "https://github.com/microsoft/vscode",
-    },
-    Repo {
-        name: "pytorch",
-        url: "https://github.com/pytorch/pytorch",
     },
     // Go libraries
     Repo {
         name: "gin",
         url: "https://github.com/gin-gonic/gin",
     },
-    Repo {
-        name: "kubernetes",
-        url: "https://github.com/kubernetes/kubernetes",
-    },
+    // Repo {
+    //     name: "kubernetes",
+    //     url: "https://github.com/kubernetes/kubernetes",
+    // },
     // Rust libraries
     Repo {
         name: "tokio",
@@ -78,7 +84,7 @@ const REPOS: &[Repo] = &[
     },
 ];
 const fn repo_indices() -> [usize; REPOS.len()] {
-    [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    [0, 1, 2, 3, 4, 5, 6]
 }
 #[divan::bench(consts = repo_indices())]
 fn parse<const REPO: usize>(bencher: divan::Bencher) {
