@@ -99,7 +99,14 @@ pub mod ast {
         type ReferenceType = crate::ast::Call<'db>;
         #[salsa::tracked(return_ref)]
         fn resolve(self, db: &'db dyn codegen_sdk_resolution::Db, name: String) -> Vec<Self::Type> {
-            let tree = self.node(db).unwrap().tree(db);
+            let node = match self.node(db) {
+                Some(node) => node,
+                None => {
+                    log::warn!(target: "resolution", "No node found for file: {:?}", self.id(db));
+                    return Vec::new();
+                }
+            };
+            let tree = node.tree(db);
             let mut results = Vec::new();
             for (def_name, defs) in self.definitions(db).functions(db).into_iter() {
                 if *def_name == name {
