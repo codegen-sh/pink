@@ -22,7 +22,7 @@ jobs:
       - name: Build the benchmark target(s)
         run: |
           cargo install cargo-codspeed --locked
-          cargo codspeed build
+          cargo codspeed build --features stable
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
