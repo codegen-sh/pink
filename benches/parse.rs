@@ -83,6 +83,7 @@ const fn repo_indices() -> [usize; REPOS.len()] {
 #[divan::bench(consts = repo_indices())]
 fn parse<const REPO: usize>(bencher: divan::Bencher) {
     let repo = &REPOS[REPO];
+    log::info!("Parsing repo: {}", repo.name);
     let repo_path = clone_repo(repo.url.to_string(), repo.name.to_string());
     bencher.bench(|| Codebase::new(repo_path.clone()));
 }
