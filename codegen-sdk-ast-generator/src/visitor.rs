@@ -82,7 +82,7 @@ pub fn generate_visitor<'db>(
                 #(
                     #defs
                 )*
-            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, salsa::Update, salsa::Supertype)]
             pub enum #symbol_name<'db> {
                 #(
                     #symbol_names(#symbol_names<'db>),
