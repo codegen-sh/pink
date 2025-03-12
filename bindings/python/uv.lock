@@ -1,7 +1,6 @@
 version = 1
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [[package]]
-name = "pink-python"
-version = "0.1.0"
+name = "codegen-sdk-pink"
 source = { editable = "." }

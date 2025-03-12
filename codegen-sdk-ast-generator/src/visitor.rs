@@ -95,14 +95,14 @@ pub fn generate_visitor<'db>(
                         #(Self::#symbol_names(symbol) => symbol.file(db),)*
                     }
                 }
-                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> PathBuf {
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &PathBuf {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
                     }
                 }
             }
             impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName {
                     match self {
                         #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
                     }

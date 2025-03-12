@@ -153,15 +153,17 @@ impl<'a> State<'a> {
     }
     pub fn get_variants(&self, subenum: &str, include_comment: bool) -> Vec<TypeDefinition> {
         let mut variants = Vec::new();
-        if include_comment {
-            let comment = get_comment_type();
-            variants.push(comment);
-        }
         for node in self.nodes.values() {
             log::debug!("Checking subenum: {} for {}", subenum, node.kind());
             if node.subenums.contains(&subenum.to_string()) {
                 log::debug!("Found variant: {} for {}", node.kind(), subenum);
                 variants.push(node.type_definition());
+            }
+        }
+        if include_comment {
+            let comment = get_comment_type();
+            if !variants.iter().any(|v| v.type_name == comment.type_name) {
+                variants.push(comment);
             }
         }
         variants
@@ -290,8 +292,8 @@ impl<'a> State<'a> {
         }
         None
     }
-    pub fn get_subenum_variants(&self, name: &str) -> Vec<&Node<'a>> {
-        let variants = self.get_variants(name, true);
+    pub fn get_subenum_variants(&self, name: &str, include_comment: bool) -> Vec<&Node<'a>> {
+        let variants = self.get_variants(name, include_comment);
         let mut nodes = Vec::new();
         for variant in variants {
             if let Some(node) = self.get_node_for_struct_name(&variant.normalize()) {
@@ -576,14 +578,27 @@ mod tests {
         let nodes = vec![node_a, node_b, parent];
         let language = get_language(nodes);
         let state = State::new(&language, Config::default());
-
         let variants = state.get_variants("parent", true);
         assert_eq!(
             vec![
                 TypeDefinition {
+                    type_name: "node_a".to_string(),
+                    named: true,
+                },
+                TypeDefinition {
+                    type_name: "node_b".to_string(),
+                    named: true,
+                },
+                TypeDefinition {
                     type_name: "comment".to_string(),
                     named: true,
                 },
+            ],
+            variants
+        );
+        let variants = state.get_variants("parent", false);
+        assert_eq!(
+            vec![
                 TypeDefinition {
                     type_name: "node_a".to_string(),
                     named: true,

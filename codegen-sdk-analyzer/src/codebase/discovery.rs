@@ -43,7 +43,7 @@ pub fn collect_files(db: &CodegenDatabase, dir: &PathBuf) -> FilesToParse {
         .filter_map(|file| file.ok())
         .filter(|file| !file.is_dir() && !file.is_symlink())
         .filter_map(|file| file.canonicalize().ok())
-        .map(|file| db.input(file).unwrap())
+        .map(|file| db.input(&file).unwrap())
         .collect();
     FilesToParse::new(db, files, dir)
 }

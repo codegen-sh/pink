@@ -18,6 +18,7 @@ convert_case = { workspace = true }
 salsa = { workspace = true }
 syn = { workspace = true }
 indextree = { workspace = true }
+pluralizer = "0.5.0"
 [dev-dependencies]
 test-log = { workspace = true }
 insta = { workspace = true }

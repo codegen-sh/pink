@@ -76,11 +76,11 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
             parse(db, input)
         }
     }
-    // impl<'db> File for {language_struct_name}File<'db> {{
-    //     fn path(&self) -> &PathBuf {{
-    //         &self.path(db)
-    //     }}
-    // }}
+    impl<'db> codegen_sdk_resolution::File<'db> for #language_struct_name<'db> {
+        fn path(&self, db: &'db dyn salsa::Database) -> &PathBuf {
+            &self.id(db).path(db)
+        }
+    }
     #[salsa::tracked(return_ref)]
     pub fn parse<'db>(db: &'db dyn codegen_sdk_resolution::Db, input: codegen_sdk_common::FileNodeId) -> #language_struct_name<'db> {
         let input = db.input(input.path(db)).unwrap();

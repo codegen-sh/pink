@@ -88,10 +88,10 @@ impl Db for CodegenDatabase {
         self.dirs.push(path);
         Ok(())
     }
-    fn get_file(&self, path: PathBuf) -> Option<File> {
-        self.files.get(&path).map(|entry| entry.value().clone())
+    fn get_file(&self, path: &PathBuf) -> Option<File> {
+        self.files.get(path).map(|entry| entry.value().clone())
     }
-    fn input(&self, path: PathBuf) -> anyhow::Result<File> {
+    fn input(&self, path: &PathBuf) -> anyhow::Result<File> {
         let path = path.canonicalize()?;
         Ok(match self.files.entry(path.clone()) {
             // If the file already exists in our cache then just return it.

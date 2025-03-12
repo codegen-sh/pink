@@ -50,6 +50,7 @@ yaml = [ "codegen-sdk-yaml"]
 toml = [ "codegen-sdk-toml"]
 serialization = ["codegen-sdk-common/serialization"]
 default = ["json"]
+stable = ["json", "toml", "typescript", "tsx", "jsx", "go", "python", "yaml", "java", "ruby", "rust", "javascript", "markdown"]
 
 [dev-dependencies]
 test-log = { workspace = true }

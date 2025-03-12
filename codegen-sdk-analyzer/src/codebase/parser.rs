@@ -114,7 +114,7 @@ fn compute_dependencies_par(db: &dyn Db, files: FilesToParse) {
                     let deps = codegen_sdk_python::ast::dependency_keys(db, input);
                     return deps
                         .iter()
-                        .map(|dep| (dep.path(db).path(db).clone(), dep.name(db).clone()))
+                        .map(|dep| (dep.file(db).path(db).clone(), dep.name(db).clone()))
                         .collect::<Vec<_>>();
                 }
             }

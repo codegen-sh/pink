@@ -14,7 +14,9 @@ use derive_more::Debug;
 use indextree::NodeId;
 use log::{debug, info, warn};
 pub mod field;
+use anyhow::Error;
 pub mod symbol;
+use pluralizer::pluralize;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use ts_query::NodeTypes;
@@ -255,11 +257,8 @@ impl<'a> Query<'a> {
     pub fn executor_id(&self) -> Ident {
         let raw_name = self.name();
         let name = raw_name.split(".").last().unwrap();
-        if name.ends_with("s") {
-            format_ident!("{}es", name)
-        } else {
-            format_ident!("{}s", name)
-        }
+        let pluralized = pluralize(name, 2, false);
+        format_ident!("{}", pluralized)
     }
     pub fn symbol_name(&self) -> Ident {
         let raw_name = self.name();
@@ -293,7 +292,8 @@ impl<'a> Query<'a> {
         field: &ts_query::FieldDefinition,
         struct_name: &str,
         current_node: &Ident,
-        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        _current_node_id: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let other_child: ts_query::NodeTypesRef = field
@@ -309,11 +309,14 @@ impl<'a> Query<'a> {
                 let name = normalize_field_name(&identifier.source());
                 if let Some(field) = self.get_field_for_field_name(&name, struct_name) {
                     let field_name = format_ident!("{}", name);
+                    let field_name_id = format_ident!("{}_id", name);
+
                     let normalized_struct_name = field.type_name();
                     let wrapped = self.get_matcher_for_definition(
                         &normalized_struct_name,
                         other_child.clone(),
                         &field_name,
+                        &field_name_id,
                         existing,
                         query_values,
                     );
@@ -327,13 +330,14 @@ impl<'a> Query<'a> {
                     if field.is_multiple() {
                         return quote! {
                             #[doc = #doc]
-                            for #field_name in #current_node.#field_name(tree) {
+                            for (#field_name, #field_name_id) in #current_node.#field_name(tree).iter().zip(#current_node.#field_name.iter()) {
                                 #wrapped
                             }
                         };
                     } else if !field.is_optional() {
                         return quote! {
                             #[doc = #doc]
+                            let #field_name_id = #current_node.#field_name;
                             let #field_name = #current_node.#field_name(tree);
                             #wrapped
                         };
@@ -341,6 +345,7 @@ impl<'a> Query<'a> {
                         return quote! {
                             #[doc = #doc]
                             if let Some(#field_name) = #current_node.#field_name(tree) {
+                                let #field_name_id = #current_node.#field_name.unwrap();
                                 #wrapped
                             }
                         };
@@ -367,7 +372,8 @@ impl<'a> Query<'a> {
         node: &ts_query::Grouping,
         struct_name: &str,
         current_node: &Ident,
-        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        current_node_id: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
@@ -376,6 +382,7 @@ impl<'a> Query<'a> {
                 struct_name,
                 group.into(),
                 current_node,
+                current_node_id,
                 existing,
                 query_values,
             );
@@ -389,6 +396,7 @@ impl<'a> Query<'a> {
         target_name: &str,
         target_kind: &str,
         current_node: &Ident,
+        current_node_id: &Ident,
         remaining_nodes: Vec<ts_query::NamedNodeChildrenRef<'_>>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
@@ -411,12 +419,13 @@ impl<'a> Query<'a> {
 
         for child in remaining_nodes {
             if let ts_query::NamedNodeChildrenRef::FieldDefinition(_) = child {
-                field_matchers.push((child.into(), target_name, current_node));
+                field_matchers.push((child.into(), target_name, current_node, current_node_id));
             } else {
                 let result = self.get_matcher_for_definition(
                     &target_name,
                     child.into(),
                     &format_ident!("child"),
+                    current_node_id,
                     &mut Vec::new(),
                     query_values,
                 );
@@ -455,6 +464,7 @@ impl<'a> Query<'a> {
                 &prev.1,
                 prev.0,
                 &prev.2,
+                &prev.3,
                 &mut field_matchers,
                 query_values,
             )
@@ -490,6 +500,7 @@ impl<'a> Query<'a> {
         first_node: &ts_query::NamedNodeChildrenRef<'_>,
         query_values: &mut HashMap<String, TokenStream>,
         current_node: &Ident,
+        current_node_id: &Ident,
     ) -> Vec<ts_query::NamedNodeChildrenRef<'b>> {
         let mut prev = first_node.clone();
         let mut remaining_nodes = Vec::new();
@@ -512,10 +523,12 @@ impl<'a> Query<'a> {
                                 .map(|c| format_ident!("{}", c.source()))
                                 .next()
                                 .unwrap();
+                            let msg =
+                                format!("Found @{}! on field: {:#?}", capture_name, field.source());
                             query_values.insert(
                                 capture_name,
                                 quote! {
-
+                                    #[doc = #msg]
                                     #current_node.#field_name
                                 },
                             );
@@ -530,7 +543,7 @@ impl<'a> Query<'a> {
                             query_values.insert(
                                 capture_name,
                                 quote! {
-                                    #current_node
+                                    #current_node_id
                                 },
                             );
                         }
@@ -543,7 +556,7 @@ impl<'a> Query<'a> {
                             query_values.insert(
                                 capture_name,
                                 quote! {
-                                    #current_node
+                                    #current_node_id
                                 },
                             );
                         }
@@ -567,18 +580,26 @@ impl<'a> Query<'a> {
         node: &ts_query::NamedNode,
         struct_name: &str,
         current_node: &Ident,
-        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        current_node_id: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         let mut matchers = TokenStream::new();
         let first_node = node.children(self.tree).into_iter().next().unwrap();
-        let remaining_nodes = self.group_children(node, &first_node, query_values, current_node);
+        let remaining_nodes = self.group_children(
+            node,
+            &first_node,
+            query_values,
+            current_node,
+            current_node_id,
+        );
         if remaining_nodes.len() == 0 {
             log::info!("single node, {}", first_node.source());
             return self.get_matcher_for_definition(
                 struct_name,
                 first_node.into(),
                 current_node,
+                current_node_id,
                 existing,
                 query_values,
             );
@@ -592,12 +613,13 @@ impl<'a> Query<'a> {
                 &target_name,
                 name_node.kind(),
                 current_node,
+                current_node_id,
                 remaining_nodes,
                 query_values,
             );
             matchers.extend_one(matcher);
         } else {
-            let subenum = self.state.get_subenum_variants(&first_node.source());
+            let subenum = self.state.get_subenum_variants(&first_node.source(), false);
             log::info!(
                 "subenum {} with {} variants",
                 first_node.source(),
@@ -612,6 +634,7 @@ impl<'a> Query<'a> {
                     &variant.normalize_name(),
                     variant.kind(),
                     current_node,
+                    current_node_id,
                     remaining_nodes.clone(),
                     query_values,
                 );
@@ -624,7 +647,7 @@ impl<'a> Query<'a> {
     }
     fn get_default_matcher(
         &self,
-        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         if let Some(prev) = existing.pop() {
@@ -637,6 +660,7 @@ impl<'a> Query<'a> {
                 &prev.1,
                 prev.0,
                 &prev.2,
+                &prev.3,
                 existing,
                 query_values,
             );
@@ -662,9 +686,11 @@ impl<'a> Query<'a> {
         });
         let symbol_name = self.symbol_name();
         return quote! {
-            let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, node.file_id(),#name.source());
-            let symbol = #symbol_name::new(db, fully_qualified_name, id, #(#args.clone().into()),*);
-            #to_append.entry(#name.source()).or_default().push(symbol);
+            let name = tree.get(&#name).unwrap().source();
+            let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, node.file_id(),name.clone());
+            let tree_id = codegen_sdk_common::CSTNodeTreeId::from_node_id(db, &node.id(), id);
+            let symbol = #symbol_name::new(db, fully_qualified_name, tree_id, #(codegen_sdk_common::CSTNodeTreeId::from_node_id(db, &tree.get(&#args).unwrap().id(), #args.clone())),*);
+            #to_append.entry(name).or_default().push(symbol);
         };
     }
     fn get_matcher_for_identifier(
@@ -672,7 +698,8 @@ impl<'a> Query<'a> {
         identifier: &ts_query::Identifier,
         struct_name: &str,
         current_node: &Ident,
-        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        _current_node_id: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         // We have 2 nodes, the parent node and the identifier node
@@ -714,7 +741,8 @@ impl<'a> Query<'a> {
         struct_name: &str,
         node: ts_query::NodeTypesRef,
         current_node: &Ident,
-        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident)>,
+        current_node_id: &Ident,
+        existing: &mut Vec<(ts_query::NodeTypesRef, &str, &Ident, &Ident)>,
         query_values: &mut HashMap<String, TokenStream>,
     ) -> TokenStream {
         if !node.is_named() {
@@ -725,6 +753,7 @@ impl<'a> Query<'a> {
                 &field,
                 struct_name,
                 current_node,
+                current_node_id,
                 existing,
                 query_values,
             ),
@@ -736,6 +765,7 @@ impl<'a> Query<'a> {
                 &named,
                 struct_name,
                 current_node,
+                current_node_id,
                 existing,
                 query_values,
             ),
@@ -748,6 +778,7 @@ impl<'a> Query<'a> {
                         struct_name,
                         child.into(),
                         current_node,
+                        current_node_id,
                         existing,
                         query_values,
                     );
@@ -760,6 +791,7 @@ impl<'a> Query<'a> {
                 &grouping,
                 struct_name,
                 current_node,
+                current_node_id,
                 existing,
                 query_values,
             ),
@@ -767,6 +799,7 @@ impl<'a> Query<'a> {
                 &identifier,
                 struct_name,
                 current_node,
+                current_node_id,
                 existing,
                 query_values,
             ),
@@ -790,18 +823,21 @@ impl<'a> Query<'a> {
             struct_name
         };
         let starting_node = format_ident!("node");
+        let starting_node_id = format_ident!("id");
         let mut query_values = HashMap::new();
         let remaining_nodes = self.group_children(
             &self.node(),
             &self.node().children(self.tree).into_iter().next().unwrap(),
             &mut query_values,
             &starting_node,
+            &starting_node_id,
         );
         return self._get_matcher_for_named_node(
             struct_name,
             &struct_name,
             kind,
             &starting_node,
+            &starting_node_id,
             remaining_nodes,
             &mut query_values,
         );
@@ -917,16 +953,33 @@ impl<'a> Query<'a> {
                 kind: type_name.to_string(),
                 is_optional: false,
                 is_multiple: false,
+                query: self.node().source().to_string(),
+                is_subenum: self.state.get_subenum_struct_names().contains(&type_name),
             });
         }
         fields
     }
+    fn category(&self) -> String {
+        let name = self.name();
+        let category = name
+            .split(".")
+            .next()
+            .ok_or_else(|| {
+                let msg = format!("No category found for: {}", name);
+                Error::msg(msg)
+            })
+            .unwrap();
+        pluralize(category.to_string().as_str(), 2, false)
+    }
+
     pub fn symbol(&self) -> symbol::Symbol {
         symbol::Symbol {
             name: self.symbol_name().to_string(),
             type_name: self.struct_name().to_string(),
             language_struct: self.language.file_struct_name().to_string(),
             fields: self.get_fields(),
+            category: self.category(),
+            subcategory: self.executor_id().to_string(),
         }
     }
 }
@@ -956,7 +1009,10 @@ pub trait HasQuery {
     ) -> BTreeMap<String, symbol::Symbol> {
         let mut symbols = BTreeMap::new();
         for (name, query) in self.queries(db).into_iter() {
-            symbols.insert(name, query.symbol());
+            if vec!["definitions".to_string(), "references".to_string()].contains(&query.category())
+            {
+                symbols.insert(name, query.symbol());
+            }
         }
         symbols
     }

@@ -4,7 +4,7 @@ use crate::{Db, Dependencies, FullyQualifiedName, HasFile, HasId, Parse, Resolve
 
 pub trait References<
     'db,
-    Dep: Dependencies<'db, FullyQualifiedName<'db>, ReferenceType> + 'db,
+    Dep: Dependencies<'db, FullyQualifiedName, ReferenceType> + 'db,
     ReferenceType: ResolveType<'db, Type = Self> + Eq + Hash + Clone + 'db, // References must resolve to this type
     Scope: crate::Scope<'db, Type = Self, ReferenceType = ReferenceType, Dependencies = Dep> +
     Clone + 'db,

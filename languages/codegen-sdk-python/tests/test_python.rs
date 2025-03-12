@@ -19,7 +19,7 @@ fn parse_file<'db>(
     name: &str,
 ) -> &'db codegen_sdk_python::ast::PythonFile<'db> {
     let file_path = write_to_temp_file_with_name(content, temp_dir, name);
-    db.input(file_path.clone()).unwrap();
+    db.input(&file_path).unwrap();
     let file_node_id = codegen_sdk_common::FileNodeId::new(db, file_path);
     let file = codegen_sdk_python::ast::parse(db, file_node_id);
     file
