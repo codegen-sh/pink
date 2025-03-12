@@ -346,7 +346,7 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
- "codegen-sdk-ts_query",
+ "codegen-sdk-ts-query",
  "convert_case",
  "derive_more",
  "indextree",
@@ -694,7 +694,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "codegen-sdk-ts_query"
+name = "codegen-sdk-ts-query"
 version = "0.1.0"
 dependencies = [
  "ambassador",
