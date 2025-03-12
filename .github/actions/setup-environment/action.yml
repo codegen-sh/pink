@@ -3,8 +3,18 @@ description: "Setup Environment"
 runs:
   using: "composite"
   steps:
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.8
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         toolchain: nightly
         components: rustc-codegen-cranelift-preview, rustfmt
+        cache-on-failure: true
+      env:
+        SCCACHE_GHA_ENABLED: "true"
+        RUSTC_WRAPPER: "sccache"
+
     - uses: taiki-e/install-action@nextest
+      env:
+        SCCACHE_GHA_ENABLED: "true"
+        RUSTC_WRAPPER: "sccache"

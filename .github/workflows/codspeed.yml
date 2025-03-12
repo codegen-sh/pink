@@ -1,0 +1,39 @@
+name: CodSpeed
+
+on:
+  push:
+    branches:
+      - "main" # or "master"
+  pull_request:
+  # `workflow_dispatch` allows CodSpeed to trigger backtest
+  # performance analysis in order to generate initial data.
+  workflow_dispatch:
+
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest-16
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-environment
+      - name: Cache Repos
+        id: cache-repos
+        uses: actions/cache@v4
+        with:
+          path: /tmp/pink-bench
+          key: ${{ runner.os }}-pink-bench-${{ hashFiles('benches/parse.rs') }}
+
+      - name: Build the benchmark target(s)
+        run: |
+          cargo install cargo-codspeed --locked
+          cargo codspeed build --features stable
+        env:
+            SCCACHE_GHA_ENABLED: "true"
+            RUSTC_WRAPPER: "sccache"
+
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: RUST_LOG=info,resolution=warn cargo codspeed run
+          token: ${{ secrets.CODSPEED_TOKEN }}

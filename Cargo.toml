@@ -48,9 +48,10 @@ stable = ["codegen-sdk-analyzer/stable", "typescript", "tsx", "jsx", "javascript
 default = ["json"]
 [dev-dependencies]
 test-log = { workspace = true }
-criterion = { version = "0.5", features = ["html_reports"] }
 git2 = { version = "0.20.0" }
 tempfile = {workspace = true}
+divan = { version = "2.9.1", package = "codspeed-divan-compat" }
+rayon = { workspace = true }
 [workspace]
 members = [
   "codegen-sdk-analyzer",

@@ -9,6 +9,8 @@ repository.workspace = true
 name = "codegen-sdk-ruby"
 
 description = "Ruby language support for codegen-sdk"
+[lib]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
 codegen-sdk-common = { workspace = true, features = ["ruby"] }

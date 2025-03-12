@@ -7,6 +7,8 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-json"
+[lib]
+crate-type = ["cdylib", "lib"]
 
 
 [dependencies]
@@ -15,8 +17,8 @@ salsa = { workspace = true }
 tree-sitter = { workspace = true }
 derive_more = { workspace = true }
 ambassador = { workspace = true }
-indextree ={ workspace = true }
-subenum = {workspace = true}
+indextree = { workspace = true }
+subenum = { workspace = true }
 bytes = { workspace = true }
 codegen-sdk-cst = { workspace = true }
 codegen-sdk-ast = { workspace = true }
