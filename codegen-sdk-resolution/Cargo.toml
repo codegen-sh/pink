@@ -1,8 +1,14 @@
 [package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true
 name = "codegen-sdk-resolution"
 description = "Traits for implementing type resolution in codegen-sdk"
-version = "0.1.0"
-edition = "2024"
+
 
 [dependencies]
 salsa = { workspace = true }

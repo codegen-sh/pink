@@ -2,7 +2,14 @@
 # It is not intended for manual editing.
 version = 4
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11,7 +18,14 @@ dependencies = [
  "memchr",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "cc"
 version = "1.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -20,7 +34,14 @@ dependencies = [
  "shlex",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "cst"
 version = "0.1.0"
 dependencies = [
@@ -29,19 +50,40 @@ dependencies = [
  "tree-sitter-typescript",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "hashbrown"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "indexmap"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -51,19 +93,40 @@ dependencies = [
  "hashbrown",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "itoa"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d75a2a4b1b190afb6f5425f10f6a8f959d2ea0b9c2b1d79553551850539e4674"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "proc-macro2"
 version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -72,7 +135,14 @@ dependencies = [
  "unicode-ident",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "quote"
 version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -81,7 +151,14 @@ dependencies = [
  "proc-macro2",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -93,7 +170,14 @@ dependencies = [
  "regex-syntax",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "regex-automata"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -104,19 +188,40 @@ dependencies = [
  "regex-syntax",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "ryu"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ea1a2d0a644769cc99faa24c3ad26b379b786fe7c36fd3c546254801650e6dd"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "serde"
 version = "1.0.217"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -125,7 +230,14 @@ dependencies = [
  "serde_derive",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "serde_derive"
 version = "1.0.217"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -136,7 +248,14 @@ dependencies = [
  "syn",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "serde_json"
 version = "1.0.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -149,19 +268,40 @@ dependencies = [
  "serde",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "streaming-iterator"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "syn"
 version = "2.0.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -172,7 +312,14 @@ dependencies = [
  "unicode-ident",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "tree-sitter"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -186,13 +333,27 @@ dependencies = [
  "tree-sitter-language",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "tree-sitter-language"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38eee4db33814de3d004de9d8d825627ed3320d0989cce0dea30efaf5be4736c"
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "tree-sitter-python"
 version = "0.23.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -202,7 +363,14 @@ dependencies = [
  "tree-sitter-language",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "tree-sitter-typescript"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -212,7 +380,14 @@ dependencies = [
  "tree-sitter-language",
 ]
 
-[[package]]
+[[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true]
 name = "unicode-ident"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"

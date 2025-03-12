@@ -1,9 +1,21 @@
 cargo-features = ["codegen-backend", "profile-rustflags"]
-
-[package]
-name = "codegen-sdk-core"
+[workspace.package]
+license = "Apache-2.0"
 version = "0.1.0"
 edition = "2024"
+readme = "README.md"
+repository = "https://github.com/codegen-sh/pink"
+homepage = "https://codegen.sh"
+authors = ["Ellen Esha Agarwal <ellenagarwal897@gmail.com>"]
+[package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true
+name = "codegen-sdk-core"
 
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
@@ -128,6 +140,8 @@ indextree = { version = "4.7.3", features = ["std"], default-features = false }
 thiserror = "2.0.11"
 indexmap = "2"
 smallvec = "1.11.0"
+
+
 [profile.dev]
 # codegen-backend = "cranelift"
 split-debuginfo = "unpacked"
