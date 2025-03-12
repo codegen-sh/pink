@@ -7,7 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-ast"
-
+description = "Common traits and types for the AST"
 
 [dependencies]
 codegen-sdk-cst = { workspace = true}

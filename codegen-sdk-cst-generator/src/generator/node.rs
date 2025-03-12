@@ -1,3 +1,4 @@
+// Representation of a tree-sitter node without variants
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -15,6 +16,7 @@ use crate::{
     Config,
     generator::utils::{get_comment_type, get_serialize_bounds},
 };
+
 #[derive(Debug)]
 pub struct Node<'a> {
     raw: Arc<codegen_sdk_common::parser::Node>,

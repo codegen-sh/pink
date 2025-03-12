@@ -16,6 +16,7 @@ homepage.workspace = true
 authors.workspace = true
 repository.workspace = true
 name = "codegen-sdk-core"
+description = "Demo program for the codegen-sdk"
 
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
@@ -89,7 +90,7 @@ tree-sitter-java = "0.23.5"
 tree-sitter-ruby = "0.23.1"
 tree-sitter-rust = "0.23.2"
 tree-sitter-go = "0.23.4"
-tree-sitter-md = {git="https://github.com/tree-sitter-grammars/tree-sitter-markdown", rev = "192407ab5a24bfc24f13332979b5e7967518754a"}
+tree-sitter-md = {git="https://github.com/tree-sitter-grammars/tree-sitter-markdown", rev = "192407ab5a24bfc24f13332979b5e7967518754a", version = ">=0.3.2"}
 tree-sitter-yaml = "0.7.0"
 tree-sitter-toml-ng = "0.7.0"
 bytes = "1.10.0"
