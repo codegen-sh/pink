@@ -69,6 +69,15 @@ pub mod ast {
         dependencies.dependencies(db).keys().cloned().collect()
     }
     #[salsa::tracked]
+    pub fn has_dependency<'db>(
+        db: &'db dyn codegen_sdk_resolution::Db,
+        input: codegen_sdk_common::FileNodeId,
+        name: codegen_sdk_resolution::FullyQualifiedName,
+    ) -> bool {
+        let dependencies = dependencies(db, input);
+        dependencies.dependencies(db).contains_key(&name)
+    }
+    #[salsa::tracked]
     struct UsagesInput<'db> {
         #[id]
         input: codegen_sdk_common::FileNodeId,
@@ -246,8 +255,7 @@ pub mod ast {
         log::info!(target: "resolution", "Finding references across {:?} files", files.len());
         let mut results = Vec::new();
         for input in files.into_iter() {
-            let keys = dependency_keys(db, input.clone());
-            if keys.contains(&name) {
+            if has_dependency(db, input.clone(), name) {
                 // if !self.filter(db, &input) {
                 //     continue;
                 // }

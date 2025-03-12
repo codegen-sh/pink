@@ -247,7 +247,7 @@ impl<'db> codegen_sdk_resolution::HasId<'db> for Module<'db> {
         self._fully_qualified_name(db)
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, salsa::Update, salsa::Supertype)]
 pub enum Symbol<'db> {
     Class(Class<'db>),
     Function(Function<'db>),
