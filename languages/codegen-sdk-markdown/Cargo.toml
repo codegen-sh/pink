@@ -1,7 +1,13 @@
 [package]
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+homepage.workspace = true
+authors.workspace = true
+repository.workspace = true
 name = "codegen-sdk-markdown"
-version = "0.1.0"
-edition = "2024"
+
 description = "Markdown language support for codegen-sdk"
 
 [dependencies]
