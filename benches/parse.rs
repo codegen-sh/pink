@@ -1,5 +1,4 @@
 use std::{
-    array,
     fmt::{self, Display},
     path::PathBuf,
 };
@@ -10,9 +9,9 @@ use rayon::prelude::*;
 static ALLOC: AllocProfiler = AllocProfiler::system();
 
 use codegen_sdk_analyzer::Codebase;
-fn thread_counts() -> Vec<usize> {
-    vec![/* available parallelism */ 0, 1, 4, 8]
-}
+// fn thread_counts() -> Vec<usize> {
+//     vec![/* available parallelism */ 0, 1, 4, 8]
+// }
 const TMP_PATH: &str = "/tmp/pink-bench";
 
 fn clone_repo(url: String, name: String) -> PathBuf {
@@ -25,6 +24,7 @@ fn clone_repo(url: String, name: String) -> PathBuf {
             .fetch_options(fetch_opts)
             .clone(&url, &repo_path)
             .unwrap();
+        log::info!("Cloned repo: {} to {}", url, repo_path.display());
     }
     repo_path
 }
@@ -47,12 +47,38 @@ const REPOS: &[Repo] = &[
         url: "https://github.com/facebook/react",
     },
     Repo {
-        name: "tensorflow",
-        url: "https://github.com/tensorflow/tensorflow",
+        name: "django",
+        url: "https://github.com/django/django",
+    },
+    Repo {
+        name: "vscode",
+        url: "https://github.com/microsoft/vscode",
+    },
+    Repo {
+        name: "pytorch",
+        url: "https://github.com/pytorch/pytorch",
+    },
+    // Go libraries
+    Repo {
+        name: "gin",
+        url: "https://github.com/gin-gonic/gin",
+    },
+    Repo {
+        name: "kubernetes",
+        url: "https://github.com/kubernetes/kubernetes",
+    },
+    // Rust libraries
+    Repo {
+        name: "tokio",
+        url: "https://github.com/tokio-rs/tokio",
+    },
+    Repo {
+        name: "rust-analyzer",
+        url: "https://github.com/rust-lang/rust-analyzer",
     },
 ];
 const fn repo_indices() -> [usize; REPOS.len()] {
-    [0, 1, 2]
+    [0, 1, 2, 3, 4, 5, 6, 7, 8]
 }
 #[divan::bench(consts = repo_indices())]
 fn parse<const REPO: usize>(bencher: divan::Bencher) {

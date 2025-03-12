@@ -27,5 +27,5 @@ jobs:
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: cargo codspeed run
+          run: RUST_LOG=info cargo codspeed run
           token: ${{ secrets.CODSPEED_TOKEN }}
