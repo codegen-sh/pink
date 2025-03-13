@@ -16,6 +16,17 @@ fn get_category(group: &str) -> Vec<syn::Stmt> {
         let category = file.#category(db);
     }
 }
+fn filter_symbols(
+    nodes: &Vec<&codegen_sdk_ast_generator::Symbol>,
+    group: &str,
+) -> Vec<codegen_sdk_ast_generator::Symbol> {
+    nodes
+        .iter()
+        .filter(|node| node.category == pluralize(group, 2, false))
+        .cloned()
+        .cloned()
+        .collect()
+}
 fn get_symbol_method_name(group: &str) -> syn::Ident {
     let symbol_name = codegen_sdk_ast_generator::get_symbol_name(group);
     syn::Ident::new(
@@ -112,8 +123,10 @@ fn generate_file_struct(
         .flatten();
     let mut symbols_methods = Vec::new();
     for group in codegen_sdk_ast_generator::GROUPS {
-        symbols_methods.extend(symbols_method(group));
-        symbols_methods.extend(get_symbols_method(group));
+        if filter_symbols(&symbols, group).len() > 0 {
+            symbols_methods.extend(symbols_method(group));
+            symbols_methods.extend(get_symbols_method(group));
+        }
     }
     output.push(parse_quote! {
         #[pymethods]
@@ -233,11 +246,13 @@ fn generate_symbol_enum(
     symbols: Vec<&Symbol>,
     group: &str,
 ) -> anyhow::Result<Vec<syn::Stmt>> {
-    let symbols: Vec<_> = symbols
+    let symbols: Vec<_> = filter_symbols(&symbols, group)
         .iter()
-        .filter(|symbol| symbol.category == pluralize(group, 2, false))
         .map(|symbol| format_ident!("{}", symbol.name))
         .collect();
+    if symbols.len() == 0 {
+        return Ok(Vec::new());
+    }
     let symbol_name = codegen_sdk_ast_generator::get_symbol_name(group);
     let span = Span::call_site();
     let mut output = Vec::new();
@@ -282,6 +297,7 @@ fn generate_module(
     let register_name = format_ident!("register_{}", language_name);
     let struct_name = format_ident!("{}", language.file_struct_name());
     let module_name = format!("codegen_sdk_pink.{}", language_name);
+
     output.push(parse_quote! {
         pub fn #register_name(py: Python<'_>, parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
             let child_module = PyModule::new(parent_module.py(), #language_name)?;
@@ -310,10 +326,12 @@ pub(crate) fn generate_bindings(language: &Language) -> anyhow::Result<Vec<syn::
     output.extend(cst);
     let mut symbol_idents = Vec::new();
     for group in codegen_sdk_ast_generator::GROUPS {
-        let symbol_enum = generate_symbol_enum(language, symbols.values().collect(), group)?;
-        output.extend(symbol_enum);
+        if filter_symbols(&symbols.values().collect(), group).len() > 0 {
+            let symbol_enum = generate_symbol_enum(language, symbols.values().collect(), group)?;
+            output.extend(symbol_enum);
+            symbol_idents.push(codegen_sdk_ast_generator::get_symbol_name(group));
+        }
     }
-
     for (_, symbol) in symbols {
         let symbol_struct = generate_symbol_struct(language, &symbol)?;
         output.extend(symbol_struct);
