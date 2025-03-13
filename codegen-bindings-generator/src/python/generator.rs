@@ -326,11 +326,8 @@ pub(crate) fn generate_bindings(language: &Language) -> anyhow::Result<Vec<syn::
     output.extend(cst);
     let mut symbol_idents = Vec::new();
     for group in codegen_sdk_ast_generator::GROUPS {
-        if filter_symbols(&symbols.values().collect(), group).len() > 0 {
-            let symbol_enum = generate_symbol_enum(language, symbols.values().collect(), group)?;
-            output.extend(symbol_enum);
-            symbol_idents.push(codegen_sdk_ast_generator::get_symbol_name(group));
-        }
+        let symbol_enum = generate_symbol_enum(language, symbols.values().collect(), group)?;
+        output.extend(symbol_enum);
     }
     for (_, symbol) in symbols {
         let symbol_struct = generate_symbol_struct(language, &symbol)?;
