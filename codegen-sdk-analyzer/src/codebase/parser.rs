@@ -124,6 +124,8 @@ fn compute_dependencies_par(db: &dyn Db, files: FilesToParse) {
         .into_iter()
         .flatten()
         .collect();
+    #[cfg(feature = "python")]
+    let _ = codegen_sdk_python::ast::dependency_matrix(db);
     // let _: Vec<_> = execute_op_with_progress(db, targets, "Finding Usages", true, |db, input: (PathBuf, String)| {
     //     let file_node_id = codegen_sdk_common::FileNodeId::new(db, input.0);
     //     let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, file_node_id, input.1);

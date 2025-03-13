@@ -77,6 +77,37 @@ pub mod ast {
         let dependencies = dependencies(db, input);
         dependencies.dependencies(db).contains_key(&name)
     }
+    #[salsa::tracked(return_ref, no_eq)]
+    pub fn dependency_matrix<'db>(
+        db: &'db dyn codegen_sdk_resolution::Db,
+    ) -> codegen_sdk_common::hash::FxIndexMap<
+        codegen_sdk_resolution::FullyQualifiedName,
+        codegen_sdk_common::hash::FxIndexSet<codegen_sdk_common::FileNodeId>,
+    > {
+        let mut ret: codegen_sdk_common::hash::FxIndexMap<
+            codegen_sdk_resolution::FullyQualifiedName,
+            codegen_sdk_common::hash::FxIndexSet<codegen_sdk_common::FileNodeId>,
+        > = Default::default();
+        let files = codegen_sdk_resolution::files(db);
+        let dependencies: Vec<
+            Vec<(
+                codegen_sdk_resolution::FullyQualifiedName,
+                codegen_sdk_common::FileNodeId,
+            )>,
+        > = salsa::par_map(db, files, |db, file| {
+            let dependencies = dependencies(db, file.clone());
+            let mut ret = Vec::default();
+            for name in dependencies.dependencies(db).keys() {
+                ret.push((name.clone(), file.clone()));
+            }
+            ret
+        });
+        for (name, dependencies) in dependencies.into_iter().flatten() {
+            ret.entry(name).or_default().insert(dependencies);
+        }
+        ret
+    }
+
     #[salsa::tracked]
     struct UsagesInput<'db> {
         #[id]
@@ -251,16 +282,12 @@ pub mod ast {
         db: &'db dyn Db,
         name: codegen_sdk_resolution::FullyQualifiedName,
     ) -> Vec<crate::ast::Call<'db>> {
-        let files = codegen_sdk_resolution::files(db);
-        log::info!(target: "resolution", "Finding references across {:?} files", files.len());
         let mut results = Vec::new();
-        for input in files.into_iter() {
-            if has_dependency(db, input.clone(), name) {
-                // if !self.filter(db, &input) {
-                //     continue;
-                // }
-                // let input = UsagesInput::new(db, input.clone(), name.clone());
-                // results.extend(usages(db, input));
+        let dependency_matrix = dependency_matrix(db);
+        let files = dependency_matrix.get(&name);
+        if let Some(files) = files {
+            log::info!(target: "resolution", "Finding references across {:?} files", files.len());
+            for input in files.into_iter() {
                 let dependencies = dependencies(db, input.clone());
                 if let Some(references) = dependencies.get(db, &name) {
                     results.extend(references.iter().cloned());

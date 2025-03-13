@@ -7,7 +7,7 @@ use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
-use codegen_sdk_resolution::CodebaseContext;
+use codegen_sdk_resolution::{CodebaseContext, HasId};
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
@@ -34,11 +34,19 @@ fn get_definitions<'db>(
         if let ParsedFile::Python(file) = parsed {
             let definitions = file.definitions(db);
             let functions = definitions.functions(db);
-            let total_references =
-                codegen_sdk_analyzer::codegen_sdk_python::ast::references_for_file(db, file.id(db));
+            let mut total_references = 0;
+            let mut total_functions = 0;
+            for function in functions.values().flatten().into_iter() {
+                let references = codegen_sdk_analyzer::codegen_sdk_python::ast::references_impl(
+                    db,
+                    function.fully_qualified_name(db),
+                );
+                total_references += references.len();
+                total_functions += 1;
+            }
             return (
-                definitions.classes(db).len(),
-                functions.len(),
+                definitions.classes(db).values().flatten().count(),
+                total_functions,
                 0,
                 0,
                 0,
