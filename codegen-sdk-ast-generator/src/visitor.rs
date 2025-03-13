@@ -4,11 +4,18 @@ use codegen_sdk_common::Language;
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::{Ident, parse_quote_spanned};
+use syn::{Ident, parse_quote, parse_quote_spanned};
 
 use super::query::Query;
 use crate::query::HasQuery;
 // Generate the Enum for all possible symbols. Also generate each symbol in the AST.
+fn get_symbol_name(name: &str) -> Ident {
+    match name {
+        "definition" => format_ident!("Symbol"),
+        "reference" => format_ident!("Reference"),
+        _ => panic!("Invalid symbol name: {}", name),
+    }
+}
 fn generate_symbol_enum<'db>(
     language: &Language,
     name: &str,
@@ -16,13 +23,9 @@ fn generate_symbol_enum<'db>(
     types: &Vec<Ident>,
     enter_methods: &BTreeMap<String, Vec<&Query>>,
 ) -> TokenStream {
-    let symbol_name = if name == "definition" {
-        format_ident!("Symbol")
-    } else {
-        format_ident!("Reference")
-    };
+    let symbol_name = get_symbol_name(name);
     let mut defs: Vec<syn::Stmt> = Vec::new();
-    let language_struct = format_ident!("{}File", language.struct_name());
+    let language_struct = language.file_struct_name();
     for (_, type_name) in symbol_names.iter().zip(types.iter()) {
         let query = enter_methods
             .get(&type_name.to_string())
@@ -70,6 +73,26 @@ fn generate_symbol_enum<'db>(
             pub enum #symbol_name<'db> {
                 _Phantom(std::marker::PhantomData<&'db ()>)
             }
+        }
+    }
+}
+// Generate a .symbols method that returns a BTreeMap of names to any kind of symbol
+fn generate_symbols<'db>(name: &str, names: &Vec<Ident>, symbol_names: &Vec<Ident>) -> syn::ItemFn {
+    let symbol_name = get_symbol_name(name);
+    let method_name = format_ident!(
+        "{}",
+        pluralizer::pluralize(&symbol_name.to_string().to_case(Case::Snake), 2, false)
+    );
+    parse_quote! {
+        #[salsa::tracked(return_ref)]
+        pub fn #method_name(self, db: &'db dyn salsa::Database) -> BTreeMap<String, Vec<#symbol_name<'db>>> {
+            let mut map: BTreeMap<String, Vec<#symbol_name<'db>>> = BTreeMap::new();
+            #(
+                for (key, value) in self.#names(db).iter() {
+                    map.entry(key.to_string()).or_default().extend(value.iter().map(|symbol| #symbol_name::#symbol_names(symbol.clone())));
+                }
+            )*
+            map
         }
     }
 }
@@ -128,6 +151,7 @@ pub fn generate_visitor<'db>(
 
     };
     let symbol = generate_symbol_enum(language, name, &symbol_names, &types, &enter_methods);
+    let symbols_method = generate_symbols(name, &names, &symbol_names);
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
     let output_constructor = quote! {
         pub fn visit(db: &'db dyn salsa::Database, root: &'db crate::cst::Parsed<'db>) -> Self {
@@ -160,8 +184,10 @@ pub fn generate_visitor<'db>(
                 pub #names: BTreeMap<String, Vec<#symbol_names<'db>>>,
             )*
         }
+        #[salsa::tracked]
         impl<'db> #name<'db> {
             #output_constructor
+            #symbols_method
         }
     }
 }
