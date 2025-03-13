@@ -7,7 +7,7 @@ use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
-use codegen_sdk_resolution::{CodebaseContext, References};
+use codegen_sdk_resolution::CodebaseContext;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
