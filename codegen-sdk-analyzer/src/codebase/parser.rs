@@ -80,7 +80,7 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
         .collect::<codegen_sdk_common::hash::FxHashSet<_>>();
     let _: Vec<_> = execute_op_with_progress(db, ids, "Parsing Files", true, |db, input| {
         let file = parse_file(db, input.clone());
-        if let Some(parsed) = file.file(db) {
+        if let Some(parsed) = file {
             #[cfg(feature = "typescript")]
             if let ParsedFile::Typescript(parsed) = parsed {
                 parsed.definitions(db);
@@ -109,7 +109,7 @@ fn compute_dependencies_par(db: &dyn Db, files: FilesToParse) {
     let _targets: codegen_sdk_common::hash::FxHashSet<(PathBuf, String)> =
         execute_op_with_progress(db, ids, "Computing Dependencies", true, |db, input| {
             let file = parse_file(db, input.clone());
-            if let Some(parsed) = file.file(db) {
+            if let Some(parsed) = file {
                 #[cfg(feature = "python")]
                 if let ParsedFile::Python(_parsed) = parsed {
                     let deps = codegen_sdk_python::ast::dependency_keys(db, input);

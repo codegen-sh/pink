@@ -75,30 +75,23 @@ pub fn languages_ast(_item: TokenStream) -> TokenStream {
     }
     let span = proc_macro2::Span::mixed_site();
     quote_spanned! {
-        span =>
-        #[derive(Debug, Clone, Eq, PartialEq, Hash, salsa::Update)]
-        // #[delegate(
-        //     codegen_sdk_ast::Definitions<'db>
-        // )]
-        // #[delegate(
-    //     codegen_sdk_ast::References<'db>
-    // )]
-
-    pub enum ParsedFile<'db> {
-        #(#output)*
-    }
-    #from_conversions
-    impl<'db> codegen_sdk_resolution::File<'db> for ParsedFile<'db> {
-        fn path(&self, db: &'db dyn salsa::Database) -> &std::path::PathBuf {
-            match self {
-                #(
-                    #[cfg(feature = #names)]
-                    Self::#variants(parsed) => parsed.path(db),
-                )*
+            span =>
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, salsa::Update, salsa::Supertype)]
+        pub enum ParsedFile<'db> {
+            #(#output)*
+        }
+        #from_conversions
+        impl<'db> codegen_sdk_resolution::File<'db> for ParsedFile<'db> {
+            fn path(&self, db: &'db dyn salsa::Database) -> &std::path::PathBuf {
+                match self {
+                    #(
+                        #[cfg(feature = #names)]
+                        Self::#variants(parsed) => parsed.path(db),
+                    )*
+                }
             }
         }
-    }
-    }
+        }
     .into()
 }
 
@@ -116,11 +109,7 @@ pub fn parse_language(_item: TokenStream) -> TokenStream {
             #[cfg(feature = #name)]
             if #package_name::cst::#struct_name::should_parse(&file.path(db)).unwrap_or(false) {
                 let parsed = #package_name::ast::parse(db, file).clone();
-                return Parsed::new(
-                    db,
-                    FileNodeId::new(db, file.path(db)),
-                    Some(ParsedFile::#struct_name(parsed)),
-                );
+                return Some(ParsedFile::#struct_name(parsed));
             }
         };
         output.extend_one(variant);

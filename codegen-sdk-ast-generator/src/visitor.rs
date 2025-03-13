@@ -4,10 +4,102 @@ use codegen_sdk_common::Language;
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::parse_quote_spanned;
+use syn::{Ident, parse_quote, parse_quote_spanned};
 
 use super::query::Query;
 use crate::query::HasQuery;
+// Generate the Enum for all possible symbols. Also generate each symbol in the AST.
+pub fn get_symbol_name(name: &str) -> Ident {
+    match name {
+        "definition" => format_ident!("Symbol"),
+        "reference" => format_ident!("Reference"),
+        _ => panic!("Invalid symbol name: {}", name),
+    }
+}
+pub fn get_symbols_method(symbol_name: &Ident) -> syn::Ident {
+    syn::Ident::new(
+        &pluralizer::pluralize(&symbol_name.to_string().to_case(Case::Snake), 2, false),
+        Span::call_site(),
+    )
+}
+fn generate_symbol_enum<'db>(
+    language: &Language,
+    name: &str,
+    symbol_names: &Vec<Ident>,
+    types: &Vec<Ident>,
+    enter_methods: &BTreeMap<String, Vec<&Query>>,
+) -> TokenStream {
+    let symbol_name = get_symbol_name(name);
+    let mut defs: Vec<syn::Stmt> = Vec::new();
+    let language_struct = language.file_struct_name();
+    for (_, type_name) in symbol_names.iter().zip(types.iter()) {
+        let query = enter_methods
+            .get(&type_name.to_string())
+            .unwrap()
+            .first()
+            .unwrap();
+        let symbol = query.symbol();
+        defs.extend(symbol.as_syn_struct());
+    }
+    if defs.len() > 0 {
+        quote! {
+                #(
+                    #defs
+                )*
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, salsa::Update, salsa::Supertype)]
+            pub enum #symbol_name<'db> {
+                #(
+                    #symbol_names(#symbol_names<'db>),
+                )*
+            }
+            impl<'db> codegen_sdk_resolution::HasFile<'db> for #symbol_name<'db> {
+                type File<'db1> = #language_struct<'db1>;
+                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.file(db),)*
+                    }
+                }
+                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &PathBuf {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
+                    }
+                }
+            }
+            impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
+                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName {
+                    match self {
+                        #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
+                    }
+                }
+            }
+        }
+    } else {
+        quote! {
+            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            pub enum #symbol_name<'db> {
+                _Phantom(std::marker::PhantomData<&'db ()>)
+            }
+        }
+    }
+}
+// Generate a .symbols method that returns a BTreeMap of names to any kind of symbol
+fn generate_symbols<'db>(name: &str, names: &Vec<Ident>, symbol_names: &Vec<Ident>) -> syn::ItemFn {
+    let symbol_name = get_symbol_name(name);
+    let method_name = get_symbols_method(&symbol_name);
+    parse_quote! {
+        #[salsa::tracked(return_ref)]
+        pub fn #method_name(self, db: &'db dyn salsa::Database) -> BTreeMap<String, Vec<#symbol_name<'db>>> {
+            let mut map: BTreeMap<String, Vec<#symbol_name<'db>>> = BTreeMap::new();
+            #(
+                for (key, value) in self.#names(db).iter() {
+                    map.entry(key.to_string()).or_default().extend(value.iter().map(|symbol| #symbol_name::#symbol_names(symbol.clone())));
+                }
+            )*
+            map
+        }
+    }
+}
+
 pub fn generate_visitor<'db>(
     db: &'db dyn salsa::Database,
     language: &Language,
@@ -52,11 +144,6 @@ pub fn generate_visitor<'db>(
         });
     }
 
-    let symbol_name = if name == "definition" {
-        format_ident!("Symbol")
-    } else {
-        format_ident!("Reference")
-    };
     let maps = quote! {
         #(
             let mut #names: BTreeMap<String,Vec<#symbol_names<'db>>> = BTreeMap::new();
@@ -66,57 +153,8 @@ pub fn generate_visitor<'db>(
         Self::new(db, #(#names),*)
 
     };
-    let mut defs = Vec::new();
-    let language_struct = format_ident!("{}File", language.struct_name());
-    for (_, type_name) in symbol_names.iter().zip(types.iter()) {
-        let query = enter_methods
-            .get(&type_name.to_string())
-            .unwrap()
-            .first()
-            .unwrap();
-        let symbol = query.symbol();
-        defs.extend(symbol.as_syn_struct());
-    }
-    let symbol = if defs.len() > 0 {
-        quote! {
-                #(
-                    #defs
-                )*
-            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
-            pub enum #symbol_name<'db> {
-                #(
-                    #symbol_names(#symbol_names<'db>),
-                )*
-            }
-            impl<'db> codegen_sdk_resolution::HasFile<'db> for #symbol_name<'db> {
-                type File<'db1> = #language_struct<'db1>;
-                fn file(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &'db Self::File<'db> {
-                    match self {
-                        #(Self::#symbol_names(symbol) => symbol.file(db),)*
-                    }
-                }
-                fn root_path(&self, db: &'db dyn codegen_sdk_resolution::Db) -> &PathBuf {
-                    match self {
-                        #(Self::#symbol_names(symbol) => symbol.root_path(db),)*
-                    }
-                }
-            }
-            impl<'db> codegen_sdk_resolution::HasId<'db> for #symbol_name<'db> {
-                fn fully_qualified_name(&self, db: &'db dyn salsa::Database) -> codegen_sdk_resolution::FullyQualifiedName {
-                    match self {
-                        #(Self::#symbol_names(symbol) => symbol.fully_qualified_name(db),)*
-                    }
-                }
-            }
-        }
-    } else {
-        quote! {
-            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
-            pub enum #symbol_name<'db> {
-                _Phantom(std::marker::PhantomData<&'db ()>)
-            }
-        }
-    };
+    let symbol = generate_symbol_enum(language, name, &symbol_names, &types, &enter_methods);
+    let symbols_method = generate_symbols(name, &names, &symbol_names);
     let name = format_ident!("{}s", name.to_case(Case::Pascal));
     let output_constructor = quote! {
         pub fn visit(db: &'db dyn salsa::Database, root: &'db crate::cst::Parsed<'db>) -> Self {
@@ -149,8 +187,10 @@ pub fn generate_visitor<'db>(
                 pub #names: BTreeMap<String, Vec<#symbol_names<'db>>>,
             )*
         }
+        #[salsa::tracked]
         impl<'db> #name<'db> {
             #output_constructor
+            #symbols_method
         }
     }
 }

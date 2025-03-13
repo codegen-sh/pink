@@ -5,9 +5,10 @@ use codegen_sdk_cst::CSTDatabase;
 use quote::{ToTokens, quote};
 mod generator;
 mod query;
-pub use query::{HasQuery, field::Field, symbol::Symbol};
+pub use query::{GROUPS, HasQuery, field::Field, symbol::Symbol};
 mod visitor;
 use syn::parse_quote;
+pub use visitor::{get_symbol_name, get_symbols_method};
 pub fn generate_ast(language: &Language) -> anyhow::Result<()> {
     let db = CSTDatabase::default();
     let imports = quote! {

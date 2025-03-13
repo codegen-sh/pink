@@ -122,7 +122,7 @@ impl CodebaseContext for Codebase {
             let file = self.db.files.get(&path);
             if let Some(_) = file {
                 let file_id = codegen_sdk_common::FileNodeId::new(&self.db, path);
-                return parse_file(&self.db, file_id).file(&self.db).as_ref();
+                return parse_file(&self.db, file_id).as_ref();
             }
         }
         None
