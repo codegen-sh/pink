@@ -262,6 +262,7 @@ pub struct Definitions<'db> {
     #[return_ref]
     pub imports: BTreeMap<String, Vec<Import<'db>>>,
 }
+#[salsa::tracked]
 impl<'db> Definitions<'db> {
     pub fn visit(
         db: &'db dyn salsa::Database,
@@ -431,5 +432,33 @@ impl<'db> Definitions<'db> {
         let mut functions: BTreeMap<String, Vec<Function<'db>>> = BTreeMap::new();
         let mut imports: BTreeMap<String, Vec<Import<'db>>> = BTreeMap::new();
         Self::new(db, classes, constants, functions, imports)
+    }
+    #[salsa::tracked(return_ref)]
+    pub fn symbols(
+        self,
+        db: &'db dyn salsa::Database,
+    ) -> BTreeMap<String, Vec<Symbol<'db>>> {
+        let mut map: BTreeMap<String, Vec<Symbol<'db>>> = BTreeMap::new();
+        for (key, value) in self.classes(db).iter() {
+            map.entry(key.to_string())
+                .or_default()
+                .extend(value.iter().map(|symbol| Symbol::Class(symbol.clone())));
+        }
+        for (key, value) in self.constants(db).iter() {
+            map.entry(key.to_string())
+                .or_default()
+                .extend(value.iter().map(|symbol| Symbol::Constant(symbol.clone())));
+        }
+        for (key, value) in self.functions(db).iter() {
+            map.entry(key.to_string())
+                .or_default()
+                .extend(value.iter().map(|symbol| Symbol::Function(symbol.clone())));
+        }
+        for (key, value) in self.imports(db).iter() {
+            map.entry(key.to_string())
+                .or_default()
+                .extend(value.iter().map(|symbol| Symbol::Import(symbol.clone())));
+        }
+        map
     }
 }
