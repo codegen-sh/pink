@@ -188,4 +188,3 @@ jobs:
         with:
           command: upload
           args: --non-interactive --skip-existing wheels-*/*
-          working-directory: bindings/python
