@@ -60,23 +60,7 @@ pub mod ast {
         let file = parse(db, input);
         PythonDependencies::new(db, file.id(db), file.compute_dependencies(db))
     }
-    #[salsa::tracked(return_ref, no_eq)]
-    pub fn dependency_keys<'db>(
-        db: &'db dyn codegen_sdk_resolution::Db,
-        input: codegen_sdk_common::FileNodeId,
-    ) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_resolution::FullyQualifiedName> {
-        let dependencies = dependencies(db, input);
-        dependencies.dependencies(db).keys().cloned().collect()
-    }
-    #[salsa::tracked]
-    pub fn has_dependency<'db>(
-        db: &'db dyn codegen_sdk_resolution::Db,
-        input: codegen_sdk_common::FileNodeId,
-        name: codegen_sdk_resolution::FullyQualifiedName,
-    ) -> bool {
-        let dependencies = dependencies(db, input);
-        dependencies.dependencies(db).contains_key(&name)
-    }
+
     #[salsa::tracked(return_ref, no_eq)]
     pub fn dependency_matrix<'db>(
         db: &'db dyn codegen_sdk_resolution::Db,
@@ -108,30 +92,6 @@ pub mod ast {
         ret
     }
 
-    #[salsa::tracked]
-    struct UsagesInput<'db> {
-        #[id]
-        input: codegen_sdk_common::FileNodeId,
-        name: codegen_sdk_resolution::FullyQualifiedName,
-    }
-    #[salsa::tracked(return_ref)]
-    pub fn usages<'db>(
-        db: &'db dyn codegen_sdk_resolution::Db,
-        input: UsagesInput<'db>,
-    ) -> codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>> {
-        let file = parse(db, input.input(db));
-        let mut results = codegen_sdk_common::hash::FxIndexSet::default();
-        for reference in file.resolvables(db) {
-            let resolved = reference.clone().resolve_type(db);
-            for resolved in resolved {
-                if resolved.fully_qualified_name(db) == input.name(db) {
-                    results.insert(reference);
-                    continue;
-                }
-            }
-        }
-        results
-    }
     #[salsa::tracked]
     impl<'db> Scope<'db> for PythonFile<'db> {
         type Type = crate::ast::Symbol<'db>;
@@ -240,44 +200,6 @@ pub mod ast {
         }
     }
     use codegen_sdk_resolution::{Db, Dependencies, HasId};
-    // #[salsa::tracked(return_ref)]
-    pub fn references_for_file<'db>(
-        db: &'db dyn Db,
-        file: codegen_sdk_common::FileNodeId,
-    ) -> usize {
-        let parsed = parse(db, file);
-        let definitions = parsed.definitions(db);
-        let functions = definitions.functions(db);
-        let mut total_references = 0;
-        let total_functions = functions.len();
-        let functions = functions
-            .into_iter()
-            .map(|(_, functions)| functions)
-            .flatten()
-            .map(|function| function.fully_qualified_name(db))
-            .collect::<codegen_sdk_common::hash::FxHashSet<_>>();
-        let files = codegen_sdk_resolution::files(db);
-        log::info!(target: "resolution", "Finding references across {:?} files", files.len());
-        let mut results = 0;
-        for input in files.into_iter() {
-            let keys = dependency_keys(db, input.clone());
-            if keys.is_disjoint(&functions) {
-                continue;
-            }
-            // if !self.filter(db, &input) {
-            //     continue;
-            // }
-            // let input = UsagesInput::new(db, input.clone(), name.clone());
-            // results.extend(usages(db, input));
-            let dependencies = dependencies(db, input.clone());
-            for function in functions.iter() {
-                if let Some(references) = dependencies.get(db, function) {
-                    results += references.len();
-                }
-            }
-        }
-        results
-    }
     pub fn references_impl<'db>(
         db: &'db dyn Db,
         name: codegen_sdk_resolution::FullyQualifiedName,

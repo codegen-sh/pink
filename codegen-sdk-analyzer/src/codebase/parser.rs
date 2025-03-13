@@ -101,36 +101,10 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
 }
 #[salsa::tracked]
 fn compute_dependencies_par(db: &dyn Db, files: FilesToParse) {
-    let ids = files
-        .files(db)
-        .iter()
-        .map(|input| codegen_sdk_common::FileNodeId::new(db, input.path(db)))
-        .collect::<codegen_sdk_common::hash::FxHashSet<_>>();
-    let _targets: codegen_sdk_common::hash::FxHashSet<(PathBuf, String)> =
-        execute_op_with_progress(db, ids, "Computing Dependencies", true, |db, input| {
-            let file = parse_file(db, input.clone());
-            if let Some(parsed) = file {
-                #[cfg(feature = "python")]
-                if let ParsedFile::Python(_parsed) = parsed {
-                    let deps = codegen_sdk_python::ast::dependency_keys(db, input);
-                    return deps
-                        .iter()
-                        .map(|dep| (dep.file(db).path(db).clone(), dep.name(db).clone()))
-                        .collect::<Vec<_>>();
-                }
-            }
-            Vec::new()
-        })
-        .into_iter()
-        .flatten()
-        .collect();
+    log::info!("Computing Dependencies");
     #[cfg(feature = "python")]
     let _ = codegen_sdk_python::ast::dependency_matrix(db);
-    // let _: Vec<_> = execute_op_with_progress(db, targets, "Finding Usages", true, |db, input: (PathBuf, String)| {
-    //     let file_node_id = codegen_sdk_common::FileNodeId::new(db, input.0);
-    //     let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, file_node_id, input.1);
-    //     codegen_sdk_python::ast::references_impl(db, fully_qualified_name);
-    // });
+    log::info!("Done Computing Dependencies");
 }
 
 pub fn parse_files<'db>(
