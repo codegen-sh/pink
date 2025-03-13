@@ -82195,6 +82195,102 @@ impl TypeRef {
         )
     }
 }
+#[pyclass(module = "codegen_sdk_pink.typescript")]
+pub enum Symbol {
+    Class(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Class),
+    Function(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Function),
+    Interface(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Interface),
+    Method(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Method),
+    Module(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Module),
+    ClassRef(codegen_sdk_analyzer::codegen_sdk_typescript::ast::ClassRef),
+    TypeRef(codegen_sdk_analyzer::codegen_sdk_typescript::ast::TypeRef),
+}
+impl Symbol {
+    pub fn new(
+        py: Python<'_>,
+        id: codegen_sdk_common::FullyQualifiedName,
+        codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    ) -> PyResult<Self> {
+        let codebase = codebase_arc.get(py);
+        let path = id.file(codebase.db());
+        let file = codebase.get_file_for_id(path);
+        let file = match file {
+            Some(codegen_sdk_analyzer::ParsedFile::Typescript(py)) => py,
+            _ => {
+                return Err(
+                    pyo3::exceptions::PyValueError::new_err(
+                        format!(
+                            "File not found for path: {}", path.path(codebase.db())
+                            .display()
+                        ),
+                    ),
+                );
+            }
+        };
+        let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+        if let Some(node) = node {
+            match node.as_ref().try_into().unwrap() {
+                Class => Ok(Self::Class(Class::new(py, id, codebase_arc))),
+                Function => Ok(Self::Function(Function::new(py, id, codebase_arc))),
+                Interface => Ok(Self::Interface(Interface::new(py, id, codebase_arc))),
+                Method => Ok(Self::Method(Method::new(py, id, codebase_arc))),
+                Module => Ok(Self::Module(Module::new(py, id, codebase_arc))),
+                ClassRef => Ok(Self::ClassRef(ClassRef::new(py, id, codebase_arc))),
+                TypeRef => Ok(Self::TypeRef(TypeRef::new(py, id, codebase_arc))),
+            }
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+        }
+    }
+}
+#[pyclass(module = "codegen_sdk_pink.typescript")]
+pub enum Reference {
+    Class(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Class),
+    Function(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Function),
+    Interface(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Interface),
+    Method(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Method),
+    Module(codegen_sdk_analyzer::codegen_sdk_typescript::ast::Module),
+    ClassRef(codegen_sdk_analyzer::codegen_sdk_typescript::ast::ClassRef),
+    TypeRef(codegen_sdk_analyzer::codegen_sdk_typescript::ast::TypeRef),
+}
+impl Reference {
+    pub fn new(
+        py: Python<'_>,
+        id: codegen_sdk_common::FullyQualifiedName,
+        codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    ) -> PyResult<Self> {
+        let codebase = codebase_arc.get(py);
+        let path = id.file(codebase.db());
+        let file = codebase.get_file_for_id(path);
+        let file = match file {
+            Some(codegen_sdk_analyzer::ParsedFile::Typescript(py)) => py,
+            _ => {
+                return Err(
+                    pyo3::exceptions::PyValueError::new_err(
+                        format!(
+                            "File not found for path: {}", path.path(codebase.db())
+                            .display()
+                        ),
+                    ),
+                );
+            }
+        };
+        let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+        if let Some(node) = node {
+            match node.as_ref().try_into().unwrap() {
+                Class => Ok(Self::Class(Class::new(py, id, codebase_arc))),
+                Function => Ok(Self::Function(Function::new(py, id, codebase_arc))),
+                Interface => Ok(Self::Interface(Interface::new(py, id, codebase_arc))),
+                Method => Ok(Self::Method(Method::new(py, id, codebase_arc))),
+                Module => Ok(Self::Module(Module::new(py, id, codebase_arc))),
+                ClassRef => Ok(Self::ClassRef(ClassRef::new(py, id, codebase_arc))),
+                TypeRef => Ok(Self::TypeRef(TypeRef::new(py, id, codebase_arc))),
+            }
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+        }
+    }
+}
 pub fn register_typescript(
     py: Python<'_>,
     parent_module: &Bound<'_, PyModule>,

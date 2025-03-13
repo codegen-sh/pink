@@ -50576,6 +50576,94 @@ impl Call {
         )
     }
 }
+#[pyclass(module = "codegen_sdk_pink.python")]
+pub enum Symbol {
+    Class(codegen_sdk_analyzer::codegen_sdk_python::ast::Class),
+    Constant(codegen_sdk_analyzer::codegen_sdk_python::ast::Constant),
+    Function(codegen_sdk_analyzer::codegen_sdk_python::ast::Function),
+    Import(codegen_sdk_analyzer::codegen_sdk_python::ast::Import),
+    Call(codegen_sdk_analyzer::codegen_sdk_python::ast::Call),
+}
+impl Symbol {
+    pub fn new(
+        py: Python<'_>,
+        id: codegen_sdk_common::FullyQualifiedName,
+        codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    ) -> PyResult<Self> {
+        let codebase = codebase_arc.get(py);
+        let path = id.file(codebase.db());
+        let file = codebase.get_file_for_id(path);
+        let file = match file {
+            Some(codegen_sdk_analyzer::ParsedFile::Python(py)) => py,
+            _ => {
+                return Err(
+                    pyo3::exceptions::PyValueError::new_err(
+                        format!(
+                            "File not found for path: {}", path.path(codebase.db())
+                            .display()
+                        ),
+                    ),
+                );
+            }
+        };
+        let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+        if let Some(node) = node {
+            match node.as_ref().try_into().unwrap() {
+                Class => Ok(Self::Class(Class::new(py, id, codebase_arc))),
+                Constant => Ok(Self::Constant(Constant::new(py, id, codebase_arc))),
+                Function => Ok(Self::Function(Function::new(py, id, codebase_arc))),
+                Import => Ok(Self::Import(Import::new(py, id, codebase_arc))),
+                Call => Ok(Self::Call(Call::new(py, id, codebase_arc))),
+            }
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+        }
+    }
+}
+#[pyclass(module = "codegen_sdk_pink.python")]
+pub enum Reference {
+    Class(codegen_sdk_analyzer::codegen_sdk_python::ast::Class),
+    Constant(codegen_sdk_analyzer::codegen_sdk_python::ast::Constant),
+    Function(codegen_sdk_analyzer::codegen_sdk_python::ast::Function),
+    Import(codegen_sdk_analyzer::codegen_sdk_python::ast::Import),
+    Call(codegen_sdk_analyzer::codegen_sdk_python::ast::Call),
+}
+impl Reference {
+    pub fn new(
+        py: Python<'_>,
+        id: codegen_sdk_common::FullyQualifiedName,
+        codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    ) -> PyResult<Self> {
+        let codebase = codebase_arc.get(py);
+        let path = id.file(codebase.db());
+        let file = codebase.get_file_for_id(path);
+        let file = match file {
+            Some(codegen_sdk_analyzer::ParsedFile::Python(py)) => py,
+            _ => {
+                return Err(
+                    pyo3::exceptions::PyValueError::new_err(
+                        format!(
+                            "File not found for path: {}", path.path(codebase.db())
+                            .display()
+                        ),
+                    ),
+                );
+            }
+        };
+        let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+        if let Some(node) = node {
+            match node.as_ref().try_into().unwrap() {
+                Class => Ok(Self::Class(Class::new(py, id, codebase_arc))),
+                Constant => Ok(Self::Constant(Constant::new(py, id, codebase_arc))),
+                Function => Ok(Self::Function(Function::new(py, id, codebase_arc))),
+                Import => Ok(Self::Import(Import::new(py, id, codebase_arc))),
+                Call => Ok(Self::Call(Call::new(py, id, codebase_arc))),
+            }
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+        }
+    }
+}
 pub fn register_python(
     py: Python<'_>,
     parent_module: &Bound<'_, PyModule>,

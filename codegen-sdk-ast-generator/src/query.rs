@@ -30,6 +30,7 @@ fn name_for_capture<'a>(capture: &'a ts_query::Capture<'a>) -> String {
 fn full_name_for_capture<'a>(capture: &'a ts_query::Capture<'a>) -> String {
     capture.source().split_off(1)
 }
+pub const GROUPS: &[&str] = &["definition", "reference"];
 fn captures_for_field_definition<'a>(
     node: &'a ts_query::FieldDefinition<'a>,
     tree: &'a Tree<NodeTypes<'a>>,
@@ -1009,7 +1010,11 @@ pub trait HasQuery {
     ) -> BTreeMap<String, symbol::Symbol> {
         let mut symbols = BTreeMap::new();
         for (name, query) in self.queries(db).into_iter() {
-            if vec!["definitions".to_string(), "references".to_string()].contains(&query.category())
+            if GROUPS
+                .iter()
+                .map(|g| pluralize(g, 2, false))
+                .collect::<Vec<String>>()
+                .contains(&query.category())
             {
                 symbols.insert(name, query.symbol());
             }

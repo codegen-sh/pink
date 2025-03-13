@@ -9,12 +9,18 @@ use syn::{Ident, parse_quote, parse_quote_spanned};
 use super::query::Query;
 use crate::query::HasQuery;
 // Generate the Enum for all possible symbols. Also generate each symbol in the AST.
-fn get_symbol_name(name: &str) -> Ident {
+pub fn get_symbol_name(name: &str) -> Ident {
     match name {
         "definition" => format_ident!("Symbol"),
         "reference" => format_ident!("Reference"),
         _ => panic!("Invalid symbol name: {}", name),
     }
+}
+pub fn get_symbols_method(symbol_name: &Ident) -> syn::Ident {
+    syn::Ident::new(
+        &pluralizer::pluralize(&symbol_name.to_string().to_case(Case::Snake), 2, false),
+        Span::call_site(),
+    )
 }
 fn generate_symbol_enum<'db>(
     language: &Language,
@@ -79,10 +85,7 @@ fn generate_symbol_enum<'db>(
 // Generate a .symbols method that returns a BTreeMap of names to any kind of symbol
 fn generate_symbols<'db>(name: &str, names: &Vec<Ident>, symbol_names: &Vec<Ident>) -> syn::ItemFn {
     let symbol_name = get_symbol_name(name);
-    let method_name = format_ident!(
-        "{}",
-        pluralizer::pluralize(&symbol_name.to_string().to_case(Case::Snake), 2, false)
-    );
+    let method_name = get_symbols_method(&symbol_name);
     parse_quote! {
         #[salsa::tracked(return_ref)]
         pub fn #method_name(self, db: &'db dyn salsa::Database) -> BTreeMap<String, Vec<#symbol_name<'db>>> {
