@@ -14,7 +14,7 @@ use rfs_test_macro::rfs_test;
               content:
                 !inline_text "import codegen_sdk_pink"
     "#,
-    start_point = "/private/tmp"
+    start_point = "/tmp"
 ))]
 fn test_basic(dirname: &str) -> Result<(), Error> {
     let codebase = Codebase::new(PathBuf::from(dirname));
@@ -33,7 +33,7 @@ fn test_basic(dirname: &str) -> Result<(), Error> {
               content:
                 !inline_text "import codegen_sdk_pink"
     "#,
-    start_point = "/private/tmp"
+    start_point = "/tmp"
 ))]
 fn test_add_file(dirname: &str) -> Result<(), Error> {
     let dir = PathBuf::from(dirname);
@@ -63,7 +63,7 @@ fn test_add_file(dirname: &str) -> Result<(), Error> {
               content:
                 !inline_text "import codegen_sdk_pink"
     "#,
-    start_point = "/private/tmp"
+    start_point = "/tmp"
 ))]
 fn test_remove_file(dirname: &str) -> Result<(), Error> {
     let dir = PathBuf::from(dirname);
