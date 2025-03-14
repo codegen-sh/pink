@@ -29,13 +29,13 @@ pub trait Scope<'db>: Sized {
         Self: 'db,
     {
         let mut dependencies: codegen_sdk_common::hash::FxHashMap<
-            FullyQualifiedName,
+            crate::FullyQualifiedName,
             codegen_sdk_common::hash::FxIndexSet<Self::ReferenceType>,
         > = codegen_sdk_common::hash::FxHashMap::default();
         for reference in self.resolvables(db) {
             let resolved = reference.clone().resolve_type(db);
-            for stack in resolved.into_iter() {
-                for entry in stack.clone().entries(db) {
+            for resolved in resolved.into_iter() {
+                for entry in resolved.entries(db) {
                     dependencies
                         .entry(entry.fully_qualified_name(db))
                         .or_default()

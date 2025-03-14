@@ -1,4 +1,4 @@
-pub trait ResolutionStack<'db, T>: Clone {
+pub trait ResolutionStack<'db, T>: Clone + Copy {
     fn bottom(self, db: &'db dyn Db) -> &'db T;
     fn entries(self, db: &'db dyn Db) -> &'db Vec<T>;
 }
