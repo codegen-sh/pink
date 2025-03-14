@@ -72,7 +72,7 @@ pub mod ast {
                 Symbol::Import(import) => import.resolve_type(db).clone(),
                 Symbol::Function(function) => vec![PythonStack::start(db, self)],
                 Symbol::Class(class) => vec![PythonStack::start(db, self)],
-                Symbol::Constant(constant) => vec![PythonStack::start(db, self)],
+                Symbol::Constant(constant) => constant.resolve_type(db).clone(),
             }
         }
     }
@@ -235,6 +235,16 @@ pub mod ast {
         }
     }
     #[salsa::tracked]
+    impl<'db> ResolveType<'db> for crate::ast::Constant<'db> {
+        type Type = crate::ast::Symbol<'db>;
+        type Stack = PythonStack<'db>;
+        #[salsa::tracked(return_ref)]
+        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Stack> {
+            // TODO: Implement assignment type resolution
+            vec![PythonStack::start(db, crate::ast::Symbol::Constant(self))]
+        }
+    }
+    #[salsa::tracked]
     impl<'db> ResolveType<'db> for crate::ast::Call<'db> {
         type Type = crate::ast::Symbol<'db>;
         type Stack = PythonStack<'db>;
@@ -242,7 +252,10 @@ pub mod ast {
         fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Stack> {
             let mut results = Vec::new();
             for resolved in self.resolve_definition_stack(db) {
-                results.push(resolved.clone());
+                if let Symbol::Function(function) = resolved.bottom(db) {
+                    // TODO: Implement function call return type resolution
+                }
+                results.push(*resolved);
             }
             results
         }
