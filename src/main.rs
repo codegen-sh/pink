@@ -7,7 +7,7 @@ use codegen_sdk_ast::Definitions;
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_core::system::get_memory;
-use codegen_sdk_resolution::{CodebaseContext, References};
+use codegen_sdk_resolution::CodebaseContext;
 #[derive(Debug, Parser)]
 struct Args {
     input: String,
@@ -32,6 +32,7 @@ fn get_definitions<'db>(
         }
         #[cfg(feature = "python")]
         if let ParsedFile::Python(file) = parsed {
+            use codegen_sdk_resolution::References;
             let definitions = file.definitions(db);
             let functions = definitions.functions(db);
             let mut total_references = 0;
