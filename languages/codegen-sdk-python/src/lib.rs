@@ -85,21 +85,21 @@ pub mod ast {
         #[no_eq]
         pub dependencies: codegen_sdk_common::hash::FxHashMap<
             codegen_sdk_resolution::FullyQualifiedName,
-            codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>,
+            codegen_sdk_common::hash::FxIndexSet<crate::ast::Reference<'db>>,
         >,
     }
     impl<'db>
         codegen_sdk_resolution::Dependencies<
             'db,
             codegen_sdk_resolution::FullyQualifiedName,
-            crate::ast::Call<'db>,
+            crate::ast::Reference<'db>,
         > for PythonDependencies<'db>
     {
         fn get(
             &'db self,
             db: &'db dyn codegen_sdk_resolution::Db,
             key: &codegen_sdk_resolution::FullyQualifiedName,
-        ) -> Option<&'db codegen_sdk_common::hash::FxIndexSet<crate::ast::Call<'db>>> {
+        ) -> Option<&'db codegen_sdk_common::hash::FxIndexSet<crate::ast::Reference<'db>>> {
             self.dependencies(db).get(key)
         }
     }
@@ -123,7 +123,14 @@ pub mod ast {
             codegen_sdk_resolution::FullyQualifiedName,
             codegen_sdk_common::hash::FxIndexSet<codegen_sdk_common::FileNodeId>,
         > = Default::default();
-        let files = codegen_sdk_resolution::files(db);
+        let files = codegen_sdk_resolution::files(db)
+            .into_iter()
+            .filter(|file| {
+                codegen_sdk_common::language::python::Python
+                    .should_parse(file.path(db))
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
         let dependencies: Vec<
             Vec<(
                 codegen_sdk_resolution::FullyQualifiedName,
@@ -149,7 +156,7 @@ pub mod ast {
     impl<'db> Scope<'db> for PythonFile<'db> {
         type Type = crate::ast::Symbol<'db>;
         type Dependencies = PythonDependencies<'db>;
-        type ReferenceType = crate::ast::Call<'db>;
+        type ReferenceType = crate::ast::Reference<'db>;
         #[salsa::tracked(return_ref)]
         fn resolve(self, db: &'db dyn codegen_sdk_resolution::Db, name: String) -> Vec<Self::Type> {
             let node = match self.node(db) {
@@ -171,7 +178,7 @@ pub mod ast {
         #[salsa::tracked]
         fn resolvables(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::ReferenceType> {
             let mut results = Vec::new();
-            for (_, refs) in self.references(db).calls(db).into_iter() {
+            for (_, refs) in self.references(db).references(db).into_iter() {
                 results.extend(refs.into_iter().cloned());
             }
             results
@@ -278,7 +285,7 @@ pub mod ast {
     pub fn references_impl<'db>(
         db: &'db dyn Db,
         name: codegen_sdk_resolution::FullyQualifiedName,
-    ) -> Vec<crate::ast::Call<'db>> {
+    ) -> Vec<crate::ast::Reference<'db>> {
         let mut results = Vec::new();
         let dependency_matrix = dependency_matrix(db);
         let files = dependency_matrix.get(&name);
@@ -294,15 +301,27 @@ pub mod ast {
         results
     }
     #[salsa::tracked]
+    impl<'db> ResolveType<'db> for crate::ast::Reference<'db> {
+        type Type = crate::ast::Symbol<'db>;
+        type Stack = PythonStack<'db>;
+        #[salsa::tracked(return_ref)]
+        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Stack> {
+            match self {
+                crate::ast::Reference::Call(call) => call.resolve_type(db).clone(),
+                _ => vec![],
+            }
+        }
+    }
+    #[salsa::tracked]
     impl<'db>
         codegen_sdk_resolution::References<
             'db,
             PythonDependencies<'db>,
-            crate::ast::Call<'db>,
+            crate::ast::Reference<'db>,
             PythonFile<'db>,
         > for crate::ast::Symbol<'db>
     {
-        fn references(self, db: &'db dyn Db) -> Vec<crate::ast::Call<'db>> {
+        fn references(self, db: &'db dyn Db) -> Vec<crate::ast::Reference<'db>> {
             let mut results = Vec::new();
             for reference in references_impl(db, self.fully_qualified_name(db)).iter() {
                 let resolved_stacks = reference.resolve_type(db);
