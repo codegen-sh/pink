@@ -125,8 +125,8 @@ indexmap = "2"
 smallvec = "1.11.0"
 pluralizer = "0.5.0"
 dashmap = "6.1.0"
-
-
+rfs_test_macro = "1.1.1"
+rfs_tester = "1.1.2"
 [profile.dev]
 # codegen-backend = "cranelift"
 split-debuginfo = "unpacked"

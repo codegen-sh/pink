@@ -108,7 +108,7 @@ fn compute_dependencies_par(db: &dyn Db) {
 }
 
 pub fn parse_files<'db>(
-    db: &'db CodegenDatabase,
+    db: &'db dyn Db,
     #[cfg(feature = "serialization")] cache: &'db Cache,
     files_to_parse: FilesToParse,
 ) -> () {
