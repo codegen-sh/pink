@@ -81,6 +81,28 @@ fn symbols_method(group: &str) -> Vec<syn::Stmt> {
     });
     output
 }
+fn get_symbol_references(
+    symbol: &codegen_sdk_ast_generator::Symbol,
+    language: &Language,
+) -> Vec<syn::Stmt> {
+    if symbol.category == "definitions" {
+        let span = Span::call_site();
+        let package_name = syn::Ident::new(&language.package_name(), span);
+        let symbol_enum = quote! { codegen_sdk_analyzer::#package_name::ast::Symbol };
+        let symbol_name = format_ident!("{}", symbol.name);
+        return parse_quote! {
+            #[getter]
+            pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+                let val = self.get(py)?;
+                let wrapped = #symbol_enum::#symbol_name(*val);
+                let db = self.codebase.get(py).db();
+                let references = wrapped.references(db);
+                Ok(references.into_iter().map(|reference| Reference::new(py.clone(), reference.fully_qualified_name(db), 0, &reference, self.codebase.clone())).collect())
+            }
+        };
+    }
+    parse_quote! {}
+}
 fn generate_symbol_struct(
     language: &Language,
     symbol: &codegen_sdk_ast_generator::Symbol,
@@ -135,6 +157,7 @@ fn generate_symbol_struct(
         })
         .flatten()
         .collect();
+    let references = get_symbol_references(symbol, language);
     let ts_node_name = syn::Ident::new(&symbol.type_name, span);
     output.push(parse_quote_spanned! {
         span =>
@@ -161,6 +184,7 @@ fn generate_symbol_struct(
                 })
             }
             #(#fields)*
+            #(#references)*
         }
     });
     Ok(output)

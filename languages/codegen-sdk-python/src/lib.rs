@@ -16,7 +16,7 @@ pub mod ast {
             let root_path = self.root_path(db);
             let module = self.module(db).source().replace(".", "/");
             let target_path = root_path.join(module).with_extension("py");
-            log::info!(target: "resolution", "Resolving import to path: {:?}", target_path);
+            log::debug!(target: "resolution", "Resolving import to path: {:?}", target_path);
             target_path
                 .canonicalize()
                 .ok()

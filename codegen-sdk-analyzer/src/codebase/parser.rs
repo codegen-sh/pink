@@ -100,7 +100,7 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
     });
 }
 #[salsa::tracked]
-fn compute_dependencies_par(db: &dyn Db, files: FilesToParse) {
+fn compute_dependencies_par(db: &dyn Db) {
     log::info!("Computing Dependencies");
     #[cfg(feature = "python")]
     let _ = codegen_sdk_python::ast::dependency_matrix(db);
@@ -140,7 +140,6 @@ pub fn parse_files<'db>(
         db,
         #[cfg(feature = "serialization")]
         &cache,
-        files_to_parse,
     );
     #[cfg(feature = "serialization")]
     report_cached_count(cached, &files_to_parse.files(db));
