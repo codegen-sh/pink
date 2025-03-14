@@ -79,6 +79,7 @@ impl Db for CodegenDatabase {
             .collect()
     }
     fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()> {
+        log::debug!("Watching dir: {}", path.display());
         let path = path.canonicalize()?;
         let watcher = &mut *self.file_watcher.lock().unwrap();
         watcher

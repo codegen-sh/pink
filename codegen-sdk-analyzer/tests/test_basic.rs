@@ -39,13 +39,11 @@ fn test_add_file(dirname: &str) -> Result<(), Error> {
     let dir = PathBuf::from(dirname);
     let mut codebase = Codebase::new(dir.clone());
     let new_file = dir.join("test2.py");
-    std::fs::write(new_file, "import codegen_sdk_pink").unwrap();
-    log::info!("Added file");
+    std::fs::write(&new_file, "import codegen_sdk_pink").unwrap();
+    log::info!("Added file at {}", new_file.display());
     assert_eq!(codebase.files().len(), 1);
     log::info!("Checking update");
-    codebase
-        .check_update_timeout(std::time::Duration::from_secs(5))
-        .unwrap();
+    codebase.check_update().unwrap();
     log::info!("Checking update done");
     assert_eq!(codebase.files().len(), 2);
     assert_eq!(codebase.files()[0].name(codebase.db()), "test2.py");
@@ -75,9 +73,7 @@ fn test_remove_file(dirname: &str) -> Result<(), Error> {
     std::fs::remove_file(new_file).unwrap();
     log::info!("Removed file");
     log::info!("Checking update");
-    codebase
-        .check_update_timeout(std::time::Duration::from_secs(5))
-        .unwrap();
+    codebase.check_update().unwrap();
     log::info!("Checking update done");
     assert_eq!(codebase.files().len(), 0);
     assert_eq!(codebase.db().files().len(), 0);
