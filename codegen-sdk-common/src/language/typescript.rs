@@ -14,9 +14,9 @@ lazy_static! {
     pub static ref Typescript: Language = Language::new(
         "typescript",
         "Typescript",
-        tree_sitter_typescript::TYPESCRIPT_NODE_TYPES,
-        &["ts"],
-        tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
+        tree_sitter_typescript::TSX_NODE_TYPES,
+        &["ts", "tsx", "jsx", "js"],
+        tree_sitter_typescript::LANGUAGE_TSX.into(),
         &QUERIES,
     )
     .unwrap();

@@ -301,9 +301,7 @@ dependencies = [
  "codegen-sdk-cst",
  "codegen-sdk-go",
  "codegen-sdk-java",
- "codegen-sdk-javascript",
  "codegen-sdk-json",
- "codegen-sdk-jsx",
  "codegen-sdk-macros",
  "codegen-sdk-markdown",
  "codegen-sdk-python",
@@ -311,7 +309,6 @@ dependencies = [
  "codegen-sdk-ruby",
  "codegen-sdk-rust",
  "codegen-sdk-toml",
- "codegen-sdk-tsx",
  "codegen-sdk-typescript",
  "codegen-sdk-yaml",
  "crossbeam-channel",
@@ -394,7 +391,6 @@ dependencies = [
  "tree-sitter",
  "tree-sitter-go",
  "tree-sitter-java",
- "tree-sitter-javascript",
  "tree-sitter-json",
  "tree-sitter-md",
  "tree-sitter-python",
@@ -504,27 +500,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "codegen-sdk-javascript"
-version = "0.1.0"
-dependencies = [
- "ambassador",
- "bytes",
- "codegen-sdk-ast",
- "codegen-sdk-ast-generator",
- "codegen-sdk-common",
- "codegen-sdk-cst",
- "codegen-sdk-cst-generator",
- "codegen-sdk-resolution",
- "derive_more",
- "env_logger",
- "indextree",
- "log",
- "salsa",
- "subenum",
- "tree-sitter",
-]
-
-[[package]]
 name = "codegen-sdk-json"
 version = "0.1.0"
 dependencies = [
@@ -543,27 +518,6 @@ dependencies = [
  "salsa",
  "subenum",
  "test-log",
- "tree-sitter",
-]
-
-[[package]]
-name = "codegen-sdk-jsx"
-version = "0.1.0"
-dependencies = [
- "ambassador",
- "bytes",
- "codegen-sdk-ast",
- "codegen-sdk-ast-generator",
- "codegen-sdk-common",
- "codegen-sdk-cst",
- "codegen-sdk-cst-generator",
- "codegen-sdk-resolution",
- "derive_more",
- "env_logger",
- "indextree",
- "log",
- "salsa",
- "subenum",
  "tree-sitter",
 ]
 
@@ -707,27 +661,6 @@ dependencies = [
  "codegen-sdk-common",
  "codegen-sdk-cst",
  "codegen-sdk-cst-generator",
- "derive_more",
- "env_logger",
- "indextree",
- "log",
- "salsa",
- "subenum",
- "tree-sitter",
-]
-
-[[package]]
-name = "codegen-sdk-tsx"
-version = "0.1.0"
-dependencies = [
- "ambassador",
- "bytes",
- "codegen-sdk-ast",
- "codegen-sdk-ast-generator",
- "codegen-sdk-common",
- "codegen-sdk-cst",
- "codegen-sdk-cst-generator",
- "codegen-sdk-resolution",
  "derive_more",
  "env_logger",
  "indextree",
@@ -2868,16 +2801,6 @@ name = "tree-sitter-java"
 version = "0.23.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0aa6cbcdc8c679b214e616fd3300da67da0e492e066df01bcf5a5921a71e90d6"
-dependencies = [
- "cc",
- "tree-sitter-language",
-]
-
-[[package]]
-name = "tree-sitter-javascript"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf40bf599e0416c16c125c3cec10ee5ddc7d1bb8b0c60fa5c4de249ad34dc1b1"
 dependencies = [
  "cc",
  "tree-sitter-language",

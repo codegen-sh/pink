@@ -33,9 +33,6 @@ rkyv.workspace = true
 [features]
 python = [ "codegen-sdk-analyzer/python"]
 typescript = [ "codegen-sdk-analyzer/typescript"]
-tsx = [ "codegen-sdk-analyzer/tsx"]
-jsx = [ "codegen-sdk-analyzer/jsx"]
-javascript = [ "codegen-sdk-analyzer/javascript"]
 json = [ "codegen-sdk-analyzer/json"]
 java = [ "codegen-sdk-analyzer/java"]
 ruby = [ "codegen-sdk-analyzer/ruby"]
@@ -45,7 +42,7 @@ markdown = [ "codegen-sdk-analyzer/markdown"]
 yaml = [ "codegen-sdk-analyzer/yaml"]
 toml = [ "codegen-sdk-analyzer/toml"]
 serialization = ["codegen-sdk-common/serialization", "codegen-sdk-analyzer/serialization"]
-stable = ["codegen-sdk-analyzer/stable", "typescript", "tsx", "jsx", "javascript", "json", "toml", "yaml", "java", "ruby", "rust", "go", "markdown"]
+stable = ["codegen-sdk-analyzer/stable", "typescript", "json", "toml", "yaml", "java", "ruby", "rust", "go", "markdown"]
 default = ["json"]
 [dev-dependencies]
 test-log = { workspace = true }
@@ -61,20 +58,8 @@ members = [
   "codegen-sdk-cst",
   "codegen-sdk-cst-generator",
   "codegen-sdk-macros",
-  "languages/codegen-sdk-json",
-  "languages/codegen-sdk-python",
-  "languages/codegen-sdk-java",
-  "languages/codegen-sdk-ruby",
-  "languages/codegen-sdk-rust",
-  "languages/codegen-sdk-go",
-  "languages/codegen-sdk-jsx",
-  "languages/codegen-sdk-tsx",
-  "languages/codegen-sdk-javascript",
-  "languages/codegen-sdk-markdown",
-  "languages/codegen-sdk-yaml",
-  "languages/codegen-sdk-toml",
-  "languages/codegen-sdk-ts-query",
-  "languages/codegen-sdk-typescript", "codegen-sdk-resolution", "bindings/python", "codegen-bindings-generator",
+  "languages/*",
+  "codegen-sdk-resolution", "bindings/python", "codegen-bindings-generator",
 ]
 resolver = "2"
 [workspace.dependencies]
@@ -120,9 +105,6 @@ codegen-sdk-go = { path = "languages/codegen-sdk-go" }
 codegen-sdk-markdown = { path = "languages/codegen-sdk-markdown" }
 codegen-sdk-yaml = { path = "languages/codegen-sdk-yaml" }
 codegen-sdk-toml = { path = "languages/codegen-sdk-toml" }
-codegen-sdk-jsx = { path = "languages/codegen-sdk-jsx" }
-codegen-sdk-tsx = { path = "languages/codegen-sdk-tsx" }
-codegen-sdk-javascript = { path = "languages/codegen-sdk-javascript" }
 codegen-sdk-json = { path = "languages/codegen-sdk-json" }
 tempfile = "3.16.0"
 quote = "1.0.38"
