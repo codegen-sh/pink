@@ -31,7 +31,7 @@ fn get_watcher(
 ) -> Arc<Mutex<Debouncer<RecommendedWatcher>>> {
     let config = Config::default()
         .with_batch_mode(true)
-        .with_timeout(Duration::from_secs(2));
+        .with_timeout(Duration::from_secs(1));
     Arc::new(Mutex::new(new_debouncer_opt(config, tx).unwrap()))
 }
 impl CodegenDatabase {

@@ -36,12 +36,15 @@ fn test_basic(dirname: &str) -> Result<(), Error> {
     start_point = "/tmp"
 ))]
 fn test_add_file(dirname: &str) -> Result<(), Error> {
+    use std::thread::sleep;
+
     let dir = PathBuf::from(dirname);
     let mut codebase = Codebase::new(dir.clone());
     let new_file = dir.join("test2.py");
     std::fs::write(&new_file, "import codegen_sdk_pink").unwrap();
     log::info!("Added file at {}", new_file.display());
     assert_eq!(codebase.files().len(), 1);
+    sleep(Duration::from_secs(2));
     log::info!("Checking update");
     codebase.check_update().unwrap();
     log::info!("Checking update done");
@@ -72,6 +75,7 @@ fn test_remove_file(dirname: &str) -> Result<(), Error> {
     assert_eq!(codebase.files().len(), 1);
     std::fs::remove_file(new_file).unwrap();
     log::info!("Removed file");
+    sleep(Duration::from_secs(2));
     log::info!("Checking update");
     codebase.check_update().unwrap();
     log::info!("Checking update done");
