@@ -5,7 +5,7 @@ use anyhow::Context;
 use codegen_sdk_common::serialization::Cache;
 use codegen_sdk_resolution::{CodebaseContext, Db};
 use discovery::FilesToParse;
-use notify_debouncer_mini::DebounceEventResult;
+use notify_debouncer_mini::{DebounceEventResult, DebouncedEvent};
 use salsa::{Database, Setter};
 
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
@@ -31,23 +31,32 @@ impl Codebase {
         codebase.sync();
         codebase
     }
-    pub fn check_update(&mut self) -> anyhow::Result<()> {
-        for event in self.rx.recv()?.unwrap() {
-            match event.path.canonicalize() {
-                Ok(path) => {
-                    log::info!("File changed: {}", path.display());
-                    let file = match self.db.files.get(&path) {
-                        Some(file) => *file,
-                        None => continue,
-                    };
-                    // `path` has changed, so read it and update the contents to match.
-                    // This creates a new revision and causes the incremental algorithm
-                    // to kick in, just like any other update to a salsa input.
-                    let contents = std::fs::read_to_string(path)
-                        .with_context(|| format!("Failed to read file {}", event.path.display()))?;
-                    file.set_content(&mut self.db).to(contents);
-                }
-                Err(e) => {
+    fn handle_event(&mut self, event: DebouncedEvent) -> anyhow::Result<()> {
+        match event.path.canonicalize() {
+            Ok(path) => {
+                log::info!("File changed: {}", path.display());
+                let file = match self.db.files.get(&path) {
+                    Some(file) => *file,
+                    None => {
+                        if path.is_file() {
+                            log::info!("New file discovered: {}", path.display());
+                            self.db.input(&path)?;
+                        }
+                        return Ok(());
+                    }
+                };
+                // `path` has changed, so read it and update the contents to match.
+                // This creates a new revision and causes the incremental algorithm
+                // to kick in, just like any other update to a salsa input.
+                let contents = std::fs::read_to_string(path)
+                    .with_context(|| format!("Failed to read file {}", event.path.display()))?;
+                file.set_content(&mut self.db).to(contents);
+            }
+            Err(e) => {
+                // Indicates that the file was deleted
+                if self.db.files.remove(&event.path).is_some() {
+                    log::info!("File deleted: {}", event.path.display());
+                } else {
                     log::error!(
                         "Failed to canonicalize path {} for file {}",
                         e,
@@ -55,6 +64,20 @@ impl Codebase {
                     );
                 }
             }
+        };
+        Ok(())
+    }
+    pub fn check_update_timeout(&mut self, timeout: std::time::Duration) -> anyhow::Result<()> {
+        if let Ok(events) = self.rx.recv_timeout(timeout) {
+            for event in events? {
+                self.handle_event(event)?;
+            }
+        }
+        Ok(())
+    }
+    pub fn check_update(&mut self) -> anyhow::Result<()> {
+        for event in self.rx.recv()?.unwrap() {
+            self.handle_event(event)?;
         }
         Ok(())
     }
@@ -107,8 +130,9 @@ impl CodebaseContext for Codebase {
     }
     fn files<'a>(&'a self) -> Vec<&'a Self::File<'a>> {
         let mut files = Vec::new();
-        for file in self.discover().files(&self.db) {
-            if let Some(file) = self.get_file(&file.path(&self.db)) {
+        let files_ids = self.db.files();
+        for file_id in files_ids {
+            if let Some(file) = self.get_file(file_id.path(&self.db)) {
                 files.push(file);
             }
         }

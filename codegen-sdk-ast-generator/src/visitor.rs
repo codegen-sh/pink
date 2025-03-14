@@ -75,7 +75,7 @@ fn generate_symbol_enum<'db>(
         }
     } else {
         quote! {
-            #[derive(Debug, Clone, PartialEq, Eq, Hash, salsa::Update)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, salsa::Update)]
             pub enum #symbol_name<'db> {
                 _Phantom(std::marker::PhantomData<&'db ()>)
             }

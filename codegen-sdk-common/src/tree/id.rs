@@ -1,9 +1,15 @@
 use std::path::PathBuf;
 
-#[salsa::interned(no_lifetime)]
+#[salsa::interned(no_lifetime,constructor=_new)]
 pub struct FileNodeId {
     #[return_ref]
     pub path: PathBuf,
+}
+impl FileNodeId {
+    // This ensures that the path is canonical - IE: if the path is a symlink, we don't want multiple ids for the same file.
+    pub fn new(db: &dyn salsa::Database, path: PathBuf) -> Self {
+        Self::_new(db, path.canonicalize().unwrap_or_else(|_| path))
+    }
 }
 #[salsa::interned]
 pub struct CSTNodeId<'db> {

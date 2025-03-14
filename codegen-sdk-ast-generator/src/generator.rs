@@ -85,6 +85,8 @@ pub fn generate_ast(language: &Language) -> anyhow::Result<TokenStream> {
     pub fn parse<'db>(db: &'db dyn codegen_sdk_resolution::Db, input: codegen_sdk_common::FileNodeId) -> #language_struct_name<'db> {
         let input = db.input(input.path(db)).unwrap();
         log::debug!("Parsing {} file: {}", input.path(db).display(), #language_name_str);
+        log::trace!("Parsing {:?}", input);
+
         let ast = crate::cst::parse_program_raw(db, input);
         let file_id = codegen_sdk_common::FileNodeId::new(db, input.path(db).clone());
         #language_struct_name::new(db, ast, file_id)

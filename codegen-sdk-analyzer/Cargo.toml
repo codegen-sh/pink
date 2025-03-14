@@ -17,9 +17,6 @@ codegen-sdk-cst = { workspace = true }
 codegen-sdk-resolution = { workspace = true }
 codegen-sdk-python = { workspace = true, optional = true}
 codegen-sdk-typescript = { workspace = true, optional = true}
-codegen-sdk-tsx = { workspace = true, optional = true}
-codegen-sdk-jsx = { workspace = true, optional = true}
-codegen-sdk-javascript = { workspace = true, optional = true}
 codegen-sdk-json = { workspace = true, optional = true}
 codegen-sdk-java = { workspace = true, optional = true}
 codegen-sdk-ruby = { workspace = true, optional = true}
@@ -29,7 +26,7 @@ codegen-sdk-markdown = { workspace = true, optional = true}
 codegen-sdk-yaml = { workspace = true, optional = true}
 codegen-sdk-toml = { workspace = true, optional = true}
 codegen-sdk-macros = { path = "../codegen-sdk-macros"}
-dashmap = "6.1.0"
+dashmap = { workspace = true }
 notify-debouncer-mini = { version = "0.6.0", features = ["macos_fsevent", "crossbeam-channel"] }
 anyhow = {workspace = true}
 env_logger = { workspace = true }
@@ -43,9 +40,6 @@ ambassador = { workspace = true }
 [features]
 python = [ "codegen-sdk-python"] # TODO: Add python support
 typescript = [ "codegen-sdk-typescript"]
-tsx = [ "codegen-sdk-tsx"]
-jsx = [ "codegen-sdk-jsx"]
-javascript = [ "codegen-sdk-javascript"]
 json = [ "codegen-sdk-json"]
 java = [ "codegen-sdk-java"]
 ruby = [ "codegen-sdk-ruby"]
@@ -56,7 +50,9 @@ yaml = [ "codegen-sdk-yaml"]
 toml = [ "codegen-sdk-toml"]
 serialization = ["codegen-sdk-common/serialization"]
 default = ["json"]
-stable = ["json", "toml", "typescript", "tsx", "jsx", "go", "python", "yaml", "java", "ruby", "rust", "javascript", "markdown"]
+stable = ["json", "toml", "typescript", "go", "python", "yaml", "java", "ruby", "rust", "markdown"]
 
 [dev-dependencies]
 test-log = { workspace = true }
+rfs_test_macro = { workspace = true }
+rfs_tester = { workspace = true }

@@ -2,7 +2,9 @@
 use std::{env, path::PathBuf};
 
 use codegen_sdk_ast::{Definitions, References};
+use codegen_sdk_common::CSTNode;
 use codegen_sdk_resolution::References as _;
+use salsa::Database;
 fn write_to_temp_file_with_name(
     content: &str,
     temp_dir: &tempfile::TempDir,
@@ -87,7 +89,9 @@ test()";
     let functions = definitions.functions(&db);
     let function = functions.get("test").unwrap().first().unwrap();
     let function = codegen_sdk_python::ast::Symbol::Function(function.clone().clone());
-    assert_eq!(function.references(&db).len(), 1);
+    db.attach(|db| {
+        assert_eq!(function.references(db).len(), 1);
+    });
 }
 #[test_log::test]
 fn test_python_ast_function_usages_cross_file() {
@@ -112,6 +116,48 @@ test()";
     let imports = usage_file.definitions(&db).imports(&db);
     let import = imports.get("test").unwrap().first().unwrap();
     let import = codegen_sdk_python::ast::Symbol::Import(import.clone().clone());
-    assert_eq!(import.references(&db,).len(), 1);
-    assert_eq!(function.references(&db,).len(), 1);
+    db.attach(|db| {
+        assert_eq!(import.references(db).len(), 1);
+        assert_eq!(function.references(db).len(), 1);
+    });
+}
+#[test_log::test]
+fn test_python_ast_function_usages_cross_file_ambiguous() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    assert!(env::set_current_dir(&temp_dir).is_ok());
+    let content = "
+def test():
+    pass
+
+def test():
+    pass
+";
+    let usage_file_content = "
+from filea import test
+test()";
+    let db = codegen_sdk_cst::CSTDatabase::default();
+    let file = parse_file(&db, content, &temp_dir, "filea.py");
+    let usage_file = parse_file(&db, usage_file_content, &temp_dir, "fileb.py");
+    assert_eq!(usage_file.references(&db).calls(&db).len(), 1);
+    let definitions = file.definitions(&db);
+    let functions = definitions.functions(&db);
+    let function_1: &codegen_sdk_python::ast::Function<'_> =
+        functions.get("test").unwrap().first().unwrap();
+    let function_2: &codegen_sdk_python::ast::Function<'_> =
+        functions.get("test").unwrap().last().unwrap();
+    assert!(function_1.node(&db).start_byte() < function_2.node(&db).start_byte());
+    assert!(function_1.node(&db).file_id() == function_2.node(&db).file_id());
+
+    let function_1: codegen_sdk_python::ast::Symbol<'_> =
+        codegen_sdk_python::ast::Symbol::Function(function_1.clone().clone());
+    let function_2: codegen_sdk_python::ast::Symbol<'_> =
+        codegen_sdk_python::ast::Symbol::Function(function_2.clone().clone());
+    let imports = usage_file.definitions(&db).imports(&db);
+    let import = imports.get("test").unwrap().first().unwrap();
+    let import = codegen_sdk_python::ast::Symbol::Import(import.clone().clone());
+    db.attach(|db| {
+        assert_eq!(import.references(db).len(), 1);
+        assert_eq!(function_1.references(db).len(), 0);
+        assert_eq!(function_2.references(db).len(), 1);
+    });
 }

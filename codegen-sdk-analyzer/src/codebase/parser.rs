@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use codegen_sdk_ast::{Definitions, References};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
@@ -8,7 +6,7 @@ use codegen_sdk_resolution::Db;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use super::discovery::{FilesToParse, log_languages};
-use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
+use crate::{ParsedFile, parser::parse_file};
 pub fn execute_op_with_progress<
     Database: Db + ?Sized + 'static,
     Input: Send + Sync,
@@ -100,39 +98,15 @@ fn parse_files_definitions_par(db: &dyn Db, files: FilesToParse) {
     });
 }
 #[salsa::tracked]
-fn compute_dependencies_par(db: &dyn Db, files: FilesToParse) {
-    let ids = files
-        .files(db)
-        .iter()
-        .map(|input| codegen_sdk_common::FileNodeId::new(db, input.path(db)))
-        .collect::<codegen_sdk_common::hash::FxHashSet<_>>();
-    let _targets: codegen_sdk_common::hash::FxHashSet<(PathBuf, String)> =
-        execute_op_with_progress(db, ids, "Computing Dependencies", true, |db, input| {
-            let file = parse_file(db, input.clone());
-            if let Some(parsed) = file {
-                #[cfg(feature = "python")]
-                if let ParsedFile::Python(_parsed) = parsed {
-                    let deps = codegen_sdk_python::ast::dependency_keys(db, input);
-                    return deps
-                        .iter()
-                        .map(|dep| (dep.file(db).path(db).clone(), dep.name(db).clone()))
-                        .collect::<Vec<_>>();
-                }
-            }
-            Vec::new()
-        })
-        .into_iter()
-        .flatten()
-        .collect();
-    // let _: Vec<_> = execute_op_with_progress(db, targets, "Finding Usages", true, |db, input: (PathBuf, String)| {
-    //     let file_node_id = codegen_sdk_common::FileNodeId::new(db, input.0);
-    //     let fully_qualified_name = codegen_sdk_resolution::FullyQualifiedName::new(db, file_node_id, input.1);
-    //     codegen_sdk_python::ast::references_impl(db, fully_qualified_name);
-    // });
+fn compute_dependencies_par(db: &dyn Db) {
+    log::info!("Computing Dependencies");
+    #[cfg(feature = "python")]
+    let _ = codegen_sdk_python::ast::dependency_matrix(db);
+    log::info!("Done Computing Dependencies");
 }
 
 pub fn parse_files<'db>(
-    db: &'db CodegenDatabase,
+    db: &'db dyn Db,
     #[cfg(feature = "serialization")] cache: &'db Cache,
     files_to_parse: FilesToParse,
 ) -> () {
@@ -164,7 +138,6 @@ pub fn parse_files<'db>(
         db,
         #[cfg(feature = "serialization")]
         &cache,
-        files_to_parse,
     );
     #[cfg(feature = "serialization")]
     report_cached_count(cached, &files_to_parse.files(db));

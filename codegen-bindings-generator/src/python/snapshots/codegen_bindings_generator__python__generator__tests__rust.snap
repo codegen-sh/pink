@@ -71261,6 +71261,25 @@ impl Class {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_rust::ast::Symbol::Class(*val);
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.rust")]
 pub struct Function {
@@ -71336,6 +71355,27 @@ impl Function {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_rust::ast::Symbol::Function(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }
@@ -71415,6 +71455,27 @@ impl Interface {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_rust::ast::Symbol::Interface(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.rust")]
 pub struct Macro {
@@ -71490,6 +71551,25 @@ impl Macro {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_rust::ast::Symbol::Macro(*val);
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }
@@ -71569,6 +71649,25 @@ impl Method {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_rust::ast::Symbol::Method(*val);
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.rust")]
 pub struct Module {
@@ -71644,6 +71743,25 @@ impl Module {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_rust::ast::Symbol::Module(*val);
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }

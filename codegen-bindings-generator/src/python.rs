@@ -1,3 +1,4 @@
+mod ast;
 mod common;
 mod cst;
 pub mod generator;

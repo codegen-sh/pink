@@ -14,7 +14,6 @@ bytes = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-python = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
-tree-sitter-javascript = { workspace = true, optional = true }
 tree-sitter-json = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
 tree-sitter-rust = { workspace = true, optional = true }
@@ -55,7 +54,7 @@ serialization = ["dep:zstd"]
 python = ["dep:tree-sitter-python"]
 json = ["dep:tree-sitter-json"]
 java = ["dep:tree-sitter-java"]
-typescript = ["dep:tree-sitter-typescript", "dep:tree-sitter-javascript"]
+typescript = ["dep:tree-sitter-typescript"]
 rust = ["dep:tree-sitter-rust"]
 go = ["dep:tree-sitter-go"]
 ruby = ["dep:tree-sitter-ruby"]

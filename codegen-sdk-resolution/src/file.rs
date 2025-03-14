@@ -8,4 +8,12 @@ pub trait File<'db> {
         let path = self.path(db);
         db.get_file(path).unwrap().content(db)
     }
+    fn name(&self, db: &'db dyn Db) -> String {
+        self.path(db)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+    }
 }

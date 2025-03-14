@@ -69,3 +69,5 @@ target/*
 .benchmarks/*
 **.snap.new
 flamegraph.svg
+*-ice*.txt
+profile.json.gz

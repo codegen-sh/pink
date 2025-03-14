@@ -13,9 +13,9 @@ description = "Common code for the CST"
 bytes = { workspace = true }
 codegen-sdk-common = { path = "../codegen-sdk-common" }
 salsa = { workspace = true }
-dashmap = "6.1.0"
+dashmap = { workspace = true }
 thiserror = {workspace = true}
 indextree = { workspace = true }
-
+log = { workspace = true }
 [features]
 serialization = ["codegen-sdk-common/serialization"]

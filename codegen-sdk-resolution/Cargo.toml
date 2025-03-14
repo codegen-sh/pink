@@ -17,3 +17,5 @@ anyhow = { workspace = true }
 indicatif = { workspace = true }
 ambassador = { workspace = true }
 codegen-sdk-cst = { workspace = true }
+dashmap = { workspace = true }
+log = { workspace = true }
