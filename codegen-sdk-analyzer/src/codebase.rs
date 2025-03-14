@@ -5,7 +5,7 @@ use anyhow::Context;
 use codegen_sdk_common::serialization::Cache;
 use codegen_sdk_resolution::{CodebaseContext, Db};
 use discovery::FilesToParse;
-use notify_debouncer_mini::{DebounceEventResult, DebouncedEvent, DebouncedEventKind};
+use notify_debouncer_mini::{DebounceEventResult, DebouncedEvent};
 use salsa::{Database, Setter};
 
 use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};

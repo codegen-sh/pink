@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use codegen_sdk_ast::{Definitions, References};
 #[cfg(feature = "serialization")]
 use codegen_sdk_common::serialize::Cache;
@@ -8,7 +6,7 @@ use codegen_sdk_resolution::Db;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use super::discovery::{FilesToParse, log_languages};
-use crate::{ParsedFile, database::CodegenDatabase, parser::parse_file};
+use crate::{ParsedFile, parser::parse_file};
 pub fn execute_op_with_progress<
     Database: Db + ?Sized + 'static,
     Input: Send + Sync,

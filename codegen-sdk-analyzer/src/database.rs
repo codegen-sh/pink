@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use codegen_sdk_cst::File;
 use codegen_sdk_resolution::Db;
-use dashmap::{DashMap, mapref::entry::Entry};
+use dashmap::DashMap;
 use indicatif::MultiProgress;
 use notify_debouncer_mini::{
     Config, DebounceEventResult, Debouncer, new_debouncer_opt,

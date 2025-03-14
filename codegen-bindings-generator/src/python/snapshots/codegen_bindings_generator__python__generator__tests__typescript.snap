@@ -84445,6 +84445,27 @@ impl Class {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_typescript::ast::Symbol::Class(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.typescript")]
 pub struct Function {
@@ -84524,6 +84545,27 @@ impl Function {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_typescript::ast::Symbol::Function(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.typescript")]
 pub struct Interface {
@@ -84601,6 +84643,27 @@ impl Interface {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_typescript::ast::Symbol::Interface(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }
@@ -84686,6 +84749,27 @@ impl Method {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_typescript::ast::Symbol::Method(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.typescript")]
 pub struct Module {
@@ -84761,6 +84845,27 @@ impl Module {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_typescript::ast::Symbol::Module(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }
