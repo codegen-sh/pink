@@ -5,6 +5,8 @@ use ambassador::delegatable_trait;
 pub use scope::Scope;
 mod resolve_type;
 pub use resolve_type::{ResolutionStack, ResolveType};
+mod compute;
+pub use compute::Compute;
 mod references;
 pub use references::References;
 mod codebase;

@@ -37,8 +37,6 @@ pub mod ast {
             }
         }
     }
-    use codegen_sdk_resolution::ResolutionStack;
-
     #[salsa::tracked]
     impl<'db> ResolveType<'db> for crate::ast::Import<'db> {
         type Type = crate::ast::Symbol<'db>;
@@ -101,7 +99,7 @@ pub mod ast {
             results
         }
     }
-    use codegen_sdk_resolution::{Db, Dependencies, HasId};
+    use codegen_sdk_resolution::{Db, Dependencies};
     #[salsa::tracked]
     impl<'db> ResolveType<'db> for crate::ast::Reference<'db> {
         type Type = crate::ast::Symbol<'db>;

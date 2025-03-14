@@ -83,6 +83,10 @@ pub fn generate_dependencies(language: &Language) -> Vec<syn::Stmt> {
         }
         ret
     }
-
+    impl<'db> codegen_sdk_resolution::Compute<'db> for crate::cst::#language_name {
+        fn compute(db: &'db dyn codegen_sdk_resolution::Db) {
+            dependency_matrix(db);
+        }
+    }
     )
 }

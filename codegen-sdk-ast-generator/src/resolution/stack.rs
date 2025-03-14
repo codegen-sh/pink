@@ -3,9 +3,11 @@
 use codegen_sdk_common::Language;
 use quote::format_ident;
 use syn::parse_quote;
-
+pub fn get_stack_name(language: &Language) -> syn::Ident {
+    format_ident!("{}Stack", language.struct_name())
+}
 pub fn generate_stack(language: &Language) -> Vec<syn::Stmt> {
-    let stack_name = format_ident!("{}Stack", language.struct_name());
+    let stack_name = get_stack_name(language);
     parse_quote! {
         #[salsa::tracked]
         pub struct #stack_name<'db> {
