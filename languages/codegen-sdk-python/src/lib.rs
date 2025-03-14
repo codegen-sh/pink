@@ -9,6 +9,43 @@ pub mod ast {
     use codegen_sdk_resolution::{ResolveType, Scope};
     include!(concat!(env!("OUT_DIR"), "/python-ast.rs"));
     #[salsa::tracked]
+    pub struct PythonStack<'db> {
+        #[tracked(return_ref)]
+        data: Symbol<'db>,
+        #[tracked(return_ref)]
+        next: Option<PythonStack<'db>>,
+    }
+    #[salsa::tracked]
+    impl<'db> codegen_sdk_resolution::ResolutionStack<'db, Symbol<'db>> for PythonStack<'db> {
+        #[salsa::tracked(return_ref)]
+        fn bottom(self, db: &'db dyn codegen_sdk_resolution::Db) -> Symbol<'db> {
+            match self.next(db) {
+                Some(next) => *next.bottom(db),
+                None => self.data(db),
+            }
+        }
+        #[salsa::tracked(return_ref)]
+        fn entries(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Symbol<'db>> {
+            match &self.next(db) {
+                Some(next) => {
+                    let mut entries = next.entries(db).clone();
+                    entries.push(self.data(db));
+                    entries
+                }
+                None => vec![self.data(db)],
+            }
+        }
+    }
+
+    impl<'db> PythonStack<'db> {
+        pub fn start(db: &'db dyn codegen_sdk_resolution::Db, data: Symbol<'db>) -> Self {
+            Self::new(db, data, None)
+        }
+        pub fn push(self, db: &'db dyn codegen_sdk_resolution::Db, data: Symbol<'db>) -> Self {
+            Self::new(db, data, Some(self))
+        }
+    }
+    #[salsa::tracked]
     impl<'db> Import<'db> {
         #[salsa::tracked]
         fn resolve_import(
@@ -23,6 +60,20 @@ pub mod ast {
                 .canonicalize()
                 .ok()
                 .map(|path| codegen_sdk_common::FileNodeId::new(db, path))
+        }
+    }
+    #[salsa::tracked]
+    impl<'db> ResolveType<'db> for Symbol<'db> {
+        type Type = crate::ast::Symbol<'db>;
+        type Stack = PythonStack<'db>;
+        #[salsa::tracked(return_ref)]
+        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Stack> {
+            match self {
+                Symbol::Import(import) => import.resolve_type(db).clone(),
+                Symbol::Function(function) => vec![PythonStack::start(db, self)],
+                Symbol::Class(class) => vec![PythonStack::start(db, self)],
+                Symbol::Constant(constant) => vec![PythonStack::start(db, self)],
+            }
         }
     }
     #[salsa::tracked]
@@ -92,6 +143,8 @@ pub mod ast {
         ret
     }
 
+    use codegen_sdk_resolution::ResolutionStack;
+
     #[salsa::tracked]
     impl<'db> Scope<'db> for PythonFile<'db> {
         type Type = crate::ast::Symbol<'db>;
@@ -108,23 +161,9 @@ pub mod ast {
             };
             let tree = node.tree(db);
             let mut results = Vec::new();
-            for (def_name, defs) in self.definitions(db).functions(db).into_iter() {
-                if *def_name == name {
-                    results.extend(
-                        defs.into_iter()
-                            .cloned()
-                            .map(|def| crate::ast::Symbol::Function(def)),
-                    );
-                }
-            }
-            for (def_name, defs) in self.definitions(db).imports(db).into_iter() {
-                if *def_name == name {
-                    for def in defs {
-                        results.push(crate::ast::Symbol::Import(def.clone()));
-                        for resolved in def.resolve_type(db) {
-                            results.push(resolved.clone());
-                        }
-                    }
+            if let Some(defs) = self.definitions(db).symbols(db).get(&name) {
+                if let Some(def) = defs.into_iter().rev().next() {
+                    results.push(*def);
                 }
             }
             results
@@ -153,11 +192,13 @@ pub mod ast {
             > = codegen_sdk_common::hash::FxHashMap::default();
             for reference in self.resolvables(db) {
                 let resolved = reference.clone().resolve_type(db);
-                for resolved in resolved {
-                    dependencies
-                        .entry(resolved.fully_qualified_name(db))
-                        .or_default()
-                        .insert(reference.clone());
+                for resolved in resolved.into_iter() {
+                    for entry in resolved.entries(db) {
+                        dependencies
+                            .entry(entry.fully_qualified_name(db))
+                            .or_default()
+                            .insert(reference.clone());
+                    }
                 }
             }
             dependencies
@@ -174,14 +215,20 @@ pub mod ast {
     #[salsa::tracked]
     impl<'db> ResolveType<'db> for crate::ast::Import<'db> {
         type Type = crate::ast::Symbol<'db>;
+        type Stack = PythonStack<'db>;
         #[salsa::tracked(return_ref)]
-        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Type> {
+        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Stack> {
             let target_path = self.resolve_import(db);
             if let Some(target_path) = target_path {
                 if let Some(_) = db.get_file_for_id(target_path) {
-                    return PythonFile::parse(db, target_path)
-                        .resolve(db, self.name(db).source())
-                        .to_vec();
+                    let file = PythonFile::parse(db, target_path);
+                    let mut results = Vec::new();
+                    for resolved in file.resolve(db, self.name(db).source()) {
+                        for stack in resolved.resolve_type(db) {
+                            results.push(stack.push(db, Symbol::Import(self.clone())));
+                        }
+                    }
+                    return results;
                 }
             }
             Vec::new()
@@ -190,13 +237,28 @@ pub mod ast {
     #[salsa::tracked]
     impl<'db> ResolveType<'db> for crate::ast::Call<'db> {
         type Type = crate::ast::Symbol<'db>;
+        type Stack = PythonStack<'db>;
         #[salsa::tracked(return_ref)]
-        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Type> {
+        fn resolve_type(self, db: &'db dyn codegen_sdk_resolution::Db) -> Vec<Self::Stack> {
+            let mut results = Vec::new();
+            for resolved in self.resolve_definition_stack(db) {
+                results.push(resolved.clone());
+            }
+            results
+        }
+        #[salsa::tracked(return_ref)]
+        fn resolve_definition_stack(
+            self,
+            db: &'db dyn codegen_sdk_resolution::Db,
+        ) -> Vec<Self::Stack> {
             let scope = self.file(db);
             let tree = scope.node(db).unwrap().tree(db);
-            scope
-                .resolve(db, self.node(db).function(tree).source())
-                .clone()
+            let definitions = scope.resolve(db, self.node(db).function(tree).source());
+            let mut results = Vec::new();
+            for definition in definitions.into_iter() {
+                results.extend(definition.resolve_type(db));
+            }
+            results
         }
     }
     use codegen_sdk_resolution::{Db, Dependencies, HasId};
@@ -228,7 +290,17 @@ pub mod ast {
         > for crate::ast::Symbol<'db>
     {
         fn references(self, db: &'db dyn Db) -> Vec<crate::ast::Call<'db>> {
-            references_impl(db, self.fully_qualified_name(db))
+            let mut results = Vec::new();
+            for reference in references_impl(db, self.fully_qualified_name(db)).iter() {
+                let resolved_stacks = reference.resolve_type(db);
+                if resolved_stacks
+                    .iter()
+                    .any(|stack| stack.entries(db).iter().any(|entry| *entry == self))
+                {
+                    results.push(reference.clone());
+                }
+            }
+            results
         }
         fn filter(
             &self,

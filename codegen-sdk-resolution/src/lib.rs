@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use ambassador::delegatable_trait;
 pub use scope::Scope;
 mod resolve_type;
-pub use resolve_type::ResolveType;
+pub use resolve_type::{ResolutionStack, ResolveType};
 mod references;
 pub use references::References;
 mod codebase;

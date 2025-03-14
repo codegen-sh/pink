@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::{Db, FullyQualifiedName, HasId, ResolveType};
+use crate::{Db, FullyQualifiedName, HasId, ResolutionStack, ResolveType};
 pub trait Dependencies<'db, Type, ReferenceType>: Eq + Hash + Clone {
     fn get(
         &'db self,
@@ -8,6 +8,7 @@ pub trait Dependencies<'db, Type, ReferenceType>: Eq + Hash + Clone {
         key: &Type,
     ) -> Option<&'db codegen_sdk_common::hash::FxIndexSet<ReferenceType>>;
 }
+
 // Resolve a given string name in a scope to a given type
 pub trait Scope<'db>: Sized {
     type Type: Eq + Hash + Clone + HasId<'db>;
@@ -33,11 +34,13 @@ pub trait Scope<'db>: Sized {
         > = codegen_sdk_common::hash::FxHashMap::default();
         for reference in self.resolvables(db) {
             let resolved = reference.clone().resolve_type(db);
-            for resolved in resolved {
-                dependencies
-                    .entry(resolved.fully_qualified_name(db))
-                    .or_default()
-                    .insert(reference.clone());
+            for stack in resolved.into_iter() {
+                for entry in stack.clone().entries(db) {
+                    dependencies
+                        .entry(entry.fully_qualified_name(db))
+                        .or_default()
+                        .insert(reference.clone());
+                }
             }
         }
         dependencies

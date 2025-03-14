@@ -29,7 +29,7 @@ codegen-sdk-markdown = { workspace = true, optional = true}
 codegen-sdk-yaml = { workspace = true, optional = true}
 codegen-sdk-toml = { workspace = true, optional = true}
 codegen-sdk-macros = { path = "../codegen-sdk-macros"}
-dashmap = "6.1.0"
+dashmap = { workspace = true }
 notify-debouncer-mini = { version = "0.6.0", features = ["macos_fsevent", "crossbeam-channel"] }
 anyhow = {workspace = true}
 env_logger = { workspace = true }
