@@ -20,6 +20,7 @@ jobs:
       - name: Run tests
         run: |
           mkdir -p test_data
+          mkdir -p codegen-sdk-analyzer/test_data
           ~/.cargo/bin/cargo-nextest nextest run --workspace --features stable
         env:
           CARGO_TERM_COLOR: always
