@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use codegen_sdk_cst::File;
+use dashmap::Entry;
 use indicatif::MultiProgress;
 #[salsa::db]
 pub trait Db: salsa::Database + Send {
@@ -19,13 +20,21 @@ pub fn files<'db>(
 ) -> codegen_sdk_common::hash::FxHashSet<codegen_sdk_common::FileNodeId> {
     db.files()
 }
+
 #[salsa::db]
 impl Db for codegen_sdk_cst::CSTDatabase {
     fn input(&self, path: &PathBuf) -> anyhow::Result<File> {
-        let content = std::fs::read_to_string(path)?;
-        let file =
-            codegen_sdk_cst::File::new(self, path.canonicalize().unwrap(), content, PathBuf::new());
-        Ok(file)
+        let path = path.canonicalize()?;
+        match self.files.entry(path.clone()) {
+            Entry::Vacant(entry) => {
+                log::info!("Reading file: {:?}", path);
+                let content = std::fs::read_to_string(&path)?;
+                let file = codegen_sdk_cst::File::new(self, path, content, PathBuf::new());
+                entry.insert(file.clone());
+                Ok(file)
+            }
+            Entry::Occupied(entry) => Ok(entry.get().clone()),
+        }
     }
     fn multi_progress(&self) -> &MultiProgress {
         unimplemented!()

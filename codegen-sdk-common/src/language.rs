@@ -110,12 +110,9 @@ impl Language {
 pub mod go;
 #[cfg(feature = "java")]
 pub mod java;
-#[cfg(feature = "typescript")]
-pub mod javascript;
 #[cfg(feature = "json")]
 pub mod json;
-#[cfg(feature = "typescript")]
-pub mod jsx;
+
 #[cfg(feature = "markdown")]
 pub mod markdown;
 #[cfg(feature = "python")]
@@ -129,8 +126,6 @@ pub mod toml;
 #[cfg(feature = "ts_query")]
 pub mod ts_query;
 #[cfg(feature = "typescript")]
-pub mod tsx;
-#[cfg(feature = "typescript")]
 pub mod typescript;
 #[cfg(feature = "yaml")]
 pub mod yaml;
@@ -140,12 +135,6 @@ lazy_static! {
         &python::Python,
         #[cfg(feature = "typescript")]
         &typescript::Typescript,
-        #[cfg(feature = "typescript")]
-        &tsx::TSX,
-        #[cfg(feature = "typescript")]
-        &jsx::JSX,
-        #[cfg(feature = "typescript")]
-        &javascript::Javascript,
         #[cfg(feature = "rust")]
         &rust::Rust,
         #[cfg(feature = "go")]

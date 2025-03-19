@@ -6,7 +6,6 @@ use codegen_sdk_common::serialize::Cache;
 use codegen_sdk_resolution::Db;
 use glob::glob;
 
-use crate::database::CodegenDatabase;
 #[salsa::input]
 pub struct FilesToParse {
     pub files: codegen_sdk_common::hash::FxHashSet<codegen_sdk_cst::File>,
@@ -22,7 +21,8 @@ pub fn log_languages() {
     }
 }
 
-pub fn collect_files(db: &CodegenDatabase, dir: &PathBuf) -> FilesToParse {
+pub fn collect_files(db: &dyn Db, dir: &PathBuf) -> FilesToParse {
+    log::info!("Discovering files");
     let mut files = Vec::new();
     let dir = dir.canonicalize().unwrap();
     for language in LANGUAGES.iter() {

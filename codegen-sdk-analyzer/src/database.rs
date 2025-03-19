@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use codegen_sdk_cst::File;
 use codegen_sdk_resolution::Db;
-use dashmap::{DashMap, mapref::entry::Entry};
+use dashmap::DashMap;
 use indicatif::MultiProgress;
 use notify_debouncer_mini::{
     Config, DebounceEventResult, Debouncer, new_debouncer_opt,
@@ -31,7 +31,7 @@ fn get_watcher(
 ) -> Arc<Mutex<Debouncer<RecommendedWatcher>>> {
     let config = Config::default()
         .with_batch_mode(true)
-        .with_timeout(Duration::from_secs(2));
+        .with_timeout(Duration::from_secs(1));
     Arc::new(Mutex::new(new_debouncer_opt(config, tx).unwrap()))
 }
 impl CodegenDatabase {
@@ -79,6 +79,7 @@ impl Db for CodegenDatabase {
             .collect()
     }
     fn watch_dir(&mut self, path: PathBuf) -> anyhow::Result<()> {
+        log::debug!("Watching dir: {}", path.display());
         let path = path.canonicalize()?;
         let watcher = &mut *self.file_watcher.lock().unwrap();
         watcher
@@ -89,28 +90,30 @@ impl Db for CodegenDatabase {
         Ok(())
     }
     fn get_file(&self, path: &PathBuf) -> Option<File> {
+        log::debug!("Getting file: {}", path.display());
         self.files.get(path).map(|entry| entry.value().clone())
     }
     fn input(&self, path: &PathBuf) -> anyhow::Result<File> {
+        log::debug!("Inputting file: {}", path.display());
         let path = path.canonicalize()?;
-        Ok(match self.files.entry(path.clone()) {
-            // If the file already exists in our cache then just return it.
-            Entry::Occupied(entry) => *entry.get(),
-            // If we haven't read this file yet set up the watch, read the
-            // contents, store it in the cache, and return it.
-            Entry::Vacant(entry) => {
-                // Set up the watch before reading the contents to try to avoid
-                // race conditions.
-                self._watch_file(&path)?;
-                let contents = std::fs::read_to_string(&path)
-                    .with_context(|| format!("Failed to read {}", path.display()))?;
-                *entry.insert(
-                    File::builder(path, contents, self.root.clone())
-                        .root_durability(salsa::Durability::HIGH)
-                        .new(self),
-                )
-            }
-        })
+        if let Some(file) = self.files.get(&path) {
+            log::debug!("File already exists in cache: {}", path.display());
+            return Ok(file.clone());
+        } else {
+            log::debug!("File does not exist in cache: {}", path.display());
+            // Set up the watch before reading the contents to try to avoid
+            // race conditions.
+            log::debug!("Setting up watch");
+            self._watch_file(&path).unwrap();
+            log::debug!("Reading file: {}", path.display());
+            let contents = std::fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read {}", path.display()))?;
+            let file = File::builder(path.clone(), contents, self.root.clone())
+                .root_durability(salsa::Durability::HIGH)
+                .new(self);
+            self.files.insert(path.clone(), file.clone());
+            Ok(self.files.get(&path).unwrap().clone())
+        }
     }
     fn multi_progress(&self) -> &MultiProgress {
         &self.multi_progress

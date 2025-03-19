@@ -50447,6 +50447,25 @@ impl Class {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_python::ast::Symbol::Class(*val);
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.python")]
 pub struct Constant {
@@ -50524,6 +50543,27 @@ impl Constant {
             )?,
         )
     }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_python::ast::Symbol::Constant(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
+        )
+    }
 }
 #[pyclass(module = "codegen_sdk_pink.python")]
 pub struct Function {
@@ -50599,6 +50639,27 @@ impl Function {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_python::ast::Symbol::Function(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }
@@ -50688,6 +50749,27 @@ impl Import {
                 node._name(db).clone(),
                 self.codebase.clone(),
             )?,
+        )
+    }
+    #[getter]
+    pub fn references(&self, py: Python<'_>) -> PyResult<Vec<Reference>> {
+        let val = self.get(py)?;
+        let wrapped = codegen_sdk_analyzer::codegen_sdk_python::ast::Symbol::Import(
+            *val,
+        );
+        let db = self.codebase.get(py).db();
+        let references = wrapped.references(db);
+        Ok(
+            references
+                .into_iter()
+                .map(|reference| Reference::new(
+                    py.clone(),
+                    reference.fully_qualified_name(db),
+                    0,
+                    &reference,
+                    self.codebase.clone(),
+                ))
+                .collect(),
         )
     }
 }

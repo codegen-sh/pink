@@ -16,6 +16,7 @@ pub(crate) fn get_imports() -> syn::File {
         use codegen_sdk_ast::References;
         use codegen_sdk_ast::Definitions;
         use codegen_sdk_resolution::HasId;
+        use codegen_sdk_resolution::References as _;
     }
 }
 
