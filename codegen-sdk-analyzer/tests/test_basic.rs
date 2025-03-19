@@ -7,7 +7,7 @@ use rfs_test_macro::rfs_test;
 #[test_log::test(rfs_test(
     config = r#"
     - !directory
-        name: test
+        name: testa
         content:
           - !file
               name: test.py
@@ -26,7 +26,7 @@ fn test_basic(dirname: &str) -> Result<(), Error> {
 #[test_log::test(rfs_test(
     config = r#"
     - !directory
-        name: test
+        name: testb
         content:
           - !file
               name: test.py
@@ -59,7 +59,7 @@ fn test_add_file(dirname: &str) -> Result<(), Error> {
 #[test_log::test(rfs_test(
     config = r#"
     - !directory
-        name: test
+        name: testc
         content:
           - !file
               name: test.py
