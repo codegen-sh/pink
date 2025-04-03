@@ -39,8 +39,10 @@ function findPresenterFiles(directory: string): string[] {
 		"**/coverage/**",
 		"**/.git/**",
 	];
-	
-	return glob.sync(`${directory}/**/*.presenter.{ts,tsx}`, { ignore: ignorePatterns });
+
+	return glob.sync(`${directory}/**/*.presenter.{ts,tsx}`, {
+		ignore: ignorePatterns,
+	});
 }
 
 function analyzeVmMethod(
@@ -64,7 +66,7 @@ function analyzeVmMethod(
 				}
 			});
 		}
-		
+
 		// Find VM method and analyze
 		if (
 			ts.isMethodDeclaration(node) &&
@@ -77,7 +79,7 @@ function analyzeVmMethod(
 			// Skip further traversal for this branch
 			return;
 		}
-		
+
 		// Continue traversal
 		ts.forEachChild(node, visit);
 	}
@@ -149,7 +151,7 @@ function analyzeVmMethod(
 function analyzeFile(filePath: string): PropertyMapping[] {
 	// Cache file content to avoid multiple reads
 	const fileContent = fs.readFileSync(filePath, "utf-8");
-	
+
 	// Use a more efficient parsing strategy
 	const sourceFile = ts.createSourceFile(
 		filePath,
@@ -204,7 +206,7 @@ function main() {
 	// Process files in batches to avoid memory pressure
 	const batchSize = 50;
 	const results: { file: string; properties: PropertyMapping[] }[] = [];
-	
+
 	for (let i = 0; i < presenterFiles.length; i += batchSize) {
 		const batch = presenterFiles.slice(i, i + batchSize);
 		const batchResults = batch.map((file) => {
