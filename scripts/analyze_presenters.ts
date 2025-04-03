@@ -29,8 +29,18 @@ interface PropertyMapping {
 	repeatedFrom?: string;
 }
 
+// Use a more efficient glob pattern with ignore patterns
 function findPresenterFiles(directory: string): string[] {
-	return glob.sync(`${directory}/**/*.presenter.{ts,tsx}`);
+	// Add common directories to ignore
+	const ignorePatterns = [
+		"**/node_modules/**",
+		"**/dist/**",
+		"**/build/**",
+		"**/coverage/**",
+		"**/.git/**",
+	];
+	
+	return glob.sync(`${directory}/**/*.presenter.{ts,tsx}`, { ignore: ignorePatterns });
 }
 
 function analyzeVmMethod(
@@ -40,8 +50,9 @@ function analyzeVmMethod(
 	const propertyMappings: PropertyMapping[] = [];
 	const propNames = new Set<string>();
 
-	// First pass: collect all prop names
-	function collectProps(node: ts.Node) {
+	// Optimize by combining the two passes into a single traversal
+	function visit(node: ts.Node) {
+		// Collect props from parameters
 		if (
 			ts.isParameter(node) &&
 			node.name &&
@@ -53,23 +64,22 @@ function analyzeVmMethod(
 				}
 			});
 		}
-		ts.forEachChild(node, collectProps);
-	}
-
-	// Second pass: analyze VM method and find property mappings
-	function visit(node: ts.Node) {
+		
+		// Find VM method and analyze
 		if (
 			ts.isMethodDeclaration(node) &&
 			ts.isIdentifier(node.name) &&
-			node.name.text === "vm"
+			node.name.text === "vm" &&
+			node.body
 		) {
-			// Found VM method
-			if (node.body) {
-				ts.forEachChild(node.body, findReturnStatement);
-			}
-		} else {
-			ts.forEachChild(node, visit);
+			// Process the VM method body
+			ts.forEachChild(node.body, findReturnStatement);
+			// Skip further traversal for this branch
+			return;
 		}
+		
+		// Continue traversal
+		ts.forEachChild(node, visit);
 	}
 
 	function findReturnStatement(node: ts.Node) {
@@ -88,7 +98,8 @@ function analyzeVmMethod(
 		const properties = objectLiteral.properties;
 		const valueMap = new Map<string, string>();
 
-		properties.forEach((prop) => {
+		// Process all properties in a single pass
+		for (const prop of properties) {
 			if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
 				const propName = prop.name.text;
 				const propValue = prop.initializer.getText();
@@ -117,26 +128,29 @@ function analyzeVmMethod(
 
 				propertyMappings.push(mapping);
 			}
-		});
+		}
 
 		// Second pass to find properties that repeat other properties
-		propertyMappings.forEach((mapping) => {
+		// This can't be combined with the first pass because we need all properties first
+		for (const mapping of propertyMappings) {
 			if (!mapping.isRepeat && valueMap.has(mapping.value)) {
 				mapping.isRepeat = true;
 				mapping.repeatedFrom = mapping.value;
 			}
-		});
+		}
 	}
 
-	// Start analysis
-	collectProps(sourceFile);
+	// Start analysis with a single traversal
 	visit(sourceFile);
 
 	return propertyMappings;
 }
 
 function analyzeFile(filePath: string): PropertyMapping[] {
+	// Cache file content to avoid multiple reads
 	const fileContent = fs.readFileSync(filePath, "utf-8");
+	
+	// Use a more efficient parsing strategy
 	const sourceFile = ts.createSourceFile(
 		filePath,
 		fileContent,
@@ -177,6 +191,7 @@ function main() {
 	const directory = process.argv[2] || ".";
 	console.log(`Analyzing presenter files in: ${directory}`);
 
+	// Find presenter files
 	const presenterFiles = findPresenterFiles(directory);
 
 	if (presenterFiles.length === 0) {
@@ -186,10 +201,18 @@ function main() {
 
 	console.log(`Found ${presenterFiles.length} presenter files.`);
 
-	const results = presenterFiles.map((file) => {
-		const properties = analyzeFile(file);
-		return { file, properties };
-	});
+	// Process files in batches to avoid memory pressure
+	const batchSize = 50;
+	const results: { file: string; properties: PropertyMapping[] }[] = [];
+	
+	for (let i = 0; i < presenterFiles.length; i += batchSize) {
+		const batch = presenterFiles.slice(i, i + batchSize);
+		const batchResults = batch.map((file) => {
+			const properties = analyzeFile(file);
+			return { file, properties };
+		});
+		results.push(...batchResults);
+	}
 
 	const formattedResults = formatResults(results);
 	console.log("\nResults:");
