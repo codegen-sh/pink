@@ -1,7 +1,7 @@
 [project]
 name = "codegen-sdk-pink"
 dynamic = ["version", "summary", "description", "authors", "license", "readme", "description_content_type", "keywords", "home_page", "author_email", "author", "license", "project_url"]
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
