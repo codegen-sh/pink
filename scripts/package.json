@@ -1,0 +1,22 @@
+{
+	"name": "presenter-vm-analyzer",
+	"version": "1.0.0",
+	"description": "Analyzes presenter files to identify redundant VM properties",
+	"main": "analyze_presenters.ts",
+	"scripts": {
+		"analyze": "ts-node analyze_presenters.ts",
+		"test": "ts-node analyze_presenters.ts ./examples"
+	},
+	"keywords": ["typescript", "presenter", "analysis", "react"],
+	"author": "Codegen",
+	"license": "MIT",
+	"dependencies": {
+		"glob": "^8.0.3",
+		"typescript": "^4.9.5"
+	},
+	"devDependencies": {
+		"@types/glob": "^8.0.0",
+		"@types/node": "^18.11.18",
+		"ts-node": "^10.9.1"
+	}
+}
