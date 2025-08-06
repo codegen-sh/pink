@@ -213,7 +213,7 @@ impl<'a> Query<'a> {
             .collect()
     }
 
-    fn captures(&self) -> Vec<&ts_query::Capture> {
+    fn captures(&self) -> Vec<&ts_query::Capture<'_>> {
         captures_for_named_node(&self.node, self.tree).collect()
     }
     /// Get the name of the query (IE @reference.class)
@@ -252,7 +252,7 @@ impl<'a> Query<'a> {
     //     }
     //     result
     // }
-    pub fn node(&self) -> &ts_query::NamedNode {
+    pub fn node(&self) -> &ts_query::NamedNode<'_> {
         &self.node
     }
     pub fn executor_id(&self) -> Ident {
@@ -272,7 +272,7 @@ impl<'a> Query<'a> {
             symbol
         }
     }
-    fn get_field_for_field_name(&self, field_name: &str, struct_name: &str) -> Option<&Field> {
+    fn get_field_for_field_name(&self, field_name: &str, struct_name: &str) -> Option<&Field<'_>> {
         debug!(
             "Getting field for: {:#?} on node: {:#?}",
             field_name, struct_name
@@ -843,7 +843,7 @@ impl<'a> Query<'a> {
             &mut query_values,
         );
     }
-    fn target_captures(&self) -> Vec<&ts_query::Capture> {
+    fn target_captures(&self) -> Vec<&ts_query::Capture<'_>> {
         let mut captures: Vec<&ts_query::Capture> = self
             .captures()
             .into_iter()
