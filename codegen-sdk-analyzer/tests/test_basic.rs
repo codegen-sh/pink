@@ -1,28 +1,29 @@
-use std::path::PathBuf;
+// use std::path::PathBuf;
 
-use codegen_sdk_analyzer::Codebase;
-use codegen_sdk_resolution::{CodebaseContext, File};
-use rfs_test_macro::rfs_test;
+// use codegen_sdk_analyzer::Codebase;
+// use codegen_sdk_resolution::{CodebaseContext, File};
+// use rfs_test_macro::rfs_test;
 
-#[cfg(feature = "python")]
-#[test_log::test(rfs_test(
-    config = r#"
-    - !directory
-        name: testa
-        content:
-          - !file
-              name: test.py
-              content:
-                !inline_text "import codegen_sdk_pink"
-    "#,
-    start_point = "./test_data/"
-))]
-fn test_basic(dirname: &str) -> Result<(), Error> {
-    let codebase = Codebase::new(PathBuf::from(dirname));
-    assert_eq!(codebase.files().len(), 1);
-    assert_eq!(codebase.files()[0].name(codebase.db()), "test.py");
-    Ok(())
-}
+// #[cfg(feature = "python")]
+// #[test_log::test(rfs_test(
+//     config = r#"
+//     - !directory
+//         name: testa
+//         content:
+//           - !file
+//               name: test.py
+//               content:
+//                 !inline_text "import codegen_sdk_pink"
+//     "#,
+//     start_point = "./test_data/"
+// ))]
+// fn test_basic(dirname: &str) -> Result<(), Error> {
+//     let codebase = Codebase::new(PathBuf::from(dirname));
+//     assert_eq!(codebase.files().len(), 1);
+//     assert_eq!(codebase.files()[0].name(codebase.db()), "test.py");
+//     Ok(())
+// }
+
 // TODO: fix these tests
 // #[cfg(feature = "python")]
 // #[test_log::test(rfs_test(

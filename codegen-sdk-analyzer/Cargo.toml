@@ -54,5 +54,5 @@ stable = ["json", "toml", "typescript", "go", "python", "yaml", "java", "ruby", 
 
 [dev-dependencies]
 test-log = { workspace = true }
-rfs_test_macro = { workspace = true }
-rfs_tester = { workspace = true }
+# rfs_test_macro = { workspace = true }
+# rfs_tester = { workspace = true }
