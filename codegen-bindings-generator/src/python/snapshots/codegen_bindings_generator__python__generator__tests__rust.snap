@@ -4944,6 +4944,113 @@ mod cst {
         }
     }
     #[pyclass(module = "codegen_sdk_pink::rust.cst")]
+    pub struct AnonymousExpr2021 {
+        id: codegen_sdk_common::CSTNodeTreeId,
+        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    }
+    impl AnonymousExpr2021 {
+        pub fn new(
+            _py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            Ok(Self { id, codebase })
+        }
+        fn get_file<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
+            let codebase = self.codebase.get(py);
+            let path = self.id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            Ok(file)
+        }
+        fn get_node<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<
+            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::AnonymousExpr2021<'db>,
+        > {
+            let file = self.get_file(py)?;
+            let tree = file.tree(self.codebase.get(py).db());
+            let node = tree.get(self.id.id(self.codebase.get(py).db()));
+            if let Some(node) = node {
+                node.as_ref()
+                    .try_into()
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
+                        format!("Failed to convert node to CSTNode {}", e),
+                    ))
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[pymethods]
+    impl AnonymousExpr2021 {
+        #[getter]
+        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            let node = self.get_node(py)?;
+            Ok(node.source())
+        }
+        #[getter]
+        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            self.source(py)
+        }
+        #[getter]
+        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
+            let node = self.get_node(py)?;
+            Ok(pyo3_bytes::PyBytes::new(node.text()))
+        }
+        #[getter]
+        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.start_byte())
+        }
+        #[getter]
+        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.end_byte())
+        }
+        #[getter]
+        pub fn start_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.start_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn end_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.end_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            Ok(self.source(py)?)
+        }
+    }
+    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
     pub struct AnonymousExtern {
         id: codegen_sdk_common::CSTNodeTreeId,
         codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -8654,6 +8761,113 @@ mod cst {
     }
     #[pymethods]
     impl AnonymousPat {
+        #[getter]
+        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            let node = self.get_node(py)?;
+            Ok(node.source())
+        }
+        #[getter]
+        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            self.source(py)
+        }
+        #[getter]
+        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
+            let node = self.get_node(py)?;
+            Ok(pyo3_bytes::PyBytes::new(node.text()))
+        }
+        #[getter]
+        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.start_byte())
+        }
+        #[getter]
+        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.end_byte())
+        }
+        #[getter]
+        pub fn start_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.start_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn end_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.end_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            Ok(self.source(py)?)
+        }
+    }
+    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
+    pub struct AnonymousPatParam {
+        id: codegen_sdk_common::CSTNodeTreeId,
+        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    }
+    impl AnonymousPatParam {
+        pub fn new(
+            _py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            Ok(Self { id, codebase })
+        }
+        fn get_file<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
+            let codebase = self.codebase.get(py);
+            let path = self.id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            Ok(file)
+        }
+        fn get_node<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<
+            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::AnonymousPatParam<'db>,
+        > {
+            let file = self.get_file(py)?;
+            let tree = file.tree(self.codebase.get(py).db());
+            let node = tree.get(self.id.id(self.codebase.get(py).db()));
+            if let Some(node) = node {
+                node.as_ref()
+                    .try_into()
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
+                        format!("Failed to convert node to CSTNode {}", e),
+                    ))
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[pymethods]
+    impl AnonymousPatParam {
         #[getter]
         pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
             let node = self.get_node(py)?;
@@ -15675,115 +15889,6 @@ mod cst {
         }
     }
     #[pyclass(module = "codegen_sdk_pink::rust.cst")]
-    pub struct ConstrainedTypeParameter {
-        id: codegen_sdk_common::CSTNodeTreeId,
-        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-    }
-    impl ConstrainedTypeParameter {
-        pub fn new(
-            _py: Python<'_>,
-            id: codegen_sdk_common::CSTNodeTreeId,
-            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-        ) -> PyResult<Self> {
-            Ok(Self { id, codebase })
-        }
-        fn get_file<'db>(
-            &'db self,
-            py: Python<'db>,
-        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
-            let codebase = self.codebase.get(py);
-            let path = self.id.file(codebase.db());
-            let file = codebase.get_file_for_id(path);
-            let file = match file {
-                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
-                _ => {
-                    return Err(
-                        pyo3::exceptions::PyValueError::new_err(
-                            format!(
-                                "File not found for path: {}", path.path(codebase.db())
-                                .display()
-                            ),
-                        ),
-                    );
-                }
-            };
-            Ok(file)
-        }
-        fn get_node<'db>(
-            &'db self,
-            py: Python<'db>,
-        ) -> PyResult<
-            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstrainedTypeParameter<
-                'db,
-            >,
-        > {
-            let file = self.get_file(py)?;
-            let tree = file.tree(self.codebase.get(py).db());
-            let node = tree.get(self.id.id(self.codebase.get(py).db()));
-            if let Some(node) = node {
-                node.as_ref()
-                    .try_into()
-                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
-                        format!("Failed to convert node to CSTNode {}", e),
-                    ))
-            } else {
-                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
-            }
-        }
-    }
-    #[pymethods]
-    impl ConstrainedTypeParameter {
-        #[getter]
-        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
-            let node = self.get_node(py)?;
-            Ok(node.source())
-        }
-        #[getter]
-        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
-            self.source(py)
-        }
-        #[getter]
-        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
-            let node = self.get_node(py)?;
-            Ok(pyo3_bytes::PyBytes::new(node.text()))
-        }
-        #[getter]
-        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
-            let node = self.get_node(py)?;
-            Ok(node.start_byte())
-        }
-        #[getter]
-        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
-            let node = self.get_node(py)?;
-            Ok(node.end_byte())
-        }
-        #[getter]
-        pub fn start_position<'a>(
-            &'a self,
-            py: Python<'a>,
-        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
-            let node = self.get_node(py)?;
-            let position = node.start_position();
-            let row = position.row(self.codebase.get(py).db());
-            let column = position.column(self.codebase.get(py).db());
-            pyo3::types::PyTuple::new(py, vec![row, column])
-        }
-        #[getter]
-        pub fn end_position<'a>(
-            &'a self,
-            py: Python<'a>,
-        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
-            let node = self.get_node(py)?;
-            let position = node.end_position();
-            let row = position.row(self.codebase.get(py).db());
-            let column = position.column(self.codebase.get(py).db());
-            pyo3::types::PyTuple::new(py, vec![row, column])
-        }
-        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
-            Ok(self.source(py)?)
-        }
-    }
-    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
     pub struct ContinueExpression {
         id: codegen_sdk_common::CSTNodeTreeId,
         codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -19727,6 +19832,137 @@ mod cst {
         }
     }
     #[pyclass(module = "codegen_sdk_pink::rust.cst")]
+    pub struct GenericPattern {
+        id: codegen_sdk_common::CSTNodeTreeId,
+        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    }
+    impl GenericPattern {
+        pub fn new(
+            _py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            Ok(Self { id, codebase })
+        }
+        fn get_file<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
+            let codebase = self.codebase.get(py);
+            let path = self.id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            Ok(file)
+        }
+        fn get_node<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<
+            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::GenericPattern<'db>,
+        > {
+            let file = self.get_file(py)?;
+            let tree = file.tree(self.codebase.get(py).db());
+            let node = tree.get(self.id.id(self.codebase.get(py).db()));
+            if let Some(node) = node {
+                node.as_ref()
+                    .try_into()
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
+                        format!("Failed to convert node to CSTNode {}", e),
+                    ))
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[pymethods]
+    impl GenericPattern {
+        #[getter]
+        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            let node = self.get_node(py)?;
+            Ok(node.source())
+        }
+        #[getter]
+        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            self.source(py)
+        }
+        #[getter]
+        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
+            let node = self.get_node(py)?;
+            Ok(pyo3_bytes::PyBytes::new(node.text()))
+        }
+        #[getter]
+        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.start_byte())
+        }
+        #[getter]
+        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.end_byte())
+        }
+        #[getter]
+        pub fn start_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.start_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn end_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.end_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn children(&self, py: Python<'_>) -> PyResult<Vec<GenericPatternChildren>> {
+            let file = self.get_file(py)?;
+            let db = self.codebase.get(py).db();
+            let tree = file.tree(db);
+            let children = tree.children(self.id.id(db));
+            Ok(
+                children
+                    .map(|(child, child_id)| {
+                        let id = codegen_sdk_common::CSTNodeTreeId::from_node_id(
+                            db,
+                            &child.id(),
+                            child_id,
+                        );
+                        GenericPatternChildren::new(
+                                py.clone(),
+                                id,
+                                self.codebase.clone(),
+                            )
+                            .unwrap()
+                    })
+                    .collect(),
+            )
+        }
+        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            Ok(self.source(py)?)
+        }
+    }
+    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
     pub struct GenericType {
         id: codegen_sdk_common::CSTNodeTreeId,
         codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -21478,6 +21714,113 @@ mod cst {
                     })
                     .collect(),
             )
+        }
+        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            Ok(self.source(py)?)
+        }
+    }
+    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
+    pub struct LifetimeParameter {
+        id: codegen_sdk_common::CSTNodeTreeId,
+        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    }
+    impl LifetimeParameter {
+        pub fn new(
+            _py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            Ok(Self { id, codebase })
+        }
+        fn get_file<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
+            let codebase = self.codebase.get(py);
+            let path = self.id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            Ok(file)
+        }
+        fn get_node<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<
+            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::LifetimeParameter<'db>,
+        > {
+            let file = self.get_file(py)?;
+            let tree = file.tree(self.codebase.get(py).db());
+            let node = tree.get(self.id.id(self.codebase.get(py).db()));
+            if let Some(node) = node {
+                node.as_ref()
+                    .try_into()
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
+                        format!("Failed to convert node to CSTNode {}", e),
+                    ))
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[pymethods]
+    impl LifetimeParameter {
+        #[getter]
+        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            let node = self.get_node(py)?;
+            Ok(node.source())
+        }
+        #[getter]
+        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            self.source(py)
+        }
+        #[getter]
+        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
+            let node = self.get_node(py)?;
+            Ok(pyo3_bytes::PyBytes::new(node.text()))
+        }
+        #[getter]
+        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.start_byte())
+        }
+        #[getter]
+        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.end_byte())
+        }
+        #[getter]
+        pub fn start_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.start_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn end_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.end_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
         }
         fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
             Ok(self.source(py)?)
@@ -23286,113 +23629,6 @@ mod cst {
         }
     }
     #[pyclass(module = "codegen_sdk_pink::rust.cst")]
-    pub struct OptionalTypeParameter {
-        id: codegen_sdk_common::CSTNodeTreeId,
-        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-    }
-    impl OptionalTypeParameter {
-        pub fn new(
-            _py: Python<'_>,
-            id: codegen_sdk_common::CSTNodeTreeId,
-            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-        ) -> PyResult<Self> {
-            Ok(Self { id, codebase })
-        }
-        fn get_file<'db>(
-            &'db self,
-            py: Python<'db>,
-        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
-            let codebase = self.codebase.get(py);
-            let path = self.id.file(codebase.db());
-            let file = codebase.get_file_for_id(path);
-            let file = match file {
-                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
-                _ => {
-                    return Err(
-                        pyo3::exceptions::PyValueError::new_err(
-                            format!(
-                                "File not found for path: {}", path.path(codebase.db())
-                                .display()
-                            ),
-                        ),
-                    );
-                }
-            };
-            Ok(file)
-        }
-        fn get_node<'db>(
-            &'db self,
-            py: Python<'db>,
-        ) -> PyResult<
-            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameter<'db>,
-        > {
-            let file = self.get_file(py)?;
-            let tree = file.tree(self.codebase.get(py).db());
-            let node = tree.get(self.id.id(self.codebase.get(py).db()));
-            if let Some(node) = node {
-                node.as_ref()
-                    .try_into()
-                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
-                        format!("Failed to convert node to CSTNode {}", e),
-                    ))
-            } else {
-                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
-            }
-        }
-    }
-    #[pymethods]
-    impl OptionalTypeParameter {
-        #[getter]
-        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
-            let node = self.get_node(py)?;
-            Ok(node.source())
-        }
-        #[getter]
-        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
-            self.source(py)
-        }
-        #[getter]
-        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
-            let node = self.get_node(py)?;
-            Ok(pyo3_bytes::PyBytes::new(node.text()))
-        }
-        #[getter]
-        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
-            let node = self.get_node(py)?;
-            Ok(node.start_byte())
-        }
-        #[getter]
-        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
-            let node = self.get_node(py)?;
-            Ok(node.end_byte())
-        }
-        #[getter]
-        pub fn start_position<'a>(
-            &'a self,
-            py: Python<'a>,
-        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
-            let node = self.get_node(py)?;
-            let position = node.start_position();
-            let row = position.row(self.codebase.get(py).db());
-            let column = position.column(self.codebase.get(py).db());
-            pyo3::types::PyTuple::new(py, vec![row, column])
-        }
-        #[getter]
-        pub fn end_position<'a>(
-            &'a self,
-            py: Python<'a>,
-        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
-            let node = self.get_node(py)?;
-            let position = node.end_position();
-            let row = position.row(self.codebase.get(py).db());
-            let column = position.column(self.codebase.get(py).db());
-            pyo3::types::PyTuple::new(py, vec![row, column])
-        }
-        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
-            Ok(self.source(py)?)
-        }
-    }
-    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
     pub struct OrPattern {
         id: codegen_sdk_common::CSTNodeTreeId,
         codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -24725,26 +24961,6 @@ mod cst {
             let row = position.row(self.codebase.get(py).db());
             let column = position.column(self.codebase.get(py).db());
             pyo3::types::PyTuple::new(py, vec![row, column])
-        }
-        #[getter]
-        pub fn children(&self, py: Python<'_>) -> PyResult<Vec<RangePatternChildren>> {
-            let file = self.get_file(py)?;
-            let db = self.codebase.get(py).db();
-            let tree = file.tree(db);
-            let children = tree.children(self.id.id(db));
-            Ok(
-                children
-                    .map(|(child, child_id)| {
-                        let id = codegen_sdk_common::CSTNodeTreeId::from_node_id(
-                            db,
-                            &child.id(),
-                            child_id,
-                        );
-                        RangePatternChildren::new(py.clone(), id, self.codebase.clone())
-                            .unwrap()
-                    })
-                    .collect(),
-            )
         }
         fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
             Ok(self.source(py)?)
@@ -29997,6 +30213,113 @@ mod cst {
         }
     }
     #[pyclass(module = "codegen_sdk_pink::rust.cst")]
+    pub struct TypeParameter {
+        id: codegen_sdk_common::CSTNodeTreeId,
+        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    }
+    impl TypeParameter {
+        pub fn new(
+            _py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            Ok(Self { id, codebase })
+        }
+        fn get_file<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
+            let codebase = self.codebase.get(py);
+            let path = self.id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            Ok(file)
+        }
+        fn get_node<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<
+            &'db codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameter<'db>,
+        > {
+            let file = self.get_file(py)?;
+            let tree = file.tree(self.codebase.get(py).db());
+            let node = tree.get(self.id.id(self.codebase.get(py).db()));
+            if let Some(node) = node {
+                node.as_ref()
+                    .try_into()
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
+                        format!("Failed to convert node to CSTNode {}", e),
+                    ))
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[pymethods]
+    impl TypeParameter {
+        #[getter]
+        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            let node = self.get_node(py)?;
+            Ok(node.source())
+        }
+        #[getter]
+        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            self.source(py)
+        }
+        #[getter]
+        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
+            let node = self.get_node(py)?;
+            Ok(pyo3_bytes::PyBytes::new(node.text()))
+        }
+        #[getter]
+        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.start_byte())
+        }
+        #[getter]
+        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.end_byte())
+        }
+        #[getter]
+        pub fn start_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.start_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn end_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.end_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            Ok(self.source(py)?)
+        }
+    }
+    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
     pub struct TypeParameters {
         id: codegen_sdk_common::CSTNodeTreeId,
         codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
@@ -30827,6 +31150,131 @@ mod cst {
             let row = position.row(self.codebase.get(py).db());
             let column = position.column(self.codebase.get(py).db());
             pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            Ok(self.source(py)?)
+        }
+    }
+    #[pyclass(module = "codegen_sdk_pink::rust.cst")]
+    pub struct UseBounds {
+        id: codegen_sdk_common::CSTNodeTreeId,
+        codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+    }
+    impl UseBounds {
+        pub fn new(
+            _py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            Ok(Self { id, codebase })
+        }
+        fn get_file<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::ast::RustFile<'db>> {
+            let codebase = self.codebase.get(py);
+            let path = self.id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            Ok(file)
+        }
+        fn get_node<'db>(
+            &'db self,
+            py: Python<'db>,
+        ) -> PyResult<&'db codegen_sdk_analyzer::codegen_sdk_rust::cst::UseBounds<'db>> {
+            let file = self.get_file(py)?;
+            let tree = file.tree(self.codebase.get(py).db());
+            let node = tree.get(self.id.id(self.codebase.get(py).db()));
+            if let Some(node) = node {
+                node.as_ref()
+                    .try_into()
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(
+                        format!("Failed to convert node to CSTNode {}", e),
+                    ))
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[pymethods]
+    impl UseBounds {
+        #[getter]
+        pub fn source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            let node = self.get_node(py)?;
+            Ok(node.source())
+        }
+        #[getter]
+        pub fn _source(&self, py: Python<'_>) -> PyResult<std::string::String> {
+            self.source(py)
+        }
+        #[getter]
+        pub fn text(&self, py: Python<'_>) -> PyResult<pyo3_bytes::PyBytes> {
+            let node = self.get_node(py)?;
+            Ok(pyo3_bytes::PyBytes::new(node.text()))
+        }
+        #[getter]
+        pub fn start_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.start_byte())
+        }
+        #[getter]
+        pub fn end_byte(&self, py: Python<'_>) -> PyResult<usize> {
+            let node = self.get_node(py)?;
+            Ok(node.end_byte())
+        }
+        #[getter]
+        pub fn start_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.start_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn end_position<'a>(
+            &'a self,
+            py: Python<'a>,
+        ) -> PyResult<Bound<'a, pyo3::types::PyTuple>> {
+            let node = self.get_node(py)?;
+            let position = node.end_position();
+            let row = position.row(self.codebase.get(py).db());
+            let column = position.column(self.codebase.get(py).db());
+            pyo3::types::PyTuple::new(py, vec![row, column])
+        }
+        #[getter]
+        pub fn children(&self, py: Python<'_>) -> PyResult<Vec<UseBoundsChildren>> {
+            let file = self.get_file(py)?;
+            let db = self.codebase.get(py).db();
+            let tree = file.tree(db);
+            let children = tree.children(self.id.id(db));
+            Ok(
+                children
+                    .map(|(child, child_id)| {
+                        let id = codegen_sdk_common::CSTNodeTreeId::from_node_id(
+                            db,
+                            &child.id(),
+                            child_id,
+                        );
+                        UseBoundsChildren::new(py.clone(), id, self.codebase.clone())
+                            .unwrap()
+                    })
+                    .collect(),
+            )
         }
         fn __str__(&self, py: Python<'_>) -> PyResult<std::string::String> {
             Ok(self.source(py)?)
@@ -31987,6 +32435,7 @@ mod cst {
     }
     #[derive(IntoPyObject)]
     pub enum AbstractTypeChildren {
+        BoundedType(BoundedType),
         FunctionType(FunctionType),
         GenericType(GenericType),
         RemovedTraitBound(RemovedTraitBound),
@@ -32020,6 +32469,15 @@ mod cst {
             let node = file.tree(codebase.db()).get(id.id(codebase.db()));
             if let Some(node) = node {
                 match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::AbstractTypeChildrenRef::BoundedType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::BoundedType(
+                                BoundedType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::AbstractTypeChildrenRef::FunctionType(
                         _,
                     ) => {
@@ -32091,6 +32549,7 @@ mod cst {
     }
     #[derive(IntoPyObject)]
     pub enum AbstractTypeTrait {
+        BoundedType(BoundedType),
         FunctionType(FunctionType),
         GenericType(GenericType),
         RemovedTraitBound(RemovedTraitBound),
@@ -32123,6 +32582,15 @@ mod cst {
             let node = file.tree(codebase.db()).get(id.id(codebase.db()));
             if let Some(node) = node {
                 match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::AbstractTypeTraitRef::BoundedType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::BoundedType(
+                                BoundedType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::AbstractTypeTraitRef::FunctionType(
                         _,
                     ) => {
@@ -37361,6 +37829,7 @@ mod cst {
         TupleType(TupleType),
         TypeIdentifier(TypeIdentifier),
         UnitType(UnitType),
+        UseBounds(UseBounds),
     }
     impl BoundedTypeChildren {
         pub fn new(
@@ -37537,6 +38006,15 @@ mod cst {
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::BoundedTypeChildrenRef::UnitType(
                         _,
                     ) => Ok(Self::UnitType(UnitType::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::BoundedTypeChildrenRef::UseBounds(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::UseBounds(
+                                UseBounds::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                 }
             } else {
                 Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
@@ -39133,6 +39611,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -39227,6 +39706,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::CapturedPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -40491,6 +40979,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -40586,6 +41075,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ClosureParametersChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -42123,19 +42621,27 @@ mod cst {
     pub enum ConstParameterChildren {
         AbstractType(AbstractType),
         ArrayType(ArrayType),
+        Block(Block),
+        BooleanLiteral(BooleanLiteral),
         BoundedType(BoundedType),
+        CharLiteral(CharLiteral),
         DynamicType(DynamicType),
+        FloatLiteral(FloatLiteral),
         FunctionType(FunctionType),
         GenericType(GenericType),
         Identifier(Identifier),
+        IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
         Metavariable(Metavariable),
+        NegativeLiteral(NegativeLiteral),
         NeverType(NeverType),
         PointerType(PointerType),
         PrimitiveType(PrimitiveType),
+        RawStringLiteral(RawStringLiteral),
         ReferenceType(ReferenceType),
         RemovedTraitBound(RemovedTraitBound),
         ScopedTypeIdentifier(ScopedTypeIdentifier),
+        StringLiteral(StringLiteral),
         TupleType(TupleType),
         TypeIdentifier(TypeIdentifier),
         UnitType(UnitType),
@@ -42183,6 +42689,18 @@ mod cst {
                             ),
                         )
                     }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::Block(
+                        _,
+                    ) => Ok(Self::Block(Block::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::BooleanLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::BooleanLiteral(
+                                BooleanLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::BoundedType(
                         _,
                     ) => {
@@ -42192,12 +42710,30 @@ mod cst {
                             ),
                         )
                     }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::CharLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::CharLiteral(
+                                CharLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::DynamicType(
                         _,
                     ) => {
                         Ok(
                             Self::DynamicType(
                                 DynamicType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::FloatLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::FloatLiteral(
+                                FloatLiteral::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -42228,6 +42764,15 @@ mod cst {
                             ),
                         )
                     }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::IntegerLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::IntegerLiteral(
+                                IntegerLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::MacroInvocation(
                         _,
                     ) => {
@@ -42243,6 +42788,15 @@ mod cst {
                         Ok(
                             Self::Metavariable(
                                 Metavariable::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::NegativeLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::NegativeLiteral(
+                                NegativeLiteral::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -42273,6 +42827,15 @@ mod cst {
                             ),
                         )
                     }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::RawStringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::RawStringLiteral(
+                                RawStringLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::ReferenceType(
                         _,
                     ) => {
@@ -42297,6 +42860,15 @@ mod cst {
                         Ok(
                             Self::ScopedTypeIdentifier(
                                 ScopedTypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterChildrenRef::StringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::StringLiteral(
+                                StringLiteral::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -42328,12 +42900,18 @@ mod cst {
         }
     }
     #[derive(IntoPyObject)]
-    pub enum ConstrainedTypeParameterChildren {
-        Lifetime(Lifetime),
-        TraitBounds(TraitBounds),
-        TypeIdentifier(TypeIdentifier),
+    pub enum ConstParameterValue {
+        Block(Block),
+        BooleanLiteral(BooleanLiteral),
+        CharLiteral(CharLiteral),
+        FloatLiteral(FloatLiteral),
+        Identifier(Identifier),
+        IntegerLiteral(IntegerLiteral),
+        NegativeLiteral(NegativeLiteral),
+        RawStringLiteral(RawStringLiteral),
+        StringLiteral(StringLiteral),
     }
-    impl ConstrainedTypeParameterChildren {
+    impl ConstParameterValue {
         pub fn new(
             py: Python<'_>,
             id: codegen_sdk_common::CSTNodeTreeId,
@@ -42358,72 +42936,78 @@ mod cst {
             let node = file.tree(codebase.db()).get(id.id(codebase.db()));
             if let Some(node) = node {
                 match node.as_ref().try_into().unwrap() {
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstrainedTypeParameterChildrenRef::Lifetime(
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::Block(
                         _,
-                    ) => Ok(Self::Lifetime(Lifetime::new(py, id, codebase_arc.clone())?)),
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstrainedTypeParameterChildrenRef::TraitBounds(
+                    ) => Ok(Self::Block(Block::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::BooleanLiteral(
                         _,
                     ) => {
                         Ok(
-                            Self::TraitBounds(
-                                TraitBounds::new(py, id, codebase_arc.clone())?,
+                            Self::BooleanLiteral(
+                                BooleanLiteral::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstrainedTypeParameterChildrenRef::TypeIdentifier(
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::CharLiteral(
                         _,
                     ) => {
                         Ok(
-                            Self::TypeIdentifier(
-                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            Self::CharLiteral(
+                                CharLiteral::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
-                }
-            } else {
-                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
-            }
-        }
-    }
-    #[derive(IntoPyObject)]
-    pub enum ConstrainedTypeParameterLeft {
-        Lifetime(Lifetime),
-        TypeIdentifier(TypeIdentifier),
-    }
-    impl ConstrainedTypeParameterLeft {
-        pub fn new(
-            py: Python<'_>,
-            id: codegen_sdk_common::CSTNodeTreeId,
-            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-        ) -> PyResult<Self> {
-            let codebase = codebase_arc.get(py);
-            let path = id.file(codebase.db());
-            let file = codebase.get_file_for_id(path);
-            let file = match file {
-                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
-                _ => {
-                    return Err(
-                        pyo3::exceptions::PyValueError::new_err(
-                            format!(
-                                "File not found for path: {}", path.path(codebase.db())
-                                .display()
-                            ),
-                        ),
-                    );
-                }
-            };
-            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
-            if let Some(node) = node {
-                match node.as_ref().try_into().unwrap() {
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstrainedTypeParameterLeftRef::Lifetime(
-                        _,
-                    ) => Ok(Self::Lifetime(Lifetime::new(py, id, codebase_arc.clone())?)),
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstrainedTypeParameterLeftRef::TypeIdentifier(
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::FloatLiteral(
                         _,
                     ) => {
                         Ok(
-                            Self::TypeIdentifier(
-                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            Self::FloatLiteral(
+                                FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::Identifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Identifier(
+                                Identifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::IntegerLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::IntegerLiteral(
+                                IntegerLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::NegativeLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::NegativeLiteral(
+                                NegativeLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::RawStringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::RawStringLiteral(
+                                RawStringLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ConstParameterValueRef::StringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::StringLiteral(
+                                StringLiteral::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -42697,6 +43281,7 @@ mod cst {
         GenericType(GenericType),
         HigherRankedTraitBound(HigherRankedTraitBound),
         ScopedTypeIdentifier(ScopedTypeIdentifier),
+        TupleType(TupleType),
         TypeIdentifier(TypeIdentifier),
     }
     impl DynamicTypeChildren {
@@ -42760,6 +43345,15 @@ mod cst {
                             ),
                         )
                     }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::DynamicTypeChildrenRef::TupleType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TupleType(
+                                TupleType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::DynamicTypeChildrenRef::TypeIdentifier(
                         _,
                     ) => {
@@ -42781,6 +43375,7 @@ mod cst {
         GenericType(GenericType),
         HigherRankedTraitBound(HigherRankedTraitBound),
         ScopedTypeIdentifier(ScopedTypeIdentifier),
+        TupleType(TupleType),
         TypeIdentifier(TypeIdentifier),
     }
     impl DynamicTypeTrait {
@@ -42841,6 +43436,15 @@ mod cst {
                         Ok(
                             Self::ScopedTypeIdentifier(
                                 ScopedTypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::DynamicTypeTraitRef::TupleType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TupleType(
+                                TupleType::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -45566,6 +46170,7 @@ mod cst {
         ConstBlock(ConstBlock),
         FieldIdentifier(FieldIdentifier),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -45671,6 +46276,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::FieldPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -45928,6 +46542,7 @@ mod cst {
         ForExpression(ForExpression),
         GenBlock(GenBlock),
         GenericFunction(GenericFunction),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IfExpression(IfExpression),
         IndexExpression(IndexExpression),
@@ -46166,6 +46781,15 @@ mod cst {
                         Ok(
                             Self::GenericFunction(
                                 GenericFunction::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ForExpressionChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -47722,6 +48346,70 @@ mod cst {
                         Ok(
                             Self::ScopedIdentifier(
                                 ScopedIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                }
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[derive(IntoPyObject)]
+    pub enum GenericPatternChildren {
+        Identifier(Identifier),
+        ScopedIdentifier(ScopedIdentifier),
+        TypeArguments(TypeArguments),
+    }
+    impl GenericPatternChildren {
+        pub fn new(
+            py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            let codebase = codebase_arc.get(py);
+            let path = id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+            if let Some(node) = node {
+                match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::GenericPatternChildrenRef::Identifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Identifier(
+                                Identifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::GenericPatternChildrenRef::ScopedIdentifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::ScopedIdentifier(
+                                ScopedIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::GenericPatternChildrenRef::TypeArguments(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TypeArguments(
+                                TypeArguments::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -50506,6 +51194,7 @@ mod cst {
         ForExpression(ForExpression),
         GenBlock(GenBlock),
         GenericFunction(GenericFunction),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IfExpression(IfExpression),
         IndexExpression(IndexExpression),
@@ -50743,6 +51432,15 @@ mod cst {
                         Ok(
                             Self::GenericFunction(
                                 GenericFunction::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::LetConditionChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -51101,6 +51799,7 @@ mod cst {
         FunctionType(FunctionType),
         GenBlock(GenBlock),
         GenericFunction(GenericFunction),
+        GenericPattern(GenericPattern),
         GenericType(GenericType),
         Identifier(Identifier),
         IfExpression(IfExpression),
@@ -51394,6 +52093,15 @@ mod cst {
                         Ok(
                             Self::GenericFunction(
                                 GenericFunction::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::LetDeclarationChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -51852,6 +52560,54 @@ mod cst {
                         Ok(
                             Self::Identifier(
                                 Identifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                }
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[derive(IntoPyObject)]
+    pub enum LifetimeParameterChildren {
+        Lifetime(Lifetime),
+        TraitBounds(TraitBounds),
+    }
+    impl LifetimeParameterChildren {
+        pub fn new(
+            py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            let codebase = codebase_arc.get(py);
+            let path = id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+            if let Some(node) = node {
+                match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::LifetimeParameterChildrenRef::Lifetime(
+                        _,
+                    ) => Ok(Self::Lifetime(Lifetime::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::LifetimeParameterChildrenRef::TraitBounds(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TraitBounds(
+                                TraitBounds::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -53214,6 +53970,7 @@ mod cst {
         ForExpression(ForExpression),
         GenBlock(GenBlock),
         GenericFunction(GenericFunction),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IfExpression(IfExpression),
         IndexExpression(IndexExpression),
@@ -53453,6 +54210,15 @@ mod cst {
                         Ok(
                             Self::GenericFunction(
                                 GenericFunction::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::MatchPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -54341,6 +55107,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -54436,6 +55203,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::MutPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -54662,268 +55438,6 @@ mod cst {
         }
     }
     #[derive(IntoPyObject)]
-    pub enum OptionalTypeParameterChildren {
-        AbstractType(AbstractType),
-        ArrayType(ArrayType),
-        BoundedType(BoundedType),
-        ConstrainedTypeParameter(ConstrainedTypeParameter),
-        DynamicType(DynamicType),
-        FunctionType(FunctionType),
-        GenericType(GenericType),
-        MacroInvocation(MacroInvocation),
-        Metavariable(Metavariable),
-        NeverType(NeverType),
-        PointerType(PointerType),
-        PrimitiveType(PrimitiveType),
-        ReferenceType(ReferenceType),
-        RemovedTraitBound(RemovedTraitBound),
-        ScopedTypeIdentifier(ScopedTypeIdentifier),
-        TupleType(TupleType),
-        TypeIdentifier(TypeIdentifier),
-        UnitType(UnitType),
-    }
-    impl OptionalTypeParameterChildren {
-        pub fn new(
-            py: Python<'_>,
-            id: codegen_sdk_common::CSTNodeTreeId,
-            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-        ) -> PyResult<Self> {
-            let codebase = codebase_arc.get(py);
-            let path = id.file(codebase.db());
-            let file = codebase.get_file_for_id(path);
-            let file = match file {
-                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
-                _ => {
-                    return Err(
-                        pyo3::exceptions::PyValueError::new_err(
-                            format!(
-                                "File not found for path: {}", path.path(codebase.db())
-                                .display()
-                            ),
-                        ),
-                    );
-                }
-            };
-            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
-            if let Some(node) = node {
-                match node.as_ref().try_into().unwrap() {
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::AbstractType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::AbstractType(
-                                AbstractType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::ArrayType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::ArrayType(
-                                ArrayType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::BoundedType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::BoundedType(
-                                BoundedType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::ConstrainedTypeParameter(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::ConstrainedTypeParameter(
-                                ConstrainedTypeParameter::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::DynamicType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::DynamicType(
-                                DynamicType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::FunctionType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::FunctionType(
-                                FunctionType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::GenericType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::GenericType(
-                                GenericType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::MacroInvocation(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::MacroInvocation(
-                                MacroInvocation::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::Metavariable(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::Metavariable(
-                                Metavariable::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::NeverType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::NeverType(
-                                NeverType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::PointerType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::PointerType(
-                                PointerType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::PrimitiveType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::PrimitiveType(
-                                PrimitiveType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::ReferenceType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::ReferenceType(
-                                ReferenceType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::RemovedTraitBound(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::RemovedTraitBound(
-                                RemovedTraitBound::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::ScopedTypeIdentifier(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::ScopedTypeIdentifier(
-                                ScopedTypeIdentifier::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::TupleType(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::TupleType(
-                                TupleType::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::TypeIdentifier(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::TypeIdentifier(
-                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterChildrenRef::UnitType(
-                        _,
-                    ) => Ok(Self::UnitType(UnitType::new(py, id, codebase_arc.clone())?)),
-                }
-            } else {
-                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
-            }
-        }
-    }
-    #[derive(IntoPyObject)]
-    pub enum OptionalTypeParameterName {
-        ConstrainedTypeParameter(ConstrainedTypeParameter),
-        TypeIdentifier(TypeIdentifier),
-    }
-    impl OptionalTypeParameterName {
-        pub fn new(
-            py: Python<'_>,
-            id: codegen_sdk_common::CSTNodeTreeId,
-            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
-        ) -> PyResult<Self> {
-            let codebase = codebase_arc.get(py);
-            let path = id.file(codebase.db());
-            let file = codebase.get_file_for_id(path);
-            let file = match file {
-                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
-                _ => {
-                    return Err(
-                        pyo3::exceptions::PyValueError::new_err(
-                            format!(
-                                "File not found for path: {}", path.path(codebase.db())
-                                .display()
-                            ),
-                        ),
-                    );
-                }
-            };
-            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
-            if let Some(node) = node {
-                match node.as_ref().try_into().unwrap() {
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterNameRef::ConstrainedTypeParameter(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::ConstrainedTypeParameter(
-                                ConstrainedTypeParameter::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OptionalTypeParameterNameRef::TypeIdentifier(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::TypeIdentifier(
-                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                }
-            } else {
-                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
-            }
-        }
-    }
-    #[derive(IntoPyObject)]
     pub enum OrPatternChildren {
         AnonymousUnderscore(AnonymousUnderscore),
         BooleanLiteral(BooleanLiteral),
@@ -54931,6 +55445,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -55025,6 +55540,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::OrPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -55418,6 +55942,7 @@ mod cst {
         DynamicType(DynamicType),
         FloatLiteral(FloatLiteral),
         FunctionType(FunctionType),
+        GenericPattern(GenericPattern),
         GenericType(GenericType),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
@@ -55570,6 +56095,15 @@ mod cst {
                         Ok(
                             Self::FunctionType(
                                 FunctionType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ParameterChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -55845,6 +56379,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -55940,6 +56475,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ParameterPatternRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -57816,6 +58360,298 @@ mod cst {
         }
     }
     #[derive(IntoPyObject)]
+    pub enum RangePatternLeft {
+        BooleanLiteral(BooleanLiteral),
+        CharLiteral(CharLiteral),
+        Crate(Crate),
+        FloatLiteral(FloatLiteral),
+        Identifier(Identifier),
+        IntegerLiteral(IntegerLiteral),
+        Metavariable(Metavariable),
+        NegativeLiteral(NegativeLiteral),
+        RawStringLiteral(RawStringLiteral),
+        ScopedIdentifier(ScopedIdentifier),
+        SelfNode(SelfNode),
+        StringLiteral(StringLiteral),
+        Super(Super),
+    }
+    impl RangePatternLeft {
+        pub fn new(
+            py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            let codebase = codebase_arc.get(py);
+            let path = id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+            if let Some(node) = node {
+                match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::BooleanLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::BooleanLiteral(
+                                BooleanLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::CharLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::CharLiteral(
+                                CharLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::Crate(
+                        _,
+                    ) => Ok(Self::Crate(Crate::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::FloatLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::FloatLiteral(
+                                FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::Identifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Identifier(
+                                Identifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::IntegerLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::IntegerLiteral(
+                                IntegerLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::Metavariable(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Metavariable(
+                                Metavariable::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::NegativeLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::NegativeLiteral(
+                                NegativeLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::RawStringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::RawStringLiteral(
+                                RawStringLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::ScopedIdentifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::ScopedIdentifier(
+                                ScopedIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::SelfNode(
+                        _,
+                    ) => Ok(Self::SelfNode(SelfNode::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::StringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::StringLiteral(
+                                StringLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternLeftRef::Super(
+                        _,
+                    ) => Ok(Self::Super(Super::new(py, id, codebase_arc.clone())?)),
+                }
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[derive(IntoPyObject)]
+    pub enum RangePatternRight {
+        BooleanLiteral(BooleanLiteral),
+        CharLiteral(CharLiteral),
+        Crate(Crate),
+        FloatLiteral(FloatLiteral),
+        Identifier(Identifier),
+        IntegerLiteral(IntegerLiteral),
+        Metavariable(Metavariable),
+        NegativeLiteral(NegativeLiteral),
+        RawStringLiteral(RawStringLiteral),
+        ScopedIdentifier(ScopedIdentifier),
+        SelfNode(SelfNode),
+        StringLiteral(StringLiteral),
+        Super(Super),
+    }
+    impl RangePatternRight {
+        pub fn new(
+            py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            let codebase = codebase_arc.get(py);
+            let path = id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+            if let Some(node) = node {
+                match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::BooleanLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::BooleanLiteral(
+                                BooleanLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::CharLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::CharLiteral(
+                                CharLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::Crate(
+                        _,
+                    ) => Ok(Self::Crate(Crate::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::FloatLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::FloatLiteral(
+                                FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::Identifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Identifier(
+                                Identifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::IntegerLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::IntegerLiteral(
+                                IntegerLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::Metavariable(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Metavariable(
+                                Metavariable::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::NegativeLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::NegativeLiteral(
+                                NegativeLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::RawStringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::RawStringLiteral(
+                                RawStringLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::ScopedIdentifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::ScopedIdentifier(
+                                ScopedIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::SelfNode(
+                        _,
+                    ) => Ok(Self::SelfNode(SelfNode::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::StringLiteral(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::StringLiteral(
+                                StringLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RangePatternRightRef::Super(
+                        _,
+                    ) => Ok(Self::Super(Super::new(py, id, codebase_arc.clone())?)),
+                }
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[derive(IntoPyObject)]
     pub enum RawStringLiteralChildren {
         StringContent(StringContent),
     }
@@ -57867,6 +58703,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -57961,6 +58798,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::RefPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -58601,6 +59447,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -58696,6 +59543,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::ReferencePatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -60449,6 +61305,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -60543,6 +61400,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::SlicePatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -64060,6 +64926,7 @@ mod cst {
         ClosureExpression(ClosureExpression),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -64163,6 +65030,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TuplePatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -64333,6 +65209,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         GenericType(GenericType),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
@@ -64428,6 +65305,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TupleStructPatternChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -66188,14 +67074,220 @@ mod cst {
         }
     }
     #[derive(IntoPyObject)]
+    pub enum TypeParameterChildren {
+        AbstractType(AbstractType),
+        ArrayType(ArrayType),
+        BoundedType(BoundedType),
+        DynamicType(DynamicType),
+        FunctionType(FunctionType),
+        GenericType(GenericType),
+        MacroInvocation(MacroInvocation),
+        Metavariable(Metavariable),
+        NeverType(NeverType),
+        PointerType(PointerType),
+        PrimitiveType(PrimitiveType),
+        ReferenceType(ReferenceType),
+        RemovedTraitBound(RemovedTraitBound),
+        ScopedTypeIdentifier(ScopedTypeIdentifier),
+        TraitBounds(TraitBounds),
+        TupleType(TupleType),
+        TypeIdentifier(TypeIdentifier),
+        UnitType(UnitType),
+    }
+    impl TypeParameterChildren {
+        pub fn new(
+            py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            let codebase = codebase_arc.get(py);
+            let path = id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+            if let Some(node) = node {
+                match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::AbstractType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::AbstractType(
+                                AbstractType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::ArrayType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::ArrayType(
+                                ArrayType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::BoundedType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::BoundedType(
+                                BoundedType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::DynamicType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::DynamicType(
+                                DynamicType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::FunctionType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::FunctionType(
+                                FunctionType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::GenericType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericType(
+                                GenericType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::MacroInvocation(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::MacroInvocation(
+                                MacroInvocation::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::Metavariable(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::Metavariable(
+                                Metavariable::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::NeverType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::NeverType(
+                                NeverType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::PointerType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::PointerType(
+                                PointerType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::PrimitiveType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::PrimitiveType(
+                                PrimitiveType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::ReferenceType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::ReferenceType(
+                                ReferenceType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::RemovedTraitBound(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::RemovedTraitBound(
+                                RemovedTraitBound::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::ScopedTypeIdentifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::ScopedTypeIdentifier(
+                                ScopedTypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::TraitBounds(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TraitBounds(
+                                TraitBounds::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::TupleType(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TupleType(
+                                TupleType::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::TypeIdentifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TypeIdentifier(
+                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParameterChildrenRef::UnitType(
+                        _,
+                    ) => Ok(Self::UnitType(UnitType::new(py, id, codebase_arc.clone())?)),
+                }
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[derive(IntoPyObject)]
     pub enum TypeParametersChildren {
         AttributeItem(AttributeItem),
         ConstParameter(ConstParameter),
-        ConstrainedTypeParameter(ConstrainedTypeParameter),
-        Lifetime(Lifetime),
+        LifetimeParameter(LifetimeParameter),
         Metavariable(Metavariable),
-        OptionalTypeParameter(OptionalTypeParameter),
-        TypeIdentifier(TypeIdentifier),
+        TypeParameter(TypeParameter),
     }
     impl TypeParametersChildren {
         pub fn new(
@@ -66240,18 +67332,15 @@ mod cst {
                             ),
                         )
                     }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::ConstrainedTypeParameter(
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::LifetimeParameter(
                         _,
                     ) => {
                         Ok(
-                            Self::ConstrainedTypeParameter(
-                                ConstrainedTypeParameter::new(py, id, codebase_arc.clone())?,
+                            Self::LifetimeParameter(
+                                LifetimeParameter::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::Lifetime(
-                        _,
-                    ) => Ok(Self::Lifetime(Lifetime::new(py, id, codebase_arc.clone())?)),
                     codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::Metavariable(
                         _,
                     ) => {
@@ -66261,21 +67350,12 @@ mod cst {
                             ),
                         )
                     }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::OptionalTypeParameter(
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::TypeParameter(
                         _,
                     ) => {
                         Ok(
-                            Self::OptionalTypeParameter(
-                                OptionalTypeParameter::new(py, id, codebase_arc.clone())?,
-                            ),
-                        )
-                    }
-                    codegen_sdk_analyzer::codegen_sdk_rust::cst::TypeParametersChildrenRef::TypeIdentifier(
-                        _,
-                    ) => {
-                        Ok(
-                            Self::TypeIdentifier(
-                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            Self::TypeParameter(
+                                TypeParameter::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -67020,6 +68100,54 @@ mod cst {
         }
     }
     #[derive(IntoPyObject)]
+    pub enum UseBoundsChildren {
+        Lifetime(Lifetime),
+        TypeIdentifier(TypeIdentifier),
+    }
+    impl UseBoundsChildren {
+        pub fn new(
+            py: Python<'_>,
+            id: codegen_sdk_common::CSTNodeTreeId,
+            codebase_arc: Arc<GILProtected<codegen_sdk_analyzer::Codebase>>,
+        ) -> PyResult<Self> {
+            let codebase = codebase_arc.get(py);
+            let path = id.file(codebase.db());
+            let file = codebase.get_file_for_id(path);
+            let file = match file {
+                Some(codegen_sdk_analyzer::ParsedFile::Rust(py)) => py,
+                _ => {
+                    return Err(
+                        pyo3::exceptions::PyValueError::new_err(
+                            format!(
+                                "File not found for path: {}", path.path(codebase.db())
+                                .display()
+                            ),
+                        ),
+                    );
+                }
+            };
+            let node = file.tree(codebase.db()).get(id.id(codebase.db()));
+            if let Some(node) = node {
+                match node.as_ref().try_into().unwrap() {
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::UseBoundsChildrenRef::Lifetime(
+                        _,
+                    ) => Ok(Self::Lifetime(Lifetime::new(py, id, codebase_arc.clone())?)),
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::UseBoundsChildrenRef::TypeIdentifier(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::TypeIdentifier(
+                                TypeIdentifier::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                }
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err("Node not found"))
+            }
+        }
+    }
+    #[derive(IntoPyObject)]
     pub enum UseDeclarationArgument {
         Crate(Crate),
         Identifier(Identifier),
@@ -67443,6 +68571,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -67538,6 +68667,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::VariadicParameterChildrenRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -70393,6 +71531,7 @@ mod cst {
         CharLiteral(CharLiteral),
         ConstBlock(ConstBlock),
         FloatLiteral(FloatLiteral),
+        GenericPattern(GenericPattern),
         Identifier(Identifier),
         IntegerLiteral(IntegerLiteral),
         MacroInvocation(MacroInvocation),
@@ -70487,6 +71626,15 @@ mod cst {
                         Ok(
                             Self::FloatLiteral(
                                 FloatLiteral::new(py, id, codebase_arc.clone())?,
+                            ),
+                        )
+                    }
+                    codegen_sdk_analyzer::codegen_sdk_rust::cst::PatternRef::GenericPattern(
+                        _,
+                    ) => {
+                        Ok(
+                            Self::GenericPattern(
+                                GenericPattern::new(py, id, codebase_arc.clone())?,
                             ),
                         )
                     }
@@ -70888,6 +72036,7 @@ mod cst {
         child_module.add_class::<AnonymousEqualsEquals>()?;
         child_module.add_class::<AnonymousEqualsGreaterThan>()?;
         child_module.add_class::<AnonymousExpr>()?;
+        child_module.add_class::<AnonymousExpr2021>()?;
         child_module.add_class::<AnonymousExtern>()?;
         child_module.add_class::<AnonymousFalse>()?;
         child_module.add_class::<AnonymousFn>()?;
@@ -70923,6 +72072,7 @@ mod cst {
         child_module.add_class::<AnonymousOpenBracket>()?;
         child_module.add_class::<AnonymousOpenParen>()?;
         child_module.add_class::<AnonymousPat>()?;
+        child_module.add_class::<AnonymousPatParam>()?;
         child_module.add_class::<AnonymousPath>()?;
         child_module.add_class::<AnonymousPercent>()?;
         child_module.add_class::<AnonymousPercentEquals>()?;
@@ -70985,7 +72135,6 @@ mod cst {
         child_module.add_class::<ConstBlock>()?;
         child_module.add_class::<ConstItem>()?;
         child_module.add_class::<ConstParameter>()?;
-        child_module.add_class::<ConstrainedTypeParameter>()?;
         child_module.add_class::<ContinueExpression>()?;
         child_module.add_class::<Crate>()?;
         child_module.add_class::<DeclarationList>()?;
@@ -71018,6 +72167,7 @@ mod cst {
         child_module.add_class::<FunctionType>()?;
         child_module.add_class::<GenBlock>()?;
         child_module.add_class::<GenericFunction>()?;
+        child_module.add_class::<GenericPattern>()?;
         child_module.add_class::<GenericType>()?;
         child_module.add_class::<GenericTypeWithTurbofish>()?;
         child_module.add_class::<HigherRankedTraitBound>()?;
@@ -71033,6 +72183,7 @@ mod cst {
         child_module.add_class::<LetCondition>()?;
         child_module.add_class::<LetDeclaration>()?;
         child_module.add_class::<Lifetime>()?;
+        child_module.add_class::<LifetimeParameter>()?;
         child_module.add_class::<LineComment>()?;
         child_module.add_class::<LoopExpression>()?;
         child_module.add_class::<MacroDefinition>()?;
@@ -71048,7 +72199,6 @@ mod cst {
         child_module.add_class::<MutableSpecifier>()?;
         child_module.add_class::<NegativeLiteral>()?;
         child_module.add_class::<NeverType>()?;
-        child_module.add_class::<OptionalTypeParameter>()?;
         child_module.add_class::<OrPattern>()?;
         child_module.add_class::<OrderedFieldDeclarationList>()?;
         child_module.add_class::<OuterDocCommentMarker>()?;
@@ -71103,6 +72253,7 @@ mod cst {
         child_module.add_class::<TypeCastExpression>()?;
         child_module.add_class::<TypeIdentifier>()?;
         child_module.add_class::<TypeItem>()?;
+        child_module.add_class::<TypeParameter>()?;
         child_module.add_class::<TypeParameters>()?;
         child_module.add_class::<UnaryExpression>()?;
         child_module.add_class::<UnionItem>()?;
@@ -71110,6 +72261,7 @@ mod cst {
         child_module.add_class::<UnitType>()?;
         child_module.add_class::<UnsafeBlock>()?;
         child_module.add_class::<UseAsClause>()?;
+        child_module.add_class::<UseBounds>()?;
         child_module.add_class::<UseDeclaration>()?;
         child_module.add_class::<UseList>()?;
         child_module.add_class::<UseWildcard>()?;
