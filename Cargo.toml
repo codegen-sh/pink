@@ -28,7 +28,7 @@ salsa = { workspace = true}
 env_logger = { workspace = true }
 log = { workspace = true }
 codegen-sdk-resolution = { workspace = true}
-sysinfo = "0.36.1"
+sysinfo = "0.37.0"
 rkyv.workspace = true
 [features]
 python = [ "codegen-sdk-analyzer/python"]
