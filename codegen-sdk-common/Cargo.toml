@@ -31,7 +31,7 @@ convert_case = { workspace = true }
 tree-sitter-query = {git = "https://github.com/tree-sitter-grammars/tree-sitter-query", rev = "0555ac0da902abff06076e40501102cee3ba68bd", optional = true, version = ">=0.1.0"}
 phf = { version = "0.13.0", features = ["macros"] }
 rkyv = { workspace = true  }
-xdg = "2.5.2"
+xdg = "3.0.0"
 base64 = "0.22.1"
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
