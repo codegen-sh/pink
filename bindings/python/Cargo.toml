@@ -15,7 +15,7 @@ codegen-sdk-analyzer = { workspace = true }
 codegen-sdk-resolution = { workspace = true }
 pyo3 = { version = "0.25.1", features = ["anyhow", "extension-module"] }
 pyo3-log = "0.12.4"
-pyo3-bytes = "0.3.0"
+pyo3-bytes = "0.5.0"
 codegen-sdk-common = { workspace = true }
 anyhow = { workspace = true }
 codegen-sdk-ast = { workspace = true }
