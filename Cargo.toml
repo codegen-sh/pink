@@ -113,7 +113,7 @@ insta = "1.42.1"
 prettyplease = "0.2.29"
 syn = { version = "2.0.104", features = ["proc-macro", "full"] }
 derive_more = { version = "2.0.1", features = ["debug", "display"] }
-salsa = {version = "0.19.0"}
+salsa = {version = "0.24.0"}
 subenum = {git = "https://github.com/mrenow/subenum", rev = "d623bc4c0e2a8ab9bc24f255e933411f0c4c9c72"}
 indicatif-log-bridge = "0.2.3"
 indicatif = { version = "0.18.0", features = ["rayon"] }
