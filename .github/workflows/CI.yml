@@ -51,7 +51,7 @@ jobs:
           working-directory: bindings/python
           rust-toolchain: nightly
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: bindings/python/dist
@@ -84,7 +84,7 @@ jobs:
           working-directory: bindings/python
           rust-toolchain: nightly
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
           path: bindings/python/dist
@@ -113,7 +113,7 @@ jobs:
           working-directory: bindings/python
           rust-toolchain: nightly
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: bindings/python/dist
@@ -141,7 +141,7 @@ jobs:
           working-directory: bindings/python
           rust-toolchain: nightly
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: bindings/python/dist
@@ -158,7 +158,7 @@ jobs:
           working-directory: bindings/python
           rust-toolchain: nightly
       - name: Upload sdist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheels-sdist
           path: bindings/python/dist
@@ -177,7 +177,7 @@ jobs:
       # Used to generate artifact attestation
       attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
