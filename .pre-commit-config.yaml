@@ -2,7 +2,7 @@ repos:
 
 
   - repo: https://github.com/biomejs/pre-commit
-    rev: "v1.9.4"
+    rev: "v2.3.8"
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@1.9.4"]
